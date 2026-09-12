@@ -13,17 +13,18 @@ export function accessibleColors(base: { text: string; background: string; backg
     // Exact brand red has insufficient contrast with small white text; use black
     // labels normally and a deeper red with white labels in high-contrast mode.
     const readableRed = dark ? '#FF9AA9' : banortePalette.strongRed;
+    const adaptiveRed = dark ? '#FF4D67' : banortePalette.red;
     return {
       ...base,
       background: dark ? base.background : banortePalette.white,
-      backgroundElement: dark ? '#2A171C' : '#FFF1F3',
-      backgroundSelected: dark ? '#3C2027' : '#FFE0E6',
+      backgroundElement: dark ? '#242428' : '#FFF1F3',
+      backgroundSelected: dark ? '#323238' : '#FFE0E6',
       textSecondary: settings.highContrast ? base.text : base.textSecondary,
-      border: settings.highContrast ? base.text : banortePalette.red,
-      accent: settings.highContrast ? banortePalette.strongRed : banortePalette.red,
+      border: settings.highContrast ? base.text : adaptiveRed,
+      accent: settings.highContrast ? banortePalette.strongRed : adaptiveRed,
       onAccent: settings.highContrast ? banortePalette.white : '#000000',
       info: settings.highContrast ? base.text : readableRed,
-      success: base.text,
+      success: settings.highContrast ? base.text : dark ? '#86EFAC' : '#166534',
       danger: settings.highContrast ? base.text : readableRed,
       warning: base.text,
       dangerBackground: banortePalette.strongRed,

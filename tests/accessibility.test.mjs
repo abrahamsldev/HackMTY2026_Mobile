@@ -6,6 +6,7 @@ import { accessibleColors } from '../src/features/accessibility/theme.ts';
 const system = { reduceMotion: false, boldText: false, screenReader: false };
 
 test('preferences have safe defaults and reject unsafe, unsupported or corrupt stored values', () => {
+  assert.equal(defaults.colorPalette, 'banorte');
   assert.deepEqual(decodeAccessibilityPreferences(null), defaults);
   assert.deepEqual(decodeAccessibilityPreferences('{"version":1,"preferences":{}}'), defaults);
   for (const patch of [{ textScale: 0 }, { textScale: 99 }, { lineSpacing: -1 }, { colorPalette: 'custom' }, { extra: true }]) {

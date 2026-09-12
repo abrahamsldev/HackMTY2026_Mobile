@@ -85,17 +85,24 @@ for (const [index, kind] of ['area', 'heatmap'].entries()) {
   });
 }
 
-test('the index route renders protocol messages separately beneath assistant text', () => {
+test('the index route renders protocol surfaces inside the matching assistant message', () => {
   const index = readFileSync(new URL('../src/app/(app)/index.tsx', import.meta.url), 'utf8');
+  const chatMessage = readFileSync(
+    new URL('../src/features/assistant/components/chat-message.tsx', import.meta.url),
+    'utf8',
+  );
   const surface = readFileSync(
     new URL('../src/features/assistant/components/a2ui-surface.tsx', import.meta.url),
     'utf8',
   );
   const renderer = readFileSync(new URL('../src/features/a2ui/renderer.tsx', import.meta.url), 'utf8');
 
-  assert.match(index, /assistant\.surface\.reply\.message/);
-  assert.match(index, /assistant\.surface\.a2uiSurfaces\.map/);
-  assert.match(index, /<A2UISurface/);
+  assert.match(index, /content=\{activeResponse\?\.reply\.message\}/);
+  assert.match(index, /surfaces=\{activeSurfaces\}/);
+  assert.match(index, /assistant\.surface\.revision > activeResponseFloor/);
+  assert.match(index, /assistant\.pending \|\| submissionLocked\.current/);
+  assert.match(chatMessage, /surfaces\.map/);
+  assert.match(chatMessage, /<A2UISurface/);
   assert.match(surface, /<A2UIRenderer/);
   assert.match(renderer, /case 'Chart'/);
   assert.match(renderer, /<A2UIChart/);
@@ -111,4 +118,88 @@ test('switching authenticated accounts remounts and clears the previous A2UI sur
   assert.match(index, /<AssistantWorkspace key=\{session\.user\.id\}/);
   assert.match(hook, /useRef\(new A2UIMessageProcessor\(\)\)/);
   assert.match(hook, /request\.current\.controller\?\.abort\(\)/);
+  assert.match(hook, /if \(!normalized \|\| inFlight\.current\) return/);
+});
+
+test('assistant chrome uses restrained Banorte outlines and animated vector status icons', () => {
+  const composer = readFileSync(
+    new URL('../src/features/assistant/components/chat-composer.tsx', import.meta.url),
+    'utf8',
+  );
+  const chatMessage = readFileSync(
+    new URL('../src/features/assistant/components/chat-message.tsx', import.meta.url),
+    'utf8',
+  );
+  const welcome = readFileSync(
+    new URL('../src/features/assistant/components/assistant-welcome.tsx', import.meta.url),
+    'utf8',
+  );
+  const statusIcon = readFileSync(
+    new URL('../src/features/assistant/components/assistant-status-icon.tsx', import.meta.url),
+    'utf8',
+  );
+  const themeTokens = readFileSync(
+    new URL('../src/constants/theme.ts', import.meta.url),
+    'utf8',
+  );
+  const accessibilityTheme = readFileSync(
+    new URL('../src/features/accessibility/theme.ts', import.meta.url),
+    'utf8',
+  );
+  const globalCss = readFileSync(
+    new URL('../src/global.css', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(composer, /outlineWidth: 0/);
+  assert.match(composer, /boxShadow: 'none'/);
+  assert.match(composer, /paddingVertical: 11/);
+  assert.match(composer, /borderWidth: 2/);
+  assert.match(composer, /MAX_INPUT_HEIGHT = 132/);
+  assert.match(composer, /duration: 360/);
+  assert.match(composer, /<View pointerEvents="none" style=\{styles\.placeholderContainer\}>/);
+  assert.match(composer, /scrollEnabled/);
+  assert.match(composer, /backgroundColor: banortePalette\.strongRed/);
+  assert.match(composer, /borderColor: banortePalette\.white/);
+  assert.doesNotMatch(composer, /💡|↵/u);
+  assert.match(welcome, /borderColor: theme\.accent/);
+  assert.match(chatMessage, /borderColor: theme\.accent/);
+  assert.match(chatMessage, /duration: settings\.reduceMotion \? 0 : 620/);
+  assert.match(statusIcon, /Animated\.loop/);
+  assert.match(statusIcon, /duration: 1250/);
+  assert.match(statusIcon, /theme\.success/);
+  assert.match(statusIcon, /settings\.reduceMotion/);
+  assert.match(themeTokens, /background: '#171719'/);
+  assert.match(accessibilityTheme, /const adaptiveRed = dark \? '#FF4D67'/);
+  assert.match(globalCss, /#assistant-query-input:hover::-webkit-scrollbar-thumb/);
+  assert.match(globalCss, /scrollbar-color: transparent transparent/);
+});
+
+test('the latest query edits inline and retry actions use icon-only controls', () => {
+  const index = readFileSync(new URL('../src/app/(app)/index.tsx', import.meta.url), 'utf8');
+  const chatMessage = readFileSync(
+    new URL('../src/features/assistant/components/chat-message.tsx', import.meta.url),
+    'utf8',
+  );
+  const errorMessage = readFileSync(
+    new URL('../src/features/assistant/components/assistant-error-message.tsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(index, /setEditingQuery\(activeQuery\)/);
+  assert.match(index, /isEditing=\{editingTurnId === activeTurnId\}/);
+  assert.match(index, /onEdit=\{assistant\.pending \? undefined : handleBeginEdit\}/);
+  assert.match(index, /disabled=\{!assistant\.isConfigured \|\| Boolean\(editingTurnId\)\}/);
+  assert.match(chatMessage, /label="Editar última consulta"/);
+  assert.match(chatMessage, /'Copiar consulta'/);
+  assert.match(chatMessage, /Clipboard\.setString\(text\)/);
+  assert.match(chatMessage, /icon=\{copied \? 'confirm' : 'copy'\}/);
+  assert.match(chatMessage, /accessibilityLabel="Editar consulta"/);
+  assert.match(chatMessage, /label="Cancelar edición"[\s\S]*color=\{theme\.danger\}/);
+  assert.match(chatMessage, /label="Enviar consulta editada"[\s\S]*color=\{theme\.success\}/);
+  assert.match(chatMessage, /<TextInput[\s\S]*autoFocus/);
+  assert.match(errorMessage, /function RetryIcon/);
+  assert.match(errorMessage, /<RetryIcon color=\{theme\.accent\}/);
+  assert.doesNotMatch(errorMessage, />\s*Reintentar\s*</);
+  assert.doesNotMatch(errorMessage, />\s*Editar consulta\s*</);
 });
