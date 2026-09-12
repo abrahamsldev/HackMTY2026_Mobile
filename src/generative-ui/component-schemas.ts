@@ -53,6 +53,38 @@ export const textBlockPropsSchema = z
   })
   .strict();
 
+export const accountBalanceCardPropsSchema = z
+  .object({
+    accountId: z.string().min(1),
+    accountName: z.string().min(1).max(100),
+    accountType: z.enum(['checking', 'savings', 'credit']),
+    accountLastFour: z
+      .string()
+      .regex(/^\d{4}$/, 'accountLastFour debe tener exactamente 4 dígitos numéricos'),
+    availableBalance: z.number().finite(),
+    currency: z.enum(['MXN', 'USD']).optional(),
+    status: z.enum(['active', 'blocked', 'inactive']).optional(),
+    variant: z.enum(['default', 'highlighted']).optional(),
+  })
+  .strict();
+
+export const financialStatCardPropsSchema = z
+  .object({
+    label: z.string().min(1),
+    value: z.number().finite(),
+    format: z.enum(['currency', 'percentage', 'number']).optional(),
+    currency: z.enum(['MXN', 'USD']).optional(),
+    tone: z.enum(['default', 'positive', 'negative', 'warning']).optional(),
+    comparison: z
+      .object({
+        value: z.number().finite(),
+        label: z.string().min(1),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
 export const generativeActionSchema: z.ZodType<GenerativeAction> = z
   .object({
     event: z.string().min(1),

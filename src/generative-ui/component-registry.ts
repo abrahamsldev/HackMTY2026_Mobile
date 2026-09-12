@@ -3,9 +3,15 @@ import type { z } from 'zod';
 
 import { Grid, Page, Section, Stack } from '@/components/layout';
 import { Card, TextBlock } from '@/components/ui';
+import {
+  AccountBalanceCard,
+  FinancialStatCard,
+} from '@/features/personal-banking';
 
 import {
+  accountBalanceCardPropsSchema,
   cardPropsSchema,
+  financialStatCardPropsSchema,
   gridPropsSchema,
   pagePropsSchema,
   sectionPropsSchema,
@@ -49,6 +55,18 @@ export const componentRegistry = {
   TextBlock: {
     component: TextBlock,
     propsSchema: textBlockPropsSchema,
+    allowsChildren: false,
+    allowedActions: [],
+  },
+  AccountBalanceCard: {
+    component: AccountBalanceCard,
+    propsSchema: accountBalanceCardPropsSchema,
+    allowsChildren: false,
+    allowedActions: ['onPress'],
+  },
+  FinancialStatCard: {
+    component: FinancialStatCard,
+    propsSchema: financialStatCardPropsSchema,
     allowsChildren: false,
     allowedActions: [],
   },

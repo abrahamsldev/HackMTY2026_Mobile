@@ -2,16 +2,17 @@ import type { GenerativeNode } from './types';
 
 /**
  * Example generative interface description conforming strictly to A2UI / Generative Schema.
+ *
  * Structure:
  * Page
  * └── Stack
  *     ├── Section
  *     │   └── Grid
- *     │       ├── Card (Saldo disponible)
- *     │       ├── Card (Ingresos)
- *     │       └── Card (Gastos)
+ *     │       ├── AccountBalanceCard (Saldo disponible con onPress a MCP)
+ *     │       ├── FinancialStatCard (Ingresos del mes)
+ *     │       └── FinancialStatCard (Gastos del mes)
  *     └── Section
- *         └── Card (Flujo de efectivo / Proyección)
+ *         └── Card (Flujo de efectivo / Proyección con TextBlock)
  */
 export const exampleFinancialInterface: GenerativeNode = {
   id: 'financial-dashboard-page',
@@ -81,140 +82,61 @@ export const exampleFinancialInterface: GenerativeNode = {
                 spacing: 'md',
               },
               children: [
-                // Card 1: Saldo Disponible
+                // Card 1: AccountBalanceCard especializado
                 {
-                  id: 'card-balance',
-                  type: 'Card',
+                  id: 'main-account',
+                  type: 'AccountBalanceCard',
                   props: {
+                    accountId: 'account-001',
+                    accountName: 'Cuenta Enlace Personal',
+                    accountType: 'checking',
+                    accountLastFour: '4821',
+                    availableBalance: 128450,
+                    currency: 'MXN',
+                    status: 'active',
                     variant: 'highlighted',
-                    padding: 'md',
                   },
                   actions: {
                     onPress: {
                       event: 'view_account_details',
                       tool: 'banorte_get_account_details',
-                      payload: { accountId: 'perfiles-banorte-001' },
+                      payload: {
+                        accountId: 'account-001',
+                      },
                     },
                   },
-                  children: [
-                    {
-                      id: 'card-balance-label',
-                      type: 'TextBlock',
-                      props: {
-                        value: 'Saldo Disponible',
-                        variant: 'caption',
-                        color: 'muted',
-                      },
-                    },
-                    {
-                      id: 'card-balance-amount',
-                      type: 'TextBlock',
-                      props: {
-                        value: '$128,450.00 MXN',
-                        variant: 'amount',
-                        color: 'default',
-                      },
-                    },
-                    {
-                      id: 'card-balance-sub',
-                      type: 'TextBlock',
-                      props: {
-                        value: 'Cuenta Débito Preferente •••• 4921',
-                        variant: 'caption',
-                        color: 'muted',
-                      },
-                    },
-                  ],
                 },
-                // Card 2: Ingresos del mes
+                // Card 2: FinancialStatCard especializado para ingresos
                 {
-                  id: 'card-income',
-                  type: 'Card',
+                  id: 'monthly-income',
+                  type: 'FinancialStatCard',
                   props: {
-                    variant: 'outlined',
-                    padding: 'md',
-                  },
-                  actions: {
-                    onPress: {
-                      event: 'view_income_breakdown',
-                      tool: 'banorte_get_income_metrics',
-                      payload: { period: 'current_month' },
+                    label: 'Ingresos del mes',
+                    value: 42800,
+                    format: 'currency',
+                    currency: 'MXN',
+                    tone: 'positive',
+                    comparison: {
+                      value: 8.4,
+                      label: 'contra el mes anterior',
                     },
                   },
-                  children: [
-                    {
-                      id: 'card-income-label',
-                      type: 'TextBlock',
-                      props: {
-                        value: 'Ingresos del Mes',
-                        variant: 'caption',
-                        color: 'muted',
-                      },
-                    },
-                    {
-                      id: 'card-income-amount',
-                      type: 'TextBlock',
-                      props: {
-                        value: '+$42,800.00 MXN',
-                        variant: 'amount',
-                        color: 'success',
-                      },
-                    },
-                    {
-                      id: 'card-income-sub',
-                      type: 'TextBlock',
-                      props: {
-                        value: '+12.5% vs. mes anterior',
-                        variant: 'caption',
-                        color: 'success',
-                      },
-                    },
-                  ],
                 },
-                // Card 3: Gastos del mes
+                // Card 3: FinancialStatCard especializado para gastos
                 {
-                  id: 'card-expenses',
-                  type: 'Card',
+                  id: 'monthly-expenses',
+                  type: 'FinancialStatCard',
                   props: {
-                    variant: 'outlined',
-                    padding: 'md',
-                  },
-                  actions: {
-                    onPress: {
-                      event: 'view_expenses_breakdown',
-                      tool: 'banorte_get_spending_categories',
-                      payload: { period: 'current_month' },
+                    label: 'Gastos del mes',
+                    value: 18320.5,
+                    format: 'currency',
+                    currency: 'MXN',
+                    tone: 'negative',
+                    comparison: {
+                      value: -3.2,
+                      label: 'contra el mes anterior',
                     },
                   },
-                  children: [
-                    {
-                      id: 'card-expenses-label',
-                      type: 'TextBlock',
-                      props: {
-                        value: 'Gastos del Mes',
-                        variant: 'caption',
-                        color: 'muted',
-                      },
-                    },
-                    {
-                      id: 'card-expenses-amount',
-                      type: 'TextBlock',
-                      props: {
-                        value: '-$18,320.50 MXN',
-                        variant: 'amount',
-                        color: 'danger',
-                      },
-                    },
-                    {
-                      id: 'card-expenses-sub',
-                      type: 'TextBlock',
-                      props: {
-                        value: '42% del presupuesto utilizado',
-                        variant: 'caption',
-                        color: 'muted',
-                      },
-                    },
-                  ],
                 },
               ],
             },

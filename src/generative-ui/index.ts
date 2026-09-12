@@ -1,6 +1,8 @@
 export { createComponentActionHandlers } from './action-dispatcher';
 export {
+  accountBalanceCardPropsSchema,
   cardPropsSchema,
+  financialStatCardPropsSchema,
   generativeActionSchema,
   generativeNodeSchema,
   gridPropsSchema,
