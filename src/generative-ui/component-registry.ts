@@ -2,7 +2,16 @@ import type React from 'react';
 import type { z } from 'zod';
 
 import { Grid, Page, Section, Stack } from '@/components/layout';
-import { Card, TextBlock } from '@/components/ui';
+import {
+  ActionButton,
+  Card,
+  Divider,
+  EmptyState,
+  InfoBanner,
+  ProgressBar,
+  StatusBadge,
+  TextBlock,
+} from '@/components/ui';
 import {
   AccountBalanceCard,
   FinancialStatCard,
@@ -13,13 +22,19 @@ import {
 
 import {
   accountBalanceCardPropsSchema,
+  actionButtonPropsSchema,
   cardPropsSchema,
+  dividerPropsSchema,
+  emptyStatePropsSchema,
   financialStatCardPropsSchema,
   gridPropsSchema,
+  infoBannerPropsSchema,
   pagePropsSchema,
+  progressBarPropsSchema,
   sectionPropsSchema,
   spendingCategoryChartPropsSchema,
   stackPropsSchema,
+  statusBadgePropsSchema,
   textBlockPropsSchema,
   transactionItemPropsSchema,
   transactionListPropsSchema,
@@ -93,6 +108,42 @@ export const componentRegistry = {
     propsSchema: spendingCategoryChartPropsSchema,
     allowsChildren: false,
     allowedActions: ['onCategoryPress'],
+  },
+  ActionButton: {
+    component: ActionButton,
+    propsSchema: actionButtonPropsSchema,
+    allowsChildren: false,
+    allowedActions: ['onPress'],
+  },
+  StatusBadge: {
+    component: StatusBadge,
+    propsSchema: statusBadgePropsSchema,
+    allowsChildren: false,
+    allowedActions: [],
+  },
+  ProgressBar: {
+    component: ProgressBar,
+    propsSchema: progressBarPropsSchema,
+    allowsChildren: false,
+    allowedActions: [],
+  },
+  InfoBanner: {
+    component: InfoBanner,
+    propsSchema: infoBannerPropsSchema,
+    allowsChildren: false,
+    allowedActions: [],
+  },
+  Divider: {
+    component: Divider,
+    propsSchema: dividerPropsSchema,
+    allowsChildren: false,
+    allowedActions: [],
+  },
+  EmptyState: {
+    component: EmptyState,
+    propsSchema: emptyStatePropsSchema,
+    allowsChildren: false,
+    allowedActions: [],
   },
 } as const;
 

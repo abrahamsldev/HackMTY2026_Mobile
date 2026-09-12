@@ -1,180 +1,381 @@
-import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { ExternalLink } from '@/components/external-link';
+import { Page, Section, Stack } from '@/components/layout';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Collapsible } from '@/components/ui/collapsible';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import {
+  ActionButton,
+  Card,
+  Divider,
+  EmptyState,
+  InfoBanner,
+  ProgressBar,
+  StatusBadge,
+} from '@/components/ui';
+import { Spacing } from '@/constants/theme';
+import {
+  AccountBalanceCard,
+  FinancialStatCard,
+  SpendingCategoryChart,
+  TransactionItem,
+} from '@/features/personal-banking';
 
-export default function TabTwoScreen() {
-  const safeAreaInsets = useSafeAreaInsets();
-  const insets = {
-    ...safeAreaInsets,
-    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
+interface TestCatalogEvent {
+  event: string;
+  componentId: string;
+  payload: {
+    source: string;
   };
-  const theme = useTheme();
+}
 
-  const contentPlatformStyle = Platform.select({
-    android: {
-      paddingTop: insets.top,
-      paddingLeft: insets.left,
-      paddingRight: insets.right,
-      paddingBottom: insets.bottom,
-    },
-    web: {
-      paddingTop: Spacing.six,
-      paddingBottom: Spacing.four,
-    },
-  });
+export default function ComponentCatalogScreen() {
+  const [debugEvent, setDebugEvent] = useState<TestCatalogEvent | null>(null);
+
+  const handlePrimaryAction = () => {
+    setDebugEvent({
+      event: 'catalog_primary_action',
+      componentId: 'catalog-primary-button',
+      payload: {
+        source: 'component-catalog',
+      },
+    });
+  };
 
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentInset={insets}
-      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
-            This starter app includes example{'\n'}code to help you get started.
+    <Page scrollable safeArea padding="md">
+      <Stack direction="column" spacing="lg">
+        {/* Encabezado */}
+        <View style={styles.header}>
+          <ThemedText type="subtitle">Biblioteca de componentes</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            Catálogo visual y de pruebas para los componentes del sistema generativo UI.
+          </ThemedText>
+        </View>
+
+        {/* Banner de depuración de eventos */}
+        {debugEvent && (
+          <Card variant="highlighted" padding="sm">
+            <View style={styles.debugHeader}>
+              <ThemedText type="smallBold" style={styles.debugTitle}>
+                Evento de prueba capturado:
+              </ThemedText>
+              <ActionButton
+                label="Limpiar"
+                variant="outline"
+                size="sm"
+                onPress={() => setDebugEvent(null)}
+              />
+            </View>
+            <ThemedText type="code">
+              {JSON.stringify(debugEvent, null, 2)}
+            </ThemedText>
+          </Card>
+        )}
+
+        {/* 1. Botones */}
+        <Section spacing="md">
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            Botones
           </ThemedText>
 
-          <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
-                <ThemedText type="link">Expo documentation</ThemedText>
-                <SymbolView
-                  tintColor={theme.text}
-                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
-                  size={12}
-                />
-              </ThemedView>
-            </Pressable>
-          </ExternalLink>
-        </ThemedView>
-
-        <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="File-based routing">
-            <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
-            </ThemedText>
-            <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Android, iOS, and web support">
-            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
-              <ThemedText type="small">
-                You can open this project on Android, iOS, and the web. To open the web version,
-                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                project.
+          <Card variant="default" padding="md">
+            <Stack direction="column" spacing="md">
+              <ThemedText type="small" themeColor="textSecondary">
+                Variantes principales (Presiona el botón Primario para probar la acción):
               </ThemedText>
-              <Image
-                source={require('@/assets/images/tutorial-web.png')}
-                style={styles.imageTutorial}
+              <Stack direction="column" spacing="sm">
+                <ActionButton
+                  label="Botón Primario (Dispara evento)"
+                  variant="primary"
+                  onPress={handlePrimaryAction}
+                />
+                <ActionButton
+                  label="Botón Secundario"
+                  variant="secondary"
+                  onPress={() => {}}
+                />
+                <ActionButton
+                  label="Botón Contorno"
+                  variant="outline"
+                  onPress={() => {}}
+                />
+                <ActionButton
+                  label="Botón Peligro"
+                  variant="danger"
+                  onPress={() => {}}
+                />
+              </Stack>
+
+              <Divider inset="none" tone="muted" />
+
+              <ThemedText type="small" themeColor="textSecondary">
+                Estados especiales:
+              </ThemedText>
+              <Stack direction="column" spacing="sm">
+                <ActionButton
+                  label="Botón Cargando"
+                  variant="primary"
+                  loading
+                  onPress={() => {}}
+                />
+                <ActionButton
+                  label="Botón Deshabilitado"
+                  variant="secondary"
+                  disabled
+                  onPress={() => {}}
+                />
+              </Stack>
+
+              <Divider inset="none" tone="muted" />
+
+              <ThemedText type="small" themeColor="textSecondary">
+                Tamaños:
+              </ThemedText>
+              <Stack direction="row" spacing="sm" align="center">
+                <ActionButton label="Pequeño" size="sm" variant="outline" onPress={() => {}} />
+                <ActionButton label="Mediano" size="md" variant="outline" onPress={() => {}} />
+                <ActionButton label="Grande" size="lg" variant="outline" onPress={() => {}} />
+              </Stack>
+            </Stack>
+          </Card>
+        </Section>
+
+        {/* 2. Estados */}
+        <Section spacing="md">
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            Estados
+          </ThemedText>
+
+          <Card variant="default" padding="md">
+            <Stack direction="column" spacing="md">
+              <ThemedText type="small" themeColor="textSecondary">
+                Todos los tonos disponibles:
+              </ThemedText>
+              <View style={styles.badgeRow}>
+                <StatusBadge label="Neutral" tone="neutral" />
+                <StatusBadge label="Información" tone="info" />
+                <StatusBadge label="Aprobado" tone="success" />
+                <StatusBadge label="Pendiente" tone="warning" />
+                <StatusBadge label="Rechazado" tone="danger" />
+              </View>
+
+              <Divider inset="none" tone="muted" />
+
+              <ThemedText type="small" themeColor="textSecondary">
+                Tamaño pequeño vs mediano:
+              </ThemedText>
+              <View style={styles.badgeRow}>
+                <StatusBadge label="Pequeño (sm)" tone="info" size="sm" />
+                <StatusBadge label="Mediano (md)" tone="info" size="md" />
+              </View>
+            </Stack>
+          </Card>
+        </Section>
+
+        {/* 3. Progreso */}
+        <Section spacing="md">
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            Progreso
+          </ThemedText>
+
+          <Card variant="default" padding="md">
+            <Stack direction="column" spacing="md">
+              <ProgressBar
+                value={25}
+                label="Inicio del período"
+                showValue
+                tone="default"
               />
-            </ThemedView>
-          </Collapsible>
+              <ProgressBar
+                value={60}
+                label="Meta de ahorro mensual"
+                showValue
+                tone="default"
+              />
+              <ProgressBar
+                value={85}
+                label="Presupuesto consumido"
+                showValue
+                tone="warning"
+              />
+              <ProgressBar
+                value={100}
+                label="Meta alcanzada"
+                showValue
+                tone="success"
+              />
+            </Stack>
+          </Card>
+        </Section>
 
-          <Collapsible title="Images">
-            <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
-            </ThemedText>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-            <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
+        {/* 4. Avisos */}
+        <Section spacing="md">
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            Avisos
+          </ThemedText>
 
-          <Collapsible title="Light and dark mode components">
-            <ThemedText type="small">
-              This template has light and dark mode support. The{' '}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
+          <Stack direction="column" spacing="sm">
+            <InfoBanner
+              tone="info"
+              title="Estado de cuenta disponible"
+              message="Tu estado de cuenta de marzo de 2026 ya está listo para ser consultado y descargado."
+            />
+            <InfoBanner
+              tone="success"
+              title="Transferencia realizada"
+              message="El envío de fondos por SPEI ha sido liquidado correctamente por Banxico."
+            />
+            <InfoBanner
+              tone="warning"
+              title="Límite de crédito próximo"
+              message="Has utilizado más del 80% del límite asignado para tu tarjeta Oro."
+            />
+            <InfoBanner
+              tone="danger"
+              title="Acceso no reconocido"
+              message="Detectamos un inicio de sesión desde un nuevo dispositivo. Revisa tu actividad."
+            />
+            <InfoBanner
+              tone="info"
+              message="Aviso rápido informativo sin encabezado adicional."
+            />
+          </Stack>
+        </Section>
 
-          <Collapsible title="Animations">
-            <ThemedText type="small">
-              This template includes an example of an animated component. The{' '}
-              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-              animate opening this hint.
-            </ThemedText>
-          </Collapsible>
-        </ThemedView>
-        {Platform.OS === 'web' && <WebBadge />}
-      </ThemedView>
-    </ScrollView>
+        {/* 5. Separadores */}
+        <Section spacing="md">
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            Separadores
+          </ThemedText>
+
+          <Card variant="default" padding="md">
+            <Stack direction="column" spacing="md">
+              <ThemedText type="small">Separador estándar sin sangría (inset: none):</ThemedText>
+              <Divider inset="none" tone="default" />
+
+              <ThemedText type="small">Separador con sangría pequeña (inset: sm):</ThemedText>
+              <Divider inset="sm" tone="muted" />
+
+              <ThemedText type="small">Separador con sangría media (inset: md):</ThemedText>
+              <Divider inset="md" tone="default" />
+
+              <ThemedText type="small">Separador con sangría grande (inset: lg):</ThemedText>
+              <Divider inset="lg" tone="muted" />
+            </Stack>
+          </Card>
+        </Section>
+
+        {/* 6. Estados vacíos */}
+        <Section spacing="md">
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            Estados vacíos
+          </ThemedText>
+
+          <Card variant="default" padding="none">
+            <EmptyState
+              title="Sin transacciones recientes"
+              description="No encontramos movimientos registrados en el período seleccionado. Utiliza tu tarjeta para comenzar a ver historial."
+              tone="muted"
+            />
+          </Card>
+        </Section>
+
+        {/* 7. Componentes financieros existentes */}
+        <Section spacing="md">
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            Componentes financieros existentes
+          </ThemedText>
+
+          <Stack direction="column" spacing="md">
+            {/* AccountBalanceCard */}
+            <AccountBalanceCard
+              accountId="acc-cat-01"
+              accountName="Cuenta Enlace Digital Banorte"
+              accountType="checking"
+              accountLastFour="7892"
+              availableBalance={48350.5}
+              currency="MXN"
+              status="active"
+              variant="highlighted"
+              onPress={() => {}}
+            />
+
+            {/* FinancialStatCard */}
+            <FinancialStatCard
+              label="Ahorro Acumulado"
+              value={15400}
+              format="currency"
+              currency="MXN"
+              tone="positive"
+              comparison={{
+                value: 8.4,
+                label: 'vs mes anterior',
+              }}
+              onPress={() => {}}
+            />
+
+            {/* TransactionItem */}
+            <Card variant="default" padding="none">
+              <TransactionItem
+                transactionId="tx-cat-01"
+                title="Supermercado HEB"
+                description="Compra de despensa quincenal"
+                amount={-1840.5}
+                currency="MXN"
+                occurredAt="2026-03-12T17:30:00Z"
+                category="food"
+                status="completed"
+                onPress={() => {}}
+              />
+            </Card>
+
+            {/* SpendingCategoryChart */}
+            <SpendingCategoryChart
+              title="Distribución de Gastos"
+              subtitle="Marzo 2026"
+              categories={[
+                { category: 'food', amount: 4800 },
+                { category: 'transport', amount: 1650 },
+                { category: 'shopping', amount: 2300 },
+                { category: 'utilities', amount: 950 },
+                { category: 'entertainment', amount: 720 },
+              ]}
+              currency="MXN"
+              showPercentages
+              onCategoryPress={() => {}}
+            />
+          </Stack>
+        </Section>
+      </Stack>
+    </Page>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  container: {
-    maxWidth: MaxContentWidth,
-    flexGrow: 1,
-  },
-  titleContainer: {
-    gap: Spacing.three,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.six,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  linkButton: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.four,
+  header: {
     paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
-    justifyContent: 'center',
     gap: Spacing.one,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    opacity: 0.8,
+  },
+  debugHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: Spacing.one,
   },
-  sectionsWrapper: {
-    gap: Spacing.five,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
+  debugTitle: {
+    color: '#208AEF',
   },
-  collapsibleContent: {
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
     alignItems: 'center',
-  },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
   },
 });

@@ -143,6 +143,58 @@ export const spendingCategoryChartPropsSchema = z
   })
   .strict();
 
+export const actionButtonPropsSchema = z
+  .object({
+    label: z.string().min(1).max(80),
+    variant: z.enum(['primary', 'secondary', 'outline', 'danger']).optional(),
+    size: z.enum(['sm', 'md', 'lg']).optional(),
+    disabled: z.boolean().optional(),
+    loading: z.boolean().optional(),
+    fullWidth: z.boolean().optional(),
+  })
+  .strict();
+
+export const statusBadgePropsSchema = z
+  .object({
+    label: z.string().min(1).max(80),
+    tone: z.enum(['neutral', 'info', 'success', 'warning', 'danger']).optional(),
+    size: z.enum(['sm', 'md']).optional(),
+  })
+  .strict();
+
+export const progressBarPropsSchema = z
+  .object({
+    value: z.number().min(0).max(100),
+    label: z.string().max(100).optional(),
+    showValue: z.boolean().optional(),
+    tone: z.enum(['default', 'success', 'warning', 'danger']).optional(),
+    size: z.enum(['sm', 'md', 'lg']).optional(),
+  })
+  .strict();
+
+export const infoBannerPropsSchema = z
+  .object({
+    title: z.string().max(100).optional(),
+    message: z.string().min(1).max(300),
+    tone: z.enum(['info', 'success', 'warning', 'danger']).optional(),
+  })
+  .strict();
+
+export const dividerPropsSchema = z
+  .object({
+    inset: z.enum(['none', 'sm', 'md', 'lg']).optional(),
+    tone: z.enum(['default', 'muted']).optional(),
+  })
+  .strict();
+
+export const emptyStatePropsSchema = z
+  .object({
+    title: z.string().min(1).max(100),
+    description: z.string().max(300).optional(),
+    tone: z.enum(['default', 'muted']).optional(),
+  })
+  .strict();
+
 export const generativeActionSchema: z.ZodType<GenerativeAction> = z
   .object({
     event: z.string().min(1),
