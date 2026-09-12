@@ -6,6 +6,8 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { questionBank, questionCount, searchQuestions } from '../question-bank';
+import { financialViewCatalog } from '@/features/financial-ui/catalog';
+import type { FinancialViewIntent } from '@/features/financial-ui/model';
 
 export function QuestionBank({ onSelect, disabled = false }: {
   onSelect: (question: string) => void;
@@ -101,6 +103,7 @@ export function QuestionBank({ onSelect, disabled = false }: {
                 { backgroundColor: theme.background, borderColor: theme.accent },
               ]}>
                 <ThemedText type="smallBold">Vista esperada</ThemedText>
+                <ThemedText type="smallBold">{financialViewCatalog[intent.id as FinancialViewIntent]?.name}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">{intent.expectedDisplay}</ThemedText>
                 <ThemedText type="smallBold">Acciones posibles · referencia</ThemedText>
                 {intent.possibleActions.map((action) => (
