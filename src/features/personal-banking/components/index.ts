@@ -7,6 +7,11 @@ export {
   type FinancialStatCardProps,
 } from './financial-stat-card';
 export {
+  SpendingCategoryChart,
+  type SpendingCategory,
+  type SpendingCategoryChartProps,
+} from './spending-category-chart';
+export {
   TransactionItem,
   type TransactionItemProps,
 } from './transaction-item';

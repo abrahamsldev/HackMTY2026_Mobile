@@ -12,8 +12,10 @@ import type { GenerativeNode } from './types';
  *     │       ├── FinancialStatCard (Ingresos del mes)
  *     │       └── FinancialStatCard (Gastos del mes con valor negativo)
  *     ├── Section
+ *     │   └── SpendingCategoryChart (Gastos por categoría interactivo con payload dinámico)
+ *     ├── Section
  *     │   └── TransactionList
- *     │       ├── TransactionItem (Supermercado: negativo)
+ *     │       ├── TransactionItem (Supermercado: negativo, categoría food)
  *     │       ├── TransactionItem (Transporte: negativo)
  *     │       ├── TransactionItem (Streaming: negativo)
  *     │       └── TransactionItem (Depósito nómina: positivo)
@@ -149,7 +151,62 @@ export const exampleFinancialInterface: GenerativeNode = {
           ],
         },
 
-        // Section 2: Movimientos Recientes (TransactionList con 4 TransactionItems)
+        // Section 2: SpendingCategoryChart (Gráfica de gastos por categoría)
+        {
+          id: 'spending-chart-section',
+          type: 'Section',
+          props: {
+            spacing: 'sm',
+            padding: 'none',
+          },
+          children: [
+            {
+              id: 'monthly-spending-chart',
+              type: 'SpendingCategoryChart',
+              props: {
+                title: 'Gastos por categoría',
+                subtitle: 'Septiembre de 2026',
+                currency: 'MXN',
+                showPercentages: true,
+                maxCategories: 6,
+                categories: [
+                  {
+                    category: 'food',
+                    amount: 4850.75,
+                  },
+                  {
+                    category: 'transport',
+                    amount: 2730,
+                  },
+                  {
+                    category: 'entertainment',
+                    amount: 1680,
+                  },
+                  {
+                    category: 'utilities',
+                    amount: 3200,
+                  },
+                  {
+                    category: 'shopping',
+                    amount: 1860,
+                  },
+                ],
+              },
+              actions: {
+                onCategoryPress: {
+                  event: 'spending_category_selected',
+                  tool: 'banorte_get_transactions_by_category',
+                  payload: {
+                    accountId: 'account-001',
+                    period: '2026-09',
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        // Section 3: Movimientos Recientes (TransactionList con 4 TransactionItems)
         {
           id: 'transactions-section',
           type: 'Section',
@@ -166,7 +223,7 @@ export const exampleFinancialInterface: GenerativeNode = {
                 emptyMessage: 'No hay movimientos recientes registrados.',
               },
               children: [
-                // 1. Supermercado (gasto negativo)
+                // 1. Supermercado (gasto negativo, categoría food corregida)
                 {
                   id: 'txn-supermarket',
                   type: 'TransactionItem',
@@ -177,7 +234,7 @@ export const exampleFinancialInterface: GenerativeNode = {
                     amount: -1450.8,
                     currency: 'MXN',
                     occurredAt: '2026-09-11T14:30:00.000Z',
-                    category: 'shopping',
+                    category: 'food',
                     status: 'completed',
                   },
                   actions: {
@@ -267,7 +324,7 @@ export const exampleFinancialInterface: GenerativeNode = {
           ],
         },
 
-        // Section 3: Proyección y Flujo de Efectivo
+        // Section 4: Proyección y Flujo de Efectivo
         {
           id: 'cashflow-section',
           type: 'Section',

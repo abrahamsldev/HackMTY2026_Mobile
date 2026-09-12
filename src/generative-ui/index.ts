@@ -8,6 +8,8 @@ export {
   gridPropsSchema,
   pagePropsSchema,
   sectionPropsSchema,
+  spendingCategoryChartPropsSchema,
+  spendingCategoryItemSchema,
   stackPropsSchema,
   textBlockPropsSchema,
   transactionItemPropsSchema,

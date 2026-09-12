@@ -88,13 +88,11 @@ export const financialStatCardPropsSchema = z
 export const transactionItemPropsSchema = z
   .object({
     transactionId: z.string().min(1),
-    title: z.string().min(1),
-    description: z.string().optional(),
+    title: z.string().min(1).max(100),
+    description: z.string().max(250).optional(),
     amount: z.number().finite(),
     currency: z.enum(['MXN', 'USD']).optional(),
-    occurredAt: z.string().refine((val) => !isNaN(Date.parse(val)), {
-      message: 'occurredAt debe ser una fecha válida (formato ISO)',
-    }),
+    occurredAt: z.string().datetime({ offset: true }),
     category: z.enum([
       'food',
       'transport',
@@ -115,6 +113,33 @@ export const transactionListPropsSchema = z
     title: z.string().optional(),
     emptyMessage: z.string().optional(),
     spacing: z.enum(['none', 'sm', 'md']).optional(),
+  })
+  .strict();
+
+export const spendingCategoryItemSchema = z
+  .object({
+    category: z.enum([
+      'food',
+      'transport',
+      'entertainment',
+      'utilities',
+      'health',
+      'shopping',
+      'transfer',
+      'other',
+    ]),
+    amount: z.number().finite().nonnegative(),
+  })
+  .strict();
+
+export const spendingCategoryChartPropsSchema = z
+  .object({
+    title: z.string().max(100).optional(),
+    subtitle: z.string().max(150).optional(),
+    categories: z.array(spendingCategoryItemSchema).min(1).max(10),
+    currency: z.enum(['MXN', 'USD']).optional(),
+    showPercentages: z.boolean().optional(),
+    maxCategories: z.number().int().min(1).max(10).optional(),
   })
   .strict();
 
