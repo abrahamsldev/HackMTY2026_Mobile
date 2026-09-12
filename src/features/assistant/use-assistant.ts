@@ -19,6 +19,7 @@ export function useAssistant(currentUserId: string) {
   const [lastQuery, setLastQuery] = useState('');
   const request = useRef<{ id: number; controller?: AbortController }>({ id: 0 });
   const processor = useRef(new A2UIMessageProcessor());
+  const lastRequest = useRef<{ query: string; action?: A2UIAction } | null>(null);
 
   useEffect(() => () => {
     request.current.controller?.abort();
@@ -32,6 +33,7 @@ export function useAssistant(currentUserId: string) {
     const controller = new AbortController();
     const id = request.current.id + 1;
     request.current = { id, controller };
+    lastRequest.current = { query: normalized, action };
     setLastQuery(normalized);
     setPending(true);
     setError(null);
@@ -79,5 +81,10 @@ export function useAssistant(currentUserId: string) {
     void run(`Acción de interfaz: ${action.name}`, action);
   }
 
-  return { surface, pending, error, lastQuery, send, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry: () => send(lastQuery) };
+  function retry() {
+    const previous = lastRequest.current;
+    if (previous) return run(previous.query, previous.action);
+  }
+
+  return { surface, pending, error, lastQuery, send, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry };
 }
