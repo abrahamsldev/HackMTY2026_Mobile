@@ -18,7 +18,11 @@ export function QuestionBank({ onSelect, disabled = false }: {
   const results = searchQuestions(search);
 
   return (
-    <View style={[styles.container, { borderColor: theme.border }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.background, borderColor: theme.accent },
+      ]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
@@ -45,7 +49,10 @@ export function QuestionBank({ onSelect, disabled = false }: {
           value={search}
           onChangeText={setSearch}
           autoCorrect={false}
-          style={[styles.search, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+          style={[
+            styles.search,
+            { color: theme.text, backgroundColor: theme.background, borderColor: theme.accent },
+          ]}
         />
         {results.length === 0 && <ThemedText type="small" accessibilityLiveRegion="polite">No encontramos preguntas. Prueba con otro término.</ThemedText>}
         {results.map((intent) => {
@@ -59,7 +66,11 @@ export function QuestionBank({ onSelect, disabled = false }: {
                   setSearch('');
                   setOpenArea(isOpen ? null : intent.id);
                 }}
-                style={[styles.heading, { backgroundColor: theme.backgroundElement, borderRadius: 8 }]}>
+                style={[
+                  styles.heading,
+                  styles.areaHeading,
+                  { backgroundColor: theme.background, borderColor: theme.accent },
+                ]}>
                 <ThemedText type="smallBold" style={styles.label}>{intent.area}</ThemedText>
                 <ThemedText>{isOpen ? '−' : '+'}</ThemedText>
               </Pressable>
@@ -74,11 +85,21 @@ export function QuestionBank({ onSelect, disabled = false }: {
                     setExpanded(false);
                     onSelect(question);
                   }}
-                  style={({ pressed }) => [styles.question, { borderColor: theme.border, opacity: disabled ? 0.5 : pressed ? 0.7 : 1 }]}>
+                  style={({ pressed }) => [
+                    styles.question,
+                    {
+                      backgroundColor: theme.background,
+                      borderColor: theme.accent,
+                      opacity: disabled ? 0.5 : pressed ? 0.7 : 1,
+                    },
+                  ]}>
                   <ThemedText>{question}</ThemedText>
                 </Pressable>
               ))}
-              {isOpen && <View style={[styles.reference, { backgroundColor: theme.backgroundElement }]}>
+              {isOpen && <View style={[
+                styles.reference,
+                { backgroundColor: theme.background, borderColor: theme.accent },
+              ]}>
                 <ThemedText type="smallBold">Vista esperada</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">{intent.expectedDisplay}</ThemedText>
                 <ThemedText type="smallBold">Acciones posibles · referencia</ThemedText>
@@ -95,12 +116,13 @@ export function QuestionBank({ onSelect, disabled = false }: {
 }
 
 const styles = StyleSheet.create({
-  container: { borderWidth: 1, borderRadius: 12 },
+  container: { borderRadius: 18, borderWidth: 2, overflow: 'hidden' },
   heading: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, padding: Spacing.three },
   label: { flex: 1 },
   content: { padding: Spacing.three, paddingTop: 0, gap: Spacing.three },
-  search: { minHeight: 48, borderRadius: 8, padding: Spacing.three, fontSize: 16 },
+  search: { minHeight: 48, borderRadius: 12, borderWidth: 2, padding: Spacing.three, fontSize: 16 },
   area: { gap: Spacing.two },
-  reference: { borderRadius: 8, padding: Spacing.three, gap: Spacing.two },
-  question: { minHeight: 48, justifyContent: 'center', borderWidth: 1, borderRadius: 8, padding: Spacing.three },
+  areaHeading: { borderRadius: 12, borderWidth: 2 },
+  reference: { borderRadius: 12, borderWidth: 2, padding: Spacing.three, gap: Spacing.two },
+  question: { minHeight: 48, justifyContent: 'center', borderRadius: 12, borderWidth: 2, padding: Spacing.three },
 });

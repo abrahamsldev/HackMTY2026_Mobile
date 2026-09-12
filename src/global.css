@@ -7,3 +7,35 @@
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
 }
+
+#assistant-query-input,
+#assistant-query-input:focus,
+#assistant-query-input:focus-visible {
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  scrollbar-color: transparent transparent;
+  scrollbar-width: thin;
+}
+
+#assistant-query-input:hover {
+  scrollbar-color: rgb(255 255 255 / 55%) transparent;
+}
+
+#assistant-query-input::-webkit-scrollbar {
+  width: 4px;
+}
+
+#assistant-query-input::-webkit-scrollbar-track,
+#assistant-query-input::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+#assistant-query-input:hover::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 55%);
+  border-radius: 999px;
+}
+
+#assistant-query-input::-webkit-scrollbar-button {
+  display: none;
+}

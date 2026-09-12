@@ -18,6 +18,7 @@ export function useAssistant(currentUserId: string) {
   const [error, setError] = useState<string | null>(null);
   const [lastQuery, setLastQuery] = useState('');
   const request = useRef<{ id: number; controller?: AbortController }>({ id: 0 });
+  const inFlight = useRef(false);
   const processor = useRef(new A2UIMessageProcessor());
   const lastRequest = useRef<{ query: string; action?: A2UIAction } | null>(null);
 
@@ -28,7 +29,8 @@ export function useAssistant(currentUserId: string) {
 
   async function run(query: string, action?: A2UIAction) {
     const normalized = query.trim();
-    if (!normalized) return;
+    if (!normalized || inFlight.current) return;
+    inFlight.current = true;
     request.current.controller?.abort();
     const controller = new AbortController();
     const id = request.current.id + 1;
@@ -63,7 +65,11 @@ export function useAssistant(currentUserId: string) {
       if (request.current.id !== id || controller.signal.aborted) return;
       setError(cause instanceof AgentRequestError ? cause.message : 'No se pudo mostrar la respuesta. Inténtalo de nuevo.');
     } finally {
-      if (request.current.id === id) setPending(false);
+      if (request.current.id === id) {
+        request.current.controller = undefined;
+        inFlight.current = false;
+        setPending(false);
+      }
     }
   }
 
@@ -74,11 +80,13 @@ export function useAssistant(currentUserId: string) {
   function cancel() {
     request.current.controller?.abort();
     request.current.id += 1;
+    request.current.controller = undefined;
+    inFlight.current = false;
     setPending(false);
   }
 
   function dispatch(action: A2UIAction) {
-    void run(`Acción de interfaz: ${action.name}`, action);
+    return run(`Acción de interfaz: ${action.name}`, action);
   }
 
   function retry() {
