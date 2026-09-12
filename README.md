@@ -53,8 +53,10 @@ Reinicia Metro y recarga completamente la app, o recompila el bundle, al cambiar
 El cliente realiza `POST /api/v1/agent/chat` con:
 
 ```json
-{ "query": "Revisar mis suscripciones", "persona": "luis" }
+{ "query": "Revisar mis suscripciones", "user_id": "c1a3797d-b335-5a9d-98a1-402311f82c7a" }
 ```
+
+La app resuelve el correo del perfil seleccionado contra sus tres usuarios demo configurados y envía el UUID sembrado como `user_id`, separado de `query`. Un correo desconocido no habilita el asistente. Al cambiar de usuario, React remonta el espacio del asistente, cancela solicitudes, crea un procesador A2UI nuevo y elimina la superficie anterior antes de mostrar otra respuesta.
 
 El OpenAPI desplegado define la respuesta actual como `{ "message": "…", "data": {}, "a2ui": null }`. La app muestra `message` como texto accesible en la pantalla principal. Valida `data` pero no muestra ni conserva ese contexto interno. El servidor actualmente declara que `a2ui` permanece nulo hasta disponer de las herramientas A2UI del MCP.
 
@@ -91,7 +93,7 @@ Componentes Basic no implementados, `Chart` bajo Basic, catálogos desconocidos 
 
 El MCP publica la plantilla separada `data_chart.json` en `a2ui://finance/data-chart`. `visualize_allowed_data` consulta solo columnas reflejadas y permitidas, omite y cuenta filas con nulos requeridos, y devuelve texto, datos de dominio y un único `updateDataModel`. El agente obtiene y cachea la plantilla, la valida con su copia sincronizada del catálogo y entrega la secuencia completa; Expo nunca descarga recursos MCP.
 
-`MCP_SERVER_URL`, `MCP_AUTH_MODE` y las credenciales de MCP son configuración exclusiva del agente. La app únicamente se conecta al agente y no envía tokens de Supabase ni credenciales de MCP en este transporte. Los perfiles `ana`, `luis` y `sofia` siguen siendo perfiles de demostración, independientes de la sesión autenticada del móvil.
+`MCP_SERVER_URL`, `MCP_AUTH_MODE` y las credenciales de MCP son configuración exclusiva del agente. La app únicamente se conecta al agente y no envía tokens de Supabase ni credenciales de MCP en este transporte. Los perfiles `ana`, `luis` y `sofia` siguen siendo perfiles de demostración; su UUID se usa para filtrado de aplicación del MVP, no como una frontera de autorización de producción.
 
 Comprobaciones del despliegue: `/health` y `/openapi.json` respondieron HTTP 200. El preflight `OPTIONS /api/v1/agent/chat` para `Origin: http://localhost:8081` respondió HTTP 405, por lo que el backend necesita habilitar CORS para usar Expo Web. Esta restricción del navegador no aplica a peticiones nativas iOS/Android. La copia local `hackmty2026-agent` incluye la corrección de CORS y pruebas de preflight; todavía requiere desplegarse. Una consulta real autorizada con Ana respondió HTTP 200 y fue aceptada por el parser móvil, pero devolvió el mensaje de fallback de Gemini y `a2ui: null`; por tanto, esta prueba confirma conectividad y compatibilidad, no el funcionamiento completo de Gemini/MCP.
 
@@ -99,7 +101,7 @@ Comprobaciones del despliegue: `/health` y `/openapi.json` respondieron HTTP 200
 
 - Cada respuesta válida actualiza el texto y procesa sus mensajes en orden. Una respuesta solo textual o con A2UI inválido conserva las últimas superficies válidas. Si falla la red o el contrato HTTP, conserva la última respuesta y ofrece reintentar. Las consultas tienen un límite de 60 segundos y pueden cancelarse.
 - Cambiar de persona o cerrar sesión descarta la respuesta y cancela peticiones pendientes. Una respuesta anterior no puede reemplazar la de una consulta más reciente.
-- Los botones producen la acción oficial con `name`, `surfaceId`, `sourceComponentId`, `timestamp` y el `context` declarado resuelto contra el modelo de datos. Mientras el endpoint solo acepte `{ query, persona }`, el adaptador de transporte serializa temporalmente esa acción dentro de `query`; el renderer no conoce esta compatibilidad. Las acciones siguen siendo consultas o simulaciones de solo lectura.
+- Los botones producen la acción oficial con `name`, `surfaceId`, `sourceComponentId`, `timestamp` y el `context` declarado resuelto contra el modelo de datos. El adaptador conserva temporalmente la acción serializada dentro de `query` y envía `user_id` como campo separado; el renderer no conoce esta compatibilidad. Las acciones siguen siendo consultas o simulaciones de solo lectura.
 - La biblioteca `src/generative-ui` continúa disponible; su árbol `GenerativeNode` es un registro local, no un contrato que el agente desplegado emita actualmente.
 
 El agente local ya puede resolver y combinar superficies Basic y Finance cuando una llamada MCP devuelve `_meta.ui`. Para usar el gráfico con preguntas bancarias reales todavía se debe desplegar esta versión de los tres repositorios, configurar el allowlist de tablas/vistas y enseñar al flujo de selección de herramientas del agente cuándo y con qué columnas invocar `visualize_allowed_data`.

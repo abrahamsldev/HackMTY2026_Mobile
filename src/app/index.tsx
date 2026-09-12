@@ -13,11 +13,13 @@ import { A2UISurface } from '@/features/assistant/components/a2ui-surface';
 import { QuestionBank } from '@/features/assistant/components/question-bank';
 import { useAssistant } from '@/features/assistant/use-assistant';
 import { useSession } from '@/features/auth/session-provider';
+import { demoUserIdForEmail, type DemoUserId } from '@/features/auth/demo-users';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function HomeScreen() {
   const { profile, isLoading } = useSession();
   const email = profile.email.trim();
+  const currentUserId = demoUserIdForEmail(email);
   const navigation = useNavigation<DrawerNavigationProp<{ index: undefined; settings: undefined; explore: undefined }>>();
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={100}>
@@ -27,12 +29,14 @@ export default function HomeScreen() {
             <ThemedText style={styles.title}>¿Qué necesitas hoy?</ThemedText>
             <ThemedText themeColor="textSecondary">Cuéntame qué quieres revisar. La pantalla se adapta a tu consulta.</ThemedText>
           </View>
-          {isLoading ? <ActivityIndicator accessibilityLabel="Cargando tu perfil" /> : email ? (
+          {isLoading ? <ActivityIndicator accessibilityLabel="Cargando tu perfil" /> : currentUserId ? (
             // Remounting also aborts requests and discards the previous user's data.
-            <AssistantWorkspace key={email} email={email} />
+            <AssistantWorkspace key={currentUserId} currentUserId={currentUserId} />
           ) : (
             <View style={styles.intro}>
-              <InfoBanner message="Agrega tu correo electrónico en tu perfil para usar el asistente." />
+              <InfoBanner message={email
+                ? 'Selecciona el correo de uno de los usuarios de demostración configurados.'
+                : 'Agrega el correo de un usuario de demostración en tu perfil para usar el asistente.'} />
               <ActionButton label="Completar mi perfil" onPress={() => navigation.navigate('settings')} />
             </View>
           )}
@@ -42,9 +46,9 @@ export default function HomeScreen() {
   );
 }
 
-function AssistantWorkspace({ email }: { email: string }) {
+function AssistantWorkspace({ currentUserId }: { currentUserId: DemoUserId }) {
   const theme = useTheme();
-  const assistant = useAssistant(email);
+  const assistant = useAssistant(currentUserId);
   const [query, setQuery] = useState('');
   const queryInput = useRef<TextInputHandle>(null);
 
