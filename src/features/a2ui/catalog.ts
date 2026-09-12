@@ -1,6 +1,7 @@
 import { componentChildren } from './message-processor.ts';
 import {
   A2UI_BASIC_CATALOG_ID,
+  A2UI_BANKING_CATALOG_ID,
   A2UI_FINANCE_CATALOG_ID,
   A2UI_LIMITS,
   type A2UICatalogId,
@@ -20,6 +21,7 @@ export const SUPPORTED_FINANCE_COMPONENTS = [
 export const SUPPORTED_COMPONENTS_BY_CATALOG: Record<A2UICatalogId, readonly string[]> = {
   [A2UI_BASIC_CATALOG_ID]: SUPPORTED_BASIC_COMPONENTS,
   [A2UI_FINANCE_CATALOG_ID]: SUPPORTED_FINANCE_COMPONENTS,
+  [A2UI_BANKING_CATALOG_ID]: [...SUPPORTED_FINANCE_COMPONENTS, 'BankingView'],
 };
 
 export function isComponentAllowed(catalogId: A2UICatalogId, component: string): boolean {

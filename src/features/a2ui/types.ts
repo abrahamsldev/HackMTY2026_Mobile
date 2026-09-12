@@ -3,6 +3,8 @@ export const A2UI_BASIC_CATALOG_ID =
   'https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json' as const;
 export const A2UI_FINANCE_CATALOG_ID =
   'https://fluidbank.app/a2ui/catalogs/finance/v1' as const;
+export const A2UI_BANKING_CATALOG_ID =
+  'https://fluidbank.app/a2ui/catalogs/finance/v2' as const;
 
 export const A2UI_LIMITS = {
   actionContextBytes: 16_384,
@@ -82,16 +84,23 @@ export type A2UIChartComponent = A2UIComponentCommon & {
   chart: A2UIChartValue | A2UIBinding;
 };
 
+export type A2UIBankingViewComponent = A2UIComponentCommon & {
+  component: 'BankingView';
+  view: import('../financial-ui/model').BankingViewData | A2UIBinding;
+};
+
 export type A2UIComponent =
   | A2UITextComponent
   | A2UIButtonComponent
   | A2UICardComponent
   | A2UIColumnComponent
-  | A2UIChartComponent;
+  | A2UIChartComponent
+  | A2UIBankingViewComponent;
 
 export type A2UICatalogId =
   | typeof A2UI_BASIC_CATALOG_ID
-  | typeof A2UI_FINANCE_CATALOG_ID;
+  | typeof A2UI_FINANCE_CATALOG_ID
+  | typeof A2UI_BANKING_CATALOG_ID;
 
 export type A2UITheme = {
   primaryColor?: string;

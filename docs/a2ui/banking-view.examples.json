@@ -1,0 +1,978 @@
+[
+  {
+    "intent": "financial-summary",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/financial-summary",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-financial-summary",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-financial-summary",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-financial-summary",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Tu panorama financiero",
+                "subtitle": "Septiembre de 2026",
+                "currency": "MXN",
+                "intent": "financial-summary",
+                "accounts": [
+                  {
+                    "accountId": "example-checking",
+                    "accountName": "Cuenta de cheques",
+                    "accountType": "checking",
+                    "accountLastFour": "1234",
+                    "availableBalance": 8500,
+                    "status": "active"
+                  },
+                  {
+                    "accountId": "example-savings",
+                    "accountName": "Ahorro para imprevistos",
+                    "accountType": "savings",
+                    "accountLastFour": "5678",
+                    "availableBalance": 12000,
+                    "status": "active"
+                  },
+                  {
+                    "accountId": "example-credit",
+                    "accountName": "Tarjeta de crédito",
+                    "accountType": "credit",
+                    "accountLastFour": "9012",
+                    "availableBalance": 1500,
+                    "status": "active"
+                  }
+                ],
+                "income": 22000,
+                "expenses": 15000
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "transactions",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/transactions",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-transactions",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-transactions",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-transactions",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Tus gastos de ayer",
+                "subtitle": "Detalle por comercio y horario",
+                "currency": "MXN",
+                "intent": "transactions",
+                "startDate": "2026-09-11",
+                "endDate": "2026-09-11",
+                "timeZone": "America/Monterrey",
+                "transactions": [
+                  {
+                    "transactionId": "example-pharmacy",
+                    "title": "Farmacia Guadalajara",
+                    "description": "Compra de farmacia",
+                    "amount": -796.81,
+                    "occurredAt": "2026-09-11T18:20:00-06:00",
+                    "category": "health",
+                    "status": "completed"
+                  },
+                  {
+                    "transactionId": "example-coffee",
+                    "title": "Café del centro",
+                    "amount": -85,
+                    "occurredAt": "2026-09-11T08:15:00-06:00",
+                    "category": "food",
+                    "status": "completed"
+                  },
+                  {
+                    "transactionId": "example-transport",
+                    "title": "Transporte",
+                    "amount": -120,
+                    "occurredAt": "2026-09-11T14:00:00-06:00",
+                    "category": "transport",
+                    "status": "completed"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "spending-analysis",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/spending-analysis",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-spending-analysis",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-spending-analysis",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-spending-analysis",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Así estás gastando",
+                "subtitle": "Septiembre frente a agosto de 2026",
+                "currency": "MXN",
+                "intent": "spending-analysis",
+                "categories": [
+                  {
+                    "category": "food",
+                    "amount": 5200
+                  },
+                  {
+                    "category": "shopping",
+                    "amount": 4500
+                  },
+                  {
+                    "category": "utilities",
+                    "amount": 2100
+                  },
+                  {
+                    "category": "transport",
+                    "amount": 1800
+                  },
+                  {
+                    "category": "health",
+                    "amount": 1400
+                  }
+                ],
+                "previousTotal": 14000,
+                "trend": {
+                  "title": "Ingresos y gastos",
+                  "data": [
+                    {
+                      "label": "Jun",
+                      "values": [
+                        18000,
+                        11000
+                      ]
+                    },
+                    {
+                      "label": "Jul",
+                      "values": [
+                        18000,
+                        13500
+                      ]
+                    },
+                    {
+                      "label": "Ago",
+                      "values": [
+                        21000,
+                        14000
+                      ]
+                    },
+                    {
+                      "label": "Sep",
+                      "values": [
+                        22000,
+                        15000
+                      ]
+                    }
+                  ],
+                  "series": [
+                    {
+                      "id": "income",
+                      "label": "Ingresos",
+                      "tone": "blue"
+                    },
+                    {
+                      "id": "expenses",
+                      "label": "Gastos",
+                      "tone": "orange"
+                    }
+                  ]
+                },
+                "activity": {
+                  "title": "Tus días de mayor gasto",
+                  "data": [
+                    {
+                      "date": "2026-09-01",
+                      "value": 0
+                    },
+                    {
+                      "date": "2026-09-02",
+                      "value": 120
+                    },
+                    {
+                      "date": "2026-09-03",
+                      "value": 350
+                    },
+                    {
+                      "date": "2026-09-04",
+                      "value": 0
+                    },
+                    {
+                      "date": "2026-09-05",
+                      "value": 750
+                    },
+                    {
+                      "date": "2026-09-06",
+                      "value": 420
+                    },
+                    {
+                      "date": "2026-09-07",
+                      "value": 80
+                    },
+                    {
+                      "date": "2026-09-08",
+                      "value": 0
+                    },
+                    {
+                      "date": "2026-09-09",
+                      "value": 160
+                    },
+                    {
+                      "date": "2026-09-10",
+                      "value": 990
+                    },
+                    {
+                      "date": "2026-09-11",
+                      "value": 1001.81
+                    }
+                  ],
+                  "initialDate": "2026-09-11",
+                  "initialView": "month",
+                  "tone": "orange"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "cash-flow",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/cash-flow",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-cash-flow",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-cash-flow",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-cash-flow",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "¿Te alcanza para fin de mes?",
+                "currency": "MXN",
+                "intent": "cash-flow",
+                "projectedBalance": 3200,
+                "targetDate": "2026-09-30",
+                "assumptions": "Estimación de ejemplo que incluye la nómina y los pagos previstos, sin compras adicionales.",
+                "projection": {
+                  "title": "Saldo estimado",
+                  "data": [
+                    {
+                      "label": "12 sep",
+                      "values": [
+                        8500
+                      ]
+                    },
+                    {
+                      "label": "15 sep",
+                      "values": [
+                        19500
+                      ]
+                    },
+                    {
+                      "label": "18 sep",
+                      "values": [
+                        13500
+                      ]
+                    },
+                    {
+                      "label": "25 sep",
+                      "values": [
+                        6200
+                      ]
+                    },
+                    {
+                      "label": "30 sep",
+                      "values": [
+                        3200
+                      ]
+                    }
+                  ],
+                  "series": [
+                    {
+                      "id": "balance",
+                      "label": "Saldo",
+                      "tone": "blue"
+                    }
+                  ]
+                },
+                "upcoming": [
+                  {
+                    "id": "salary",
+                    "name": "Nómina",
+                    "date": "2026-09-15",
+                    "amount": 11000,
+                    "direction": "income"
+                  },
+                  {
+                    "id": "rent",
+                    "name": "Renta",
+                    "date": "2026-09-18",
+                    "amount": 6000,
+                    "direction": "expense"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "budgets",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/budgets",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-budgets",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-budgets",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-budgets",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Tu semana bajo control",
+                "currency": "MXN",
+                "intent": "budgets",
+                "budgets": [
+                  {
+                    "id": "food",
+                    "name": "Comida",
+                    "spent": 780,
+                    "limit": 1000,
+                    "period": "7–13 de septiembre de 2026",
+                    "status": "active"
+                  },
+                  {
+                    "id": "transport",
+                    "name": "Transporte",
+                    "spent": 650,
+                    "limit": 600,
+                    "period": "7–13 de septiembre de 2026",
+                    "status": "active"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "recurring-payments",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/recurring-payments",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-recurring-payments",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-recurring-payments",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-recurring-payments",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Tus próximos cobros",
+                "currency": "MXN",
+                "intent": "recurring-payments",
+                "payments": [
+                  {
+                    "id": "netflix",
+                    "name": "Netflix",
+                    "amount": 299,
+                    "nextDate": "2026-09-15",
+                    "cycle": "monthly",
+                    "status": "active"
+                  },
+                  {
+                    "id": "gym",
+                    "name": "Gimnasio",
+                    "amount": 450,
+                    "nextDate": "2026-09-18",
+                    "cycle": "monthly",
+                    "status": "active"
+                  },
+                  {
+                    "id": "cloud",
+                    "name": "Almacenamiento en la nube",
+                    "amount": 999,
+                    "nextDate": "2026-10-01",
+                    "cycle": "yearly",
+                    "status": "active"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "credit-card",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/credit-card",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-credit-card",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-credit-card",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-credit-card",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Organiza el pago de tu tarjeta",
+                "currency": "MXN",
+                "intent": "credit-card",
+                "cardName": "Tarjeta Oro",
+                "lastFour": "9012",
+                "debt": 8500,
+                "availableCredit": 1500,
+                "minimumPayment": 420,
+                "interestFreePayment": 6200,
+                "dueDate": "2026-09-25"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "debts",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/debts",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-debts",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-debts",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-debts",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Tu camino para liquidar la deuda",
+                "currency": "MXN",
+                "intent": "debts",
+                "outstanding": 25000,
+                "assumptions": "Escenarios ilustrativos provistos por el agente. No incluyen nuevos cargos; los resultados reales dependen de tasa, comisiones y fecha de pago.",
+                "scenarios": [
+                  {
+                    "id": "current",
+                    "name": "Pago actual",
+                    "monthlyPayment": 1800,
+                    "months": 18,
+                    "totalInterest": 7400
+                  },
+                  {
+                    "id": "extra",
+                    "name": "Con aportación extra",
+                    "monthlyPayment": 2600,
+                    "months": 11,
+                    "totalInterest": 3600
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "transfers",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/transfers",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-transfers",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-transfers",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-transfers",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Revisa tu transferencia",
+                "currency": "MXN",
+                "intent": "transfers",
+                "source": "Cuenta de cheques •••• 1234",
+                "recipient": "Ana · cuenta •••• 4321",
+                "amount": 500,
+                "fee": 0,
+                "scheduledDate": "2026-09-12"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "card-security",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/card-security",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-card-security",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-card-security",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-card-security",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Revisa la actividad de tu tarjeta",
+                "currency": "MXN",
+                "intent": "card-security",
+                "cardName": "Tarjeta Oro",
+                "lastFour": "9012",
+                "status": "active",
+                "reportedTransaction": {
+                  "transactionId": "example-pharmacy",
+                  "title": "Farmacia Guadalajara",
+                  "description": "Compra de farmacia",
+                  "amount": -796.81,
+                  "occurredAt": "2026-09-11T18:20:00-06:00",
+                  "category": "health",
+                  "status": "completed"
+                },
+                "guidance": "Si no reconoces el movimiento, revisa primero los detalles del comercio y solicita la revisión desde los canales de tu banco."
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "savings-goals",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/savings-goals",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-savings-goals",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-savings-goals",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-savings-goals",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Cada aportación te acerca",
+                "currency": "MXN",
+                "intent": "savings-goals",
+                "goals": [
+                  {
+                    "id": "laptop",
+                    "name": "Mi próxima laptop",
+                    "saved": 7200,
+                    "target": 18000,
+                    "targetDate": "2027-03-12",
+                    "monthlyContribution": 1800
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "banking-information",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/banking-information",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-banking-information",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-banking-information",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-banking-information",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Tus datos bancarios",
+                "currency": "MXN",
+                "intent": "banking-information",
+                "bankName": "Banorte",
+                "holder": "Persona de ejemplo",
+                "maskedClabe": "••••••••••••••1234",
+                "documents": [
+                  {
+                    "id": "statement-aug",
+                    "name": "Estado de cuenta",
+                    "period": "Agosto de 2026",
+                    "status": "available"
+                  },
+                  {
+                    "id": "statement-sep",
+                    "name": "Estado de cuenta",
+                    "period": "Septiembre de 2026",
+                    "status": "processing"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "intent": "financial-education",
+    "message": "Vista de ejemplo; los datos son ficticios.",
+    "data": {},
+    "a2ui": {
+      "resource_uri": "a2ui://banking/financial-education",
+      "messages": [
+        {
+          "version": "v0.9.1",
+          "createSurface": {
+            "surfaceId": "banking-financial-education",
+            "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateComponents": {
+            "surfaceId": "banking-financial-education",
+            "components": [
+              {
+                "id": "root",
+                "component": "BankingView",
+                "view": {
+                  "path": "/view"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "version": "v0.9.1",
+          "updateDataModel": {
+            "surfaceId": "banking-financial-education",
+            "path": "/",
+            "value": {
+              "view": {
+                "title": "Entiende el costo de tu crédito",
+                "currency": "MXN",
+                "intent": "financial-education",
+                "concept": "Pagar el mínimo",
+                "explanation": "El pago mínimo es el importe indicado por tu banco para mantener el crédito al corriente. El saldo restante puede generar intereses. Consulta las condiciones de tu tarjeta.",
+                "takeaways": [
+                  "Revisa la fecha límite y el importe para no generar intereses en tu estado de cuenta.",
+                  "Compara cuánto pagarías en total y por cuánto tiempo con distintas aportaciones."
+                ],
+                "scenarios": [
+                  {
+                    "id": "current",
+                    "name": "Pago actual",
+                    "monthlyPayment": 1800,
+                    "months": 18,
+                    "totalInterest": 7400
+                  },
+                  {
+                    "id": "extra",
+                    "name": "Con aportación extra",
+                    "monthlyPayment": 2600,
+                    "months": 11,
+                    "totalInterest": 3600
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+]

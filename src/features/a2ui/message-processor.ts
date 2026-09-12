@@ -1,6 +1,7 @@
 import { cloneDataModel, updateDataModel } from './data-model.ts';
 import { isComponentAllowed } from './catalog.ts';
 import { resolveA2UIChart } from './components/chart-model.ts';
+import { resolveBankingView } from './components/banking-view-model.ts';
 import { a2uiMessageSequenceSchema } from './schemas.ts';
 import {
   A2UI_LIMITS,
@@ -95,6 +96,16 @@ export class A2UIMessageProcessor {
       }
     } catch {
       return { ok: false, error: 'No se pudo aplicar la interfaz recibida.', surfaces: this.snapshot() };
+    }
+
+    // Bindings may be populated after updateComponents. Validate complete views
+    // after the batch, before committing any part of it.
+    for (const surface of draft.values()) {
+      for (const component of surface.components.values()) {
+        if (component.component === 'BankingView' && !resolveBankingView(component.view, surface.dataModel).success) {
+          return { ok: false, error: 'Faltan datos válidos para la vista financiera.', surfaces: this.snapshot() };
+        }
+      }
     }
 
     this.surfaces = draft;

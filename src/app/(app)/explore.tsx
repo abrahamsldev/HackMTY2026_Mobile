@@ -22,6 +22,7 @@ import {
   type A2UIAction,
 } from '@/features/a2ui';
 import { A2UISurface } from '@/features/assistant/components/a2ui-surface';
+import { FinancialViewGallery } from '@/features/financial-ui/gallery';
 import {
   AccountBalanceCard,
   FinancialStatCard,
@@ -164,6 +165,8 @@ export default function ComponentCatalogScreen() {
             Catálogo visual de la biblioteca. Datos de ejemplo e interacciones locales, sin peticiones al agente.
           </ThemedText>
         </View>
+
+        <FinancialViewGallery />
 
         {/* Banner de depuración de eventos */}
         {debugEvent && (
