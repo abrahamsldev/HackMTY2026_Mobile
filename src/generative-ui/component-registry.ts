@@ -1,3 +1,5 @@
+import { HeatmapChart } from '@/components/charts/heatmap-chart';
+import { heatmapChartPropsSchema } from '@/components/charts/heatmap-chart-model';
 import type React from 'react';
 import type { z } from 'zod';
 
@@ -40,9 +42,18 @@ import {
   transactionListPropsSchema,
 } from './component-schemas';
 import type { ComponentRegistryEntry } from './types';
+import { AreaChart } from '@/components/charts/area-chart';
+import { areaChartPropsSchema } from '@/components/charts/area-chart-model';
 
 // Registry definition with precise typing
 export const componentRegistry = {
+  HeatmapChart: {
+    component: HeatmapChart,
+    propsSchema: heatmapChartPropsSchema,
+    allowsChildren: false,
+    allowedActions: ['onDaySelect', 'onPeriodChange'],
+  },
+  AreaChart: { component: AreaChart, propsSchema: areaChartPropsSchema, allowsChildren: false, allowedActions: ['onPointSelect'] },
   Page: {
     component: Page,
     propsSchema: pagePropsSchema,

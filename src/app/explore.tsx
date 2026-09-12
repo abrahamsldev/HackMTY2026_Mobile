@@ -5,6 +5,8 @@ import { Page, Section, Stack } from '@/components/layout';
 import { ThemedText } from '@/components/themed-text';
 import {
   ActionButton,
+  AreaChart,
+  HeatmapChart,
   Card,
   Divider,
   EmptyState,
@@ -29,6 +31,11 @@ interface TestCatalogEvent {
     source: string;
   };
 }
+
+const heatmapDemo = Array.from({ length: 365 }, (_, index) => ({
+  date: new Date(Date.UTC(2026, 0, index + 1)).toISOString().slice(0, 10),
+  value: index % 7 === 0 ? 0 : (index * 137 + 53) % 2400,
+})).filter((_, index) => index % 19 !== 0);
 
 const a2uiPreview: A2UIPayload = {
   version: 'a2ui/v1',
@@ -92,6 +99,40 @@ export default function ComponentCatalogScreen() {
             </ThemedText>
           </Card>
         )}
+
+        <Section spacing="md">
+          <ThemedText type="smallBold" style={styles.sectionTitle}>Gráfico de áreas</ThemedText>
+          <AreaChart
+            title="Ingresos y gastos"
+            subtitle="Evolución mensual · datos de ejemplo"
+            currency="MXN"
+            series={[{ label: 'Ingresos', tone: 'blue' }, { label: 'Gastos', tone: 'violet' }]}
+            data={[
+              { label: 'Ene', values: [12000, 8500] }, { label: 'Feb', values: [15800, 9200] },
+              { label: 'Mar', values: [14200, 8100] }, { label: 'Abr', values: [19500, 11800] },
+              { label: 'May', values: [17800, 10400] }, { label: 'Jun', values: [23800, 14200] },
+              { label: 'Jul', values: [21600, 12600] }, { label: 'Ago', values: [28500, 16100] },
+            ]}
+            onPointSelect={(point) => setDebugEvent({ event: 'area_point_selected', componentId: 'catalog-area-chart', payload: { source: point.label } })}
+          />
+          <AreaChart title="Flujo neto" series={[{ label: 'Saldo neto', tone: 'green' }]} data={[
+            { label: 'Lun', values: [1200] }, { label: 'Mar', values: [-600] },
+            { label: 'Mié', values: [400] }, { label: 'Jue', values: [0] }, { label: 'Vie', values: [2100] },
+          ]} />
+        </Section>
+
+        <Section spacing="md">
+          <ThemedText type="smallBold" style={styles.sectionTitle}>Mapa de calor</ThemedText>
+          <HeatmapChart
+            title="Actividad de gastos"
+            subtitle="Datos de ejemplo · amplía por mes o semana"
+            data={heatmapDemo}
+            initialDate="2026-09-12"
+            currency="MXN"
+            onDaySelect={(day) => setDebugEvent({ event: 'heatmap_day_selected', componentId: 'catalog-heatmap', payload: { source: JSON.stringify(day) } })}
+            onPeriodChange={(period) => setDebugEvent({ event: 'heatmap_period_changed', componentId: 'catalog-heatmap', payload: { source: JSON.stringify(period) } })}
+          />
+        </Section>
 
         {/* 1. Botones */}
         <Section spacing="md">

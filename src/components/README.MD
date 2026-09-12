@@ -554,3 +554,51 @@ No incluir archivos no relacionados dentro del mismo commit.
 ## Licencia
 
 Consultar el archivo `LICENSE` del repositorio.
+
+## AreaChart
+
+Gráfico de áreas para iOS, Android y web, inspirado en [Bklit Area Chart](https://bklit.com/docs/components/area-chart). Disponible desde `@/components/ui` y en el catálogo del drawer. Usa SVG nativo, curvas monótonas, degradados, cuadrícula, ejes, leyenda, animación de entrada y tooltip con indicador vertical. Permite seleccionar con toque, arrastre horizontal, cursor, teclas de flecha en web y acciones de accesibilidad. Respeta movimiento reducido.
+
+```tsx
+<AreaChart
+  title="Ingresos y gastos"
+  currency="MXN"
+  series={[{ label: 'Ingresos', tone: 'blue' }, { label: 'Gastos', tone: 'violet' }]}
+  data={[
+    { label: 'Ene', values: [12000, 8500] },
+    { label: 'Feb', values: [15800, 9200] },
+    { label: 'Mar', values: [14200, 8100] },
+  ]}
+  onPointSelect={({ index, label, values }) => { /* evento local */ }}
+/>
+```
+
+Acepta hasta cuatro series y 240 puntos. Cada punto debe contener un valor finito por serie; se admiten valores negativos, ceros y una sola muestra. `height` controla la altura (180–500), `status="loading"` muestra carga y `data={[]}` muestra el estado vacío. La paleta admite `blue`, `violet`, `green` y `orange`; no recibe estilos o código arbitrarios desde JSON.
+
+Se registra como `AreaChart` en el renderer local `GenerativeNode`, con `areaChartPropsSchema` y la acción `onPointSelect`. El contrato de red `a2ui/v1` del agente conserva sus cuatro tipos actuales; para recibir gráficos desde ese backend hace falta ampliar su contrato de forma coordinada. Esta adaptación no incluye la API composable web, brush zoom ni ejes dobles de Bklit.
+
+### HeatmapChart
+
+Adaptación nativa del [mapa de calor de Bklit](https://bklit.com/docs/components/heatmap-chart), con navegación y ampliación por año, mes y semana. Disponible en Drawer → Componentes.
+
+```tsx
+<HeatmapChart
+  title="Gastos diarios"
+  currency="MXN"
+  initialDate="2026-09-12"
+  initialView="month"
+  data={[{ date: '2026-09-12', value: 420 }]}
+  onDaySelect={({ date, value }) => console.log(date, value)}
+  onPeriodChange={({ view, startDate, endDate }) => console.log(view, startDate, endDate)}
+/>
+```
+
+- Año: calendario de contribuciones con desplazamiento horizontal; tocar el nombre de un mes lo amplía.
+- Mes: calendario con celdas mayores. Semana: siete filas con fecha y valor, para leer cantidades completas.
+- Selector Año/Mes/Semana y controles anterior/siguiente. Al seleccionar un día, se puede ampliar su mes o semana.
+- Leyenda interactiva de cinco niveles; escala fija respecto del máximo de todos los datos recibidos, incluso al cambiar de vista. Cero usa el color neutro; fecha ausente usa borde punteado y se reporta como `value: null`.
+- Fechas únicas `YYYY-MM-DD` entre 1900 y 2100, cálculos UTC y semanas de lunes a domingo. Hasta 4000 registros, valores finitos no negativos. No se agregan fechas duplicadas implícitamente.
+- `tone`: green (predeterminado), blue, violet u orange. `currency`: MXN o USD, opcional. `status`: ready o loading. Contempla datos vacíos y periodos sin registros.
+- Sin fecha inicial, abre el último día disponible; sin datos, usa la fecha actual. Los cambios de datos reinician la navegación y selección.
+
+Registrado como `HeatmapChart` en el registro generativo local, con esquema estricto y acciones `onDaySelect` / `onPeriodChange`. El contrato de red actual del agente conserva sus cuatro tipos: el backend aún debe ampliar su contrato para emitir este componente. La demostración es local y no hace peticiones al agente ni al MCP.

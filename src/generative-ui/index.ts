@@ -1,5 +1,6 @@
 export { createComponentActionHandlers } from './action-dispatcher';
 export {
+  areaChartPropsSchema,
   accountBalanceCardPropsSchema,
   actionButtonPropsSchema,
   cardPropsSchema,
@@ -36,3 +37,5 @@ export type {
   GenerativeNode,
   UIActionEvent,
 } from './types';
+
+export { heatmapChartPropsSchema } from './component-schemas';

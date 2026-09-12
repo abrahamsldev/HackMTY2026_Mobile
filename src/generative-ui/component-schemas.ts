@@ -217,3 +217,7 @@ export const generativeNodeSchema: z.ZodType<GenerativeNode> = z.lazy(() =>
     })
     .strict(),
 );
+
+export { areaChartPropsSchema } from '@/components/charts/area-chart-model';
+
+export { heatmapChartPropsSchema } from '@/components/charts/heatmap-chart-model';
