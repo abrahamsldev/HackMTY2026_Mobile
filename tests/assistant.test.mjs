@@ -8,14 +8,15 @@ const fixture = JSON.parse(readFileSync(new URL('./fixtures/agent-responses.json
 const messages = fixture.databaseOverview;
 const USER_A = '68dc4d66-07b8-5893-95f1-07f06989a552';
 const USER_B = 'c1a3797d-b335-5a9d-98a1-402311f82c7a';
-const options = { baseUrl: 'https://agent.example.com', query: 'Revisar base', userId: USER_B };
+const TOKEN = 'test-session-access-token';
+const options = { accessToken: TOKEN, baseUrl: 'https://agent.example.com', query: 'Revisar base', userId: USER_B };
 
 test('extracts ordered official messages from the application transport wrapper', async () => {
   const result = await requestAgent({ ...options, fetchImpl: async (url, init) => {
     assert.equal(url, 'https://agent.example.com/api/v1/agent/chat');
     assert.equal(init.method, 'POST');
     assert.deepEqual(JSON.parse(init.body), { query: 'Revisar base', user_id: USER_B });
-    assert.deepEqual(init.headers, { 'Content-Type': 'application/json', Accept: 'application/json' });
+    assert.deepEqual(init.headers, { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${TOKEN}` });
     return new Response(JSON.stringify({
       message: 'Resumen disponible', data: {}, a2ui: { resource_uri: 'a2ui://database/overview', messages },
     }));
@@ -44,7 +45,7 @@ test('structured actions keep the official five fields behind legacy query seria
     sourceComponentId: 'refresh_button', timestamp: '2026-09-12T12:00:00.000Z', context: { limit: 50 },
   };
   await requestAgentAction({
-    baseUrl: options.baseUrl, userId: USER_A, action,
+    baseUrl: options.baseUrl, userId: USER_A, accessToken: TOKEN, action,
     fetchImpl: async (_url, init) => {
       const body = JSON.parse(init.body);
       assert.deepEqual(Object.keys(body).sort(), ['query', 'user_id']);
@@ -65,13 +66,13 @@ test('missing deployment URL never makes a network request or uses localhost', a
   assert.equal(called, false);
 });
 
-test('an unknown demo user id never makes a network request', async () => {
+test('an invalid account id never makes a network request', async () => {
   let called = false;
-  await assert.rejects(requestAgent({ ...options, userId: '11111111-1111-1111-1111-111111111111', fetchImpl: async () => { called = true; } }), { code: 'configuration' });
+  await assert.rejects(requestAgent({ ...options, userId: 'not-a-uuid', fetchImpl: async () => { called = true; } }), { code: 'configuration' });
   assert.equal(called, false);
 });
 
-test('the canonical selected demo user id reaches the agent unchanged', async () => {
+test('the authenticated account id reaches the agent unchanged', async () => {
   const result = await requestAgent({ ...options, userId: USER_B, fetchImpl: async (url, init) => {
     assert.deepEqual(JSON.parse(init.body), { query: 'Revisar base', user_id: USER_B });
     return new Response(JSON.stringify({
@@ -116,4 +117,20 @@ test('a request cancelled before sending never reaches the transport', async () 
     { name: 'AbortError' },
   );
   assert.equal(called, false);
+});
+
+
+test('anonymous requests never reach the agent', async () => {
+  let called = false;
+  await assert.rejects(requestAgent({ ...options, accessToken: '', fetchImpl: async () => { called = true; } }), { code: 'authentication' });
+  assert.equal(called, false);
+});
+
+test('a real account outside the old demo list can query the agent', async () => {
+  const userId = '5b9d23ca-ae95-49cc-9f71-ef62e6aaccb9';
+  await requestAgent({ ...options, userId, fetchImpl: async (_, init) => {
+    assert.equal(JSON.parse(init.body).user_id, userId);
+    assert.equal(init.headers.Authorization, `Bearer ${TOKEN}`);
+    return new Response(JSON.stringify({ message: 'Hola', data: {}, a2ui: null }));
+  } });
 });

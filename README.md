@@ -25,20 +25,33 @@ EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 
 También se admite `EXPO_PUBLIC_SUPABASE_ANON_KEY` para proyectos con la clave pública anterior. Reinicia Metro después de cambiar estas variables. Las variables públicas se incluyen en el cliente: nunca uses `SUPABASE_SERVICE_ROLE_KEY`.
 
-- `src/lib/supabase.ts` crea un cliente único con persistencia y renovación automática. Usa AsyncStorage en iOS/Android y el almacenamiento del navegador en web.
-- `SessionProvider` restaura la sesión, escucha sus cambios y activa la renovación nativa solo mientras la app está en primer plano. `useSession()` expone sesión, perfil, carga, errores, actualización y cierre.
-- El acceso a Inicio y Configuración está abierto, incluso sin sesión o sin variables de Supabase. No se crea una sesión anónima ni se agrega una pantalla de login.
-- Con sesión, Configuración usa `auth.updateUser` para guardar `user_metadata.full_name` y correo. Si el correo necesita confirmación, se informa al usuario; la dirección anterior sigue vigente hasta confirmarse.
-- Sin sesión, los datos se guardan en un perfil local de prueba separado. No se suben ni se fusionan automáticamente al iniciar sesión.
-- Cerrar sesión usa `scope: 'local'`, elimina el perfil de prueba y reinicia las pantallas para descartar datos y borradores anteriores. Otros dispositivos conservan su sesión.
+- Inicio, Configuración y Componentes están en `(app)` y requieren una sesión real verificada por Supabase. Las rutas directas y el botón atrás tampoco permiten acceso sin cuenta. Sin configuración de Auth, el acceso permanece bloqueado.
+- Registro con nombre, correo y contraseña; inicio de sesión; reenvío de confirmación; recuperación por correo y cambio de contraseña. El proyecto consultado tiene correo/registro habilitados y exige confirmar el email.
+- La sesión se persiste y renueva; al restaurar se valida mediante `auth.getUser`. No se aceptan sesiones anónimas, usuarios sin correo confirmado ni IDs alterados. Los errores de restauración permiten reintentar.
+- Configuración actualiza los datos reales con `auth.updateUser`. Los cambios de correo conservan la dirección vigente hasta confirmación. Ya no se guarda un perfil invitado para acceder.
+- Cerrar sesión elimina el acceso y descarta las pantallas/datos del usuario. Las preferencias de accesibilidad continúan separadas por cuenta; los ajustes de lectura también están disponibles antes de iniciar sesión.
 
-Para agregar autenticación obligatoria más adelante, conecta el flujo de login al mismo cliente y protege las rutas cuando termine `isLoading`. El backend debe validar la identidad por su cuenta.
+### Enlaces de confirmación y recuperación
+
+En Supabase → Authentication → URL Configuration, autoriza los callbacks que uses:
+
+- Development build / aplicación nativa: `hackmty2026mobile://auth/callback` y `hackmty2026mobile://auth/callback?flow=recovery`.
+- Expo Web local: `http://localhost:8081/auth/callback` y su variante `?flow=recovery`.
+- Web desplegada: el mismo path sobre el dominio real de la app.
+
+La app genera la URL con `Linking.createURL`; Expo Go usa su URL `exp://…/--/auth/callback`, que cambia con el entorno. Para enlaces de email estables, usa un development build con el esquema configurado. El flujo PKCE exige abrir el enlace en el mismo dispositivo/navegador que inició la solicitud. No se modificó la allowlist remota de Supabase desde este entorno. Para recibir correo en producción, configura el proveedor SMTP y sus límites en Supabase.
+
+### Identidad del agente
+
+La app obtiene el UUID de `session.user.id`, ya no de una tabla de correos demo, y añade `Authorization: Bearer <access_token>` únicamente al agente HTTPS configurado. Verifica la sesión antes de enviar cada consulta o acción. Los usuarios nuevos necesitan sus propios datos financieros en el backend; registrarse no copia datos de Ana/Luis/Sofía.
+
+La copia local `hackmty2026-agent` incluye validación del token contra Supabase, rechazo de cuentas anónimas/no confirmadas, comprobación de coincidencia con `user_id` y CORS con Authorization. También evita sustituir datos faltantes por un perfil financiero estático. **Estos cambios deben desplegarse en el agente**: las rutas protegidas del móvil no protegen por sí solas un endpoint público. El agente necesita `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` (o `SUPABASE_ANON_KEY`) del mismo proyecto de Auth.
 
 ## A2UI, agente y MCP
 
 El flujo financiero es **app → agente → MCP → Supabase → agente → app**. El móvil solo habla con el agente. No importa archivos de los otros repositorios ni usa claves de MCP. Supabase Auth mantiene una conexión separada para sesión y perfil.
 
-Inicio permite escribir consultas, elegir uno de los perfiles de demostración (`ana`, `luis`, `sofia`) y mostrar la respuesta en la misma pantalla. Ya no usa el dashboard estático de ejemplo.
+Inicio permite escribir consultas con la cuenta autenticada y mostrar la respuesta en la misma pantalla. Ya no usa el dashboard estático de ejemplo.
 
 ### Agente desplegado
 
@@ -56,7 +69,7 @@ El cliente realiza `POST /api/v1/agent/chat` con:
 { "query": "Revisar mis suscripciones", "user_id": "c1a3797d-b335-5a9d-98a1-402311f82c7a" }
 ```
 
-La app resuelve el correo del perfil seleccionado contra sus tres usuarios demo configurados y envía el UUID sembrado como `user_id`, separado de `query`. Un correo desconocido no habilita el asistente. Al cambiar de usuario, React remonta el espacio del asistente, cancela solicitudes, crea un procesador A2UI nuevo y elimina la superficie anterior antes de mostrar otra respuesta.
+La app envía el UUID de la cuenta autenticada como `user_id`, separado de `query`, y su token en Authorization. Al cambiar de usuario, React remonta el espacio del asistente, cancela solicitudes, crea un procesador A2UI nuevo y elimina la superficie anterior antes de mostrar otra respuesta.
 
 El OpenAPI desplegado define la respuesta actual como `{ "message": "…", "data": {}, "a2ui": null }`. La app muestra `message` como texto accesible en la pantalla principal. Valida `data` pero no muestra ni conserva ese contexto interno. El servidor actualmente declara que `a2ui` permanece nulo hasta disponer de las herramientas A2UI del MCP.
 
@@ -93,7 +106,7 @@ Componentes Basic no implementados, `Chart` bajo Basic, catálogos desconocidos 
 
 El MCP publica la plantilla separada `data_chart.json` en `a2ui://finance/data-chart`. `visualize_allowed_data` consulta solo columnas reflejadas y permitidas, omite y cuenta filas con nulos requeridos, y devuelve texto, datos de dominio y un único `updateDataModel`. El agente obtiene y cachea la plantilla, la valida con su copia sincronizada del catálogo y entrega la secuencia completa; Expo nunca descarga recursos MCP.
 
-`MCP_SERVER_URL`, `MCP_AUTH_MODE` y las credenciales de MCP son configuración exclusiva del agente. La app únicamente se conecta al agente y no envía tokens de Supabase ni credenciales de MCP en este transporte. Los perfiles `ana`, `luis` y `sofia` siguen siendo perfiles de demostración; su UUID se usa para filtrado de aplicación del MVP, no como una frontera de autorización de producción.
+`MCP_SERVER_URL`, `MCP_AUTH_MODE` y las credenciales de MCP son configuración exclusiva del agente. La app envía su token de sesión de Supabase al agente HTTPS para verificar su cuenta; nunca envía credenciales de MCP. La identidad financiera procede del UUID autenticado, no de un correo demo editable.
 
 Comprobaciones del despliegue: `/health` y `/openapi.json` respondieron HTTP 200. El preflight `OPTIONS /api/v1/agent/chat` para `Origin: http://localhost:8081` respondió HTTP 405, por lo que el backend necesita habilitar CORS para usar Expo Web. Esta restricción del navegador no aplica a peticiones nativas iOS/Android. La copia local `hackmty2026-agent` incluye la corrección de CORS y pruebas de preflight; todavía requiere desplegarse. Una consulta real autorizada con Ana respondió HTTP 200 y fue aceptada por el parser móvil, pero devolvió el mensaje de fallback de Gemini y `a2ui: null`; por tanto, esta prueba confirma conectividad y compatibilidad, no el funcionamiento completo de Gemini/MCP.
 
@@ -123,6 +136,6 @@ npm test
 npx expo export --platform all
 ```
 
-Prueba manual: abrir/cerrar el drawer, entrar a Configuración y volver; guardar datos de invitado y recargar; cerrar sesión y comprobar que el formulario se limpia. Con una cuenta de prueba autenticada, comprobar restauración al reiniciar, edición de nombre/correo y cierre de sesión. No se necesita una cuenta para navegar.
+Prueba manual: registrar una cuenta con un correo propio, confirmarlo e iniciar sesión; reiniciar para verificar restauración; editar el perfil y cambiar contraseña; cerrar sesión y abrir directamente /settings o /explore para comprobar el bloqueo. Probar recuperación por correo en el mismo dispositivo. Estas pruebas con correo real no se realizaron automáticamente.
 
 Las pruebas de integración del cliente usan respuestas y transporte simulados, sin conexión al agente ni a un servidor local. Cubren los cuatro envelopes oficiales, procesamiento incremental, bindings, acciones, límites de render, JSON Pointer, superficies independientes, solicitudes HTTP, cancelación, timeout y errores.

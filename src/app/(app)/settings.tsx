@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { AccessibilitySettings } from '@/features/accessibility/accessibility-settings';
 import { TextInput } from '@/components/accessible-primitives';
 import { useState } from 'react';
@@ -25,9 +26,9 @@ export default function SettingsScreen() {
             <ProfileForm
               key={session?.user.id ?? 'guest'}
               initialProfile={profile}
-              isGuest={!session}
             />
           )}
+          <ActionButton label="Cambiar contraseña" variant="outline" onPress={() => router.push('/reset-password')} />
           <AccessibilitySettings />
         </View>
       </Page>
@@ -35,7 +36,7 @@ export default function SettingsScreen() {
   );
 }
 
-function ProfileForm({ initialProfile, isGuest }: { initialProfile: UserProfile; isGuest: boolean }) {
+function ProfileForm({ initialProfile }: { initialProfile: UserProfile }) {
   const theme = useTheme();
   const { updateProfile } = useSession();
   const [draft, setDraft] = useState(initialProfile);
@@ -56,9 +57,7 @@ function ProfileForm({ initialProfile, isGuest }: { initialProfile: UserProfile;
       setDraft(parsed.data);
       setFeedback({
         tone: 'success',
-        message: result.savedLocally
-          ? 'Datos guardados en este dispositivo.'
-          : result.emailConfirmationRequired
+        message: result.emailConfirmationRequired
             ? 'Nombre actualizado. Revisa tu correo para confirmar el cambio de dirección.'
             : 'Tus datos se actualizaron.',
       });
@@ -76,7 +75,6 @@ function ProfileForm({ initialProfile, isGuest }: { initialProfile: UserProfile;
 
   return (
     <View style={styles.content}>
-      {isGuest && <InfoBanner message="Estás en modo de prueba. Tus datos se guardan solo en este dispositivo mientras no tengas una sesión iniciada." />}
       <View style={styles.field}>
         <ThemedText type="smallBold">Nombre completo</ThemedText>
         <TextInput

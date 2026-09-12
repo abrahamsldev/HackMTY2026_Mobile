@@ -1,6 +1,4 @@
 import { TextInput, type TextInputHandle } from '@/components/accessible-primitives';
-import { useNavigation } from 'expo-router';
-import type { DrawerNavigationProp } from 'expo-router/drawer';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 
@@ -13,14 +11,10 @@ import { A2UISurface } from '@/features/assistant/components/a2ui-surface';
 import { QuestionBank } from '@/features/assistant/components/question-bank';
 import { useAssistant } from '@/features/assistant/use-assistant';
 import { useSession } from '@/features/auth/session-provider';
-import { demoUserIdForEmail, type DemoUserId } from '@/features/auth/demo-users';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function HomeScreen() {
-  const { profile, isLoading } = useSession();
-  const email = profile.email.trim();
-  const currentUserId = demoUserIdForEmail(email);
-  const navigation = useNavigation<DrawerNavigationProp<{ index: undefined; settings: undefined; explore: undefined }>>();
+  const { session } = useSession();
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={100}>
       <Page>
@@ -29,24 +23,14 @@ export default function HomeScreen() {
             <ThemedText style={styles.title}>¿Qué necesitas hoy?</ThemedText>
             <ThemedText themeColor="textSecondary">Cuéntame qué quieres revisar. La pantalla se adapta a tu consulta.</ThemedText>
           </View>
-          {isLoading ? <ActivityIndicator accessibilityLabel="Cargando tu perfil" /> : currentUserId ? (
-            // Remounting also aborts requests and discards the previous user's data.
-            <AssistantWorkspace key={currentUserId} currentUserId={currentUserId} />
-          ) : (
-            <View style={styles.intro}>
-              <InfoBanner message={email
-                ? 'Selecciona el correo de uno de los usuarios de demostración configurados.'
-                : 'Agrega el correo de un usuario de demostración en tu perfil para usar el asistente.'} />
-              <ActionButton label="Completar mi perfil" onPress={() => navigation.navigate('settings')} />
-            </View>
-          )}
+          {session && <AssistantWorkspace key={session.user.id} currentUserId={session.user.id} />}
         </View>
       </Page>
     </KeyboardAvoidingView>
   );
 }
 
-function AssistantWorkspace({ currentUserId }: { currentUserId: DemoUserId }) {
+function AssistantWorkspace({ currentUserId }: { currentUserId: string }) {
   const theme = useTheme();
   const assistant = useAssistant(currentUserId);
   const [query, setQuery] = useState('');

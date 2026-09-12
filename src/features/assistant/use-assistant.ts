@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 import { A2UIMessageProcessor, type A2UIAction, type A2UISurfaceState } from '../a2ui';
 import { AgentRequestError, requestAgent, requestAgentAction, type AgentReply } from './agent';
-import type { DemoUserId } from '../auth/demo-users';
+import { supabase } from '@/lib/supabase';
+import { verifySession } from '../auth/auth-service';
 import { agentBaseUrl } from './connection';
 
 type AssistantSurface = {
@@ -11,7 +12,7 @@ type AssistantSurface = {
   a2uiSurfaces: readonly A2UISurfaceState[];
 };
 
-export function useAssistant(currentUserId: DemoUserId) {
+export function useAssistant(currentUserId: string) {
   const [surface, setSurface] = useState<AssistantSurface | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,9 +36,16 @@ export function useAssistant(currentUserId: DemoUserId) {
     setPending(true);
     setError(null);
     try {
+      if (!supabase) throw new AgentRequestError('authentication', 'Inicia sesión para consultar al asistente.');
+      const { data, error: authError } = await supabase.auth.getSession();
+      if (authError) throw new AgentRequestError('authentication', 'No se pudo verificar tu sesión.');
+      const verified = await verifySession(supabase, data.session);
+      if (!verified || verified.user.id !== currentUserId) throw new AgentRequestError('authentication', 'Inicia sesión para consultar al asistente.');
+      if (controller.signal.aborted || request.current.id !== id) return;
+      const accessToken = verified.access_token;
       const reply = action
-        ? await requestAgentAction({ baseUrl: agentBaseUrl, action, userId: currentUserId, signal: controller.signal })
-        : await requestAgent({ baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, signal: controller.signal });
+        ? await requestAgentAction({ baseUrl: agentBaseUrl, action, userId: currentUserId, accessToken, signal: controller.signal })
+        : await requestAgent({ baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, accessToken, signal: controller.signal });
       if (request.current.id === id) {
         const processed = reply.messages ? processor.current.process(reply.messages) : null;
         const effectiveReply = processed && !processed.ok

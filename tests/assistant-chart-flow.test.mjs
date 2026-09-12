@@ -62,6 +62,7 @@ for (const [index, kind] of ['area', 'heatmap'].entries()) {
         ? 'Show account activity by day as a heatmap.'
         : 'Show account activity over time as a chart.',
       userId: USER_A,
+      accessToken: 'test-authenticated-token',
       fetchImpl: async () => new Response(JSON.stringify({
         message: `${kind} chart ready.`,
         data: { ok: true },
@@ -85,7 +86,7 @@ for (const [index, kind] of ['area', 'heatmap'].entries()) {
 }
 
 test('the index route renders protocol messages separately beneath assistant text', () => {
-  const index = readFileSync(new URL('../src/app/index.tsx', import.meta.url), 'utf8');
+  const index = readFileSync(new URL('../src/app/(app)/index.tsx', import.meta.url), 'utf8');
   const surface = readFileSync(
     new URL('../src/features/assistant/components/a2ui-surface.tsx', import.meta.url),
     'utf8',
@@ -100,14 +101,14 @@ test('the index route renders protocol messages separately beneath assistant tex
   assert.match(renderer, /<A2UIChart/);
 });
 
-test('switching demo users remounts and clears the previous A2UI surface state', () => {
-  const index = readFileSync(new URL('../src/app/index.tsx', import.meta.url), 'utf8');
+test('switching authenticated accounts remounts and clears the previous A2UI surface state', () => {
+  const index = readFileSync(new URL('../src/app/(app)/index.tsx', import.meta.url), 'utf8');
   const hook = readFileSync(
     new URL('../src/features/assistant/use-assistant.ts', import.meta.url),
     'utf8',
   );
 
-  assert.match(index, /<AssistantWorkspace key=\{currentUserId\}/);
+  assert.match(index, /<AssistantWorkspace key=\{session\.user\.id\}/);
   assert.match(hook, /useRef\(new A2UIMessageProcessor\(\)\)/);
   assert.match(hook, /request\.current\.controller\?\.abort\(\)/);
 });

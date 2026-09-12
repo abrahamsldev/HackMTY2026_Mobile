@@ -74,7 +74,7 @@ test('thin client adapter delegates only to trusted charts and keeps a safe inva
 });
 
 test('component gallery contains bounded A2UI previews for both variants', () => {
-  const gallery = readFileSync(new URL('../src/app/explore.tsx', import.meta.url), 'utf8');
+  const gallery = readFileSync(new URL('../src/app/(app)/explore.tsx', import.meta.url), 'utf8');
   assert.match(gallery, /catalog-area-preview/);
   assert.match(gallery, /catalog-heatmap-preview/);
   assert.match(gallery, /A2UI_FINANCE_CATALOG_ID/);
