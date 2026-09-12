@@ -21,6 +21,7 @@ type ProfileServices = {
   client: SupabaseClient | null;
   session: Session | null;
   storage: ProfileStorage;
+  redirectTo?: string;
 };
 
 export type SaveProfileResult = {
@@ -45,20 +46,17 @@ export async function loadGuestProfile(storage: ProfileStorage): Promise<UserPro
 
 export async function saveUserProfile(
   input: UserProfile,
-  { client, session, storage }: ProfileServices,
+  { client, session, redirectTo }: ProfileServices,
 ): Promise<SaveProfileResult> {
   const profile = profileSchema.parse(input);
-  if (!session) {
-    await storage.setItem(GUEST_PROFILE_STORAGE_KEY, JSON.stringify(profile));
-    return { profile, emailConfirmationRequired: false, savedLocally: true };
-  }
+  if (!session || session.user.is_anonymous) throw new Error('Inicia sesión para actualizar tus datos.');
   if (!client) throw new Error('La configuración de la cuenta no está disponible.');
   const emailChanged = profile.email !== session.user.email;
   // Account metadata belongs to Supabase Auth. Do not write to MCP's read-only tables.
   const { data, error } = await client.auth.updateUser({
     data: { full_name: profile.fullName },
     ...(emailChanged ? { email: profile.email } : {}),
-  });
+  }, redirectTo ? { emailRedirectTo: redirectTo } : undefined);
   if (error) throw error;
   return {
     profile,
@@ -68,11 +66,11 @@ export async function saveUserProfile(
 }
 
 export async function clearUserSession({ client, session, storage }: ProfileServices): Promise<void> {
-  // Remove demo data first, so a storage failure cannot leave it visible after logout.
-  await storage.removeItem(GUEST_PROFILE_STORAGE_KEY);
   if (session) {
     if (!client) throw new Error('La configuración de la cuenta no está disponible.');
     const { error } = await client.auth.signOut({ scope: 'local' });
     if (error) throw error;
   }
+  // Legacy guest data is never used for access; cleanup must not prevent logout.
+  await storage.removeItem(GUEST_PROFILE_STORAGE_KEY).catch(() => {});
 }

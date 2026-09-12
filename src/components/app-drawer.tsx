@@ -18,7 +18,7 @@ import { useSession } from '@/features/auth/session-provider';
 import { useTheme } from '@/hooks/use-theme';
 
 function AccountDrawerContent(props: DrawerContentComponentProps) {
-  const { profile, session, isLoading, signOut } = useSession();
+  const { profile, isLoading, signOut } = useSession();
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,8 +28,7 @@ function AccountDrawerContent(props: DrawerContentComponentProps) {
     setError(null);
     try {
       await signOut();
-      props.navigation.navigate('index');
-      props.navigation.closeDrawer();
+      // Protected routes remove this drawer after sign-out.
     } catch {
       setError('No se pudo cerrar la sesión. Inténtalo de nuevo.');
     } finally {
@@ -50,9 +49,8 @@ function AccountDrawerContent(props: DrawerContentComponentProps) {
         </Pressable>
       </View>
       <View style={styles.profile}>
-        <ThemedText style={styles.name}>{profile.fullName || 'Invitado'}</ThemedText>
+        <ThemedText style={styles.name}>{profile.fullName || 'Mi cuenta'}</ThemedText>
         {profile.email ? <ThemedText themeColor="textSecondary">{profile.email}</ThemedText> : null}
-        {!session && <ThemedText type="small" themeColor="textSecondary">Modo de prueba</ThemedText>}
       </View>
       <ActionButton
         label="Configuración"

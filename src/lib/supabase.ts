@@ -22,7 +22,7 @@ function hasValidConfig(): boolean {
 
 export const isSupabaseConfigured = hasValidConfig();
 
-// Missing configuration must not prevent the unauthenticated demo from opening.
+// Missing configuration leaves only the sign-in screen available.
 export const supabase = isSupabaseConfigured
   ? createClient(url!, publicKey!, {
       auth: {
@@ -30,6 +30,7 @@ export const supabase = isSupabaseConfigured
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: false,
+        flowType: 'pkce',
       },
     })
   : null;

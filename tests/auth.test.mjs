@@ -23,15 +23,9 @@ function makeStorage() {
 const profile = { fullName: 'Usuario de prueba', email: 'demo@example.com' };
 const session = { user: { email: profile.email } };
 
-test('guest profile persists and restores independently of Supabase Auth', async () => {
+test('guest profile cannot grant access or save account data', async () => {
   const storage = makeStorage();
-  const result = await saveUserProfile(
-    { fullName: ' Usuario de prueba ', email: ' DEMO@example.com ' },
-    { client: null, session: null, storage },
-  );
-  assert.equal(result.savedLocally, true);
-  assert.deepEqual(await loadGuestProfile(storage), profile);
-  await clearUserSession({ client: null, session: null, storage });
+  await assert.rejects(saveUserProfile(profile, { client: null, session: null, storage }), /Inicia sesión/);
   assert.deepEqual(await loadGuestProfile(storage), emptyProfile);
 });
 
@@ -79,11 +73,11 @@ test('logout clears demo data and only signs out the current device', async () =
   let scope;
   const client = { auth: { signOut: async (options) => {
     scope = options.scope;
-    assert.equal(await storage.getItem(GUEST_PROFILE_STORAGE_KEY), null);
     return { error: null };
   } } };
   await clearUserSession({ client, session, storage });
   assert.equal(scope, 'local');
+  assert.equal(await storage.getItem(GUEST_PROFILE_STORAGE_KEY), null);
 });
 
 test('logout failure propagates so the UI can offer a retry', async () => {
@@ -102,4 +96,11 @@ test('configured demo emails resolve to canonical ids and unknown emails fail cl
     '68dc4d66-07b8-5893-95f1-07f06989a552',
   );
   assert.equal(demoUserIdForEmail('unknown@example.com'), null);
+});
+
+
+test('failure to remove an obsolete guest profile does not prevent a successful logout', async () => {
+  let signedOut = false;
+  await clearUserSession({ session, client: { auth: { signOut: async () => { signedOut = true; return { error: null }; } } }, storage: { ...makeStorage(), removeItem: async () => { throw new Error('legacy storage unavailable'); } } });
+  assert.equal(signedOut, true);
 });

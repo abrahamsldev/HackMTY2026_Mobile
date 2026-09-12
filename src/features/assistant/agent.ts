@@ -1,6 +1,6 @@
 import { extractA2UITransportReply, serializeActionForLegacyChat } from '../a2ui/transport.ts';
 import type { A2UIAction, A2UIMessage } from '../a2ui/types.ts';
-import { demoUserIdSchema, type DemoUserId } from '../auth/demo-users.ts';
+import { z } from 'zod';
 
 export type AgentReply = {
   message: string;
@@ -20,7 +20,7 @@ export function parseAgentReply(input: unknown): AgentReply {
 }
 
 export class AgentRequestError extends Error {
-  code: 'configuration' | 'network' | 'timeout' | 'response' | 'contract';
+  code: 'configuration' | 'network' | 'timeout' | 'response' | 'contract' | 'authentication';
 
   constructor(code: AgentRequestError['code'], message: string) {
     super(message);
@@ -32,7 +32,8 @@ export class AgentRequestError extends Error {
 export type AgentRequestOptions = {
   baseUrl: string;
   query: string;
-  userId: DemoUserId | string;
+  userId: string;
+  accessToken: string;
   signal?: AbortSignal;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
@@ -42,6 +43,7 @@ export async function requestAgent({
   baseUrl,
   query,
   userId,
+  accessToken,
   signal,
   timeoutMs = 60_000,
   fetchImpl = fetch,
@@ -50,7 +52,7 @@ export async function requestAgent({
   try {
     endpoint = new URL(`${baseUrl.replace(/\/$/, '')}/api/v1/agent/chat`);
     if (
-      !['http:', 'https:'].includes(endpoint.protocol) ||
+      endpoint.protocol !== 'https:' ||
       endpoint.username || endpoint.password || endpoint.search || endpoint.hash
     ) throw new Error();
   } catch {
@@ -61,10 +63,11 @@ export async function requestAgent({
   if (!normalizedQuery || normalizedQuery.length > 8_000) {
     throw new AgentRequestError('response', 'Escribe una consulta de hasta 8000 caracteres.');
   }
-  const parsedUserId = demoUserIdSchema.safeParse(userId);
+  const parsedUserId = z.uuid().safeParse(userId);
   if (!parsedUserId.success) {
-    throw new AgentRequestError('configuration', 'Selecciona un usuario de demostración configurado para usar el asistente.');
+    throw new AgentRequestError('configuration', 'La cuenta no tiene un identificador válido.');
   }
+  if (!accessToken || /\s/.test(accessToken)) throw new AgentRequestError('authentication', 'Inicia sesión para consultar al asistente.');
   const controller = new AbortController();
   const cancel = () => controller.abort();
   if (signal?.aborted) cancel();
@@ -79,17 +82,17 @@ export async function requestAgent({
     if (controller.signal.aborted) throw new Error('Consulta cancelada.');
     const response = await fetchImpl(endpoint.toString(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({ query: normalizedQuery, user_id: parsedUserId.data }),
       signal: controller.signal,
     });
     if (!response.ok) {
       throw new AgentRequestError(
-        'response',
+        response.status === 401 || response.status === 403 ? 'authentication' : 'response',
         response.status === 422
-          ? 'El usuario de demostración seleccionado no está configurado.'
+          ? 'El agente no pudo procesar la consulta de esta cuenta.'
           : response.status === 401 || response.status === 403
-          ? 'El agente rechazó el acceso. Revisa su configuración de autenticación.'
+          ? 'Tu sesión no tiene acceso al agente. Vuelve a iniciar sesión.'
           : 'El agente no pudo atender la consulta. Inténtalo de nuevo.',
       );
     }
