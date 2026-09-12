@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { A2UIMessageProcessor, type A2UIAction, type A2UISurfaceState } from '../a2ui';
+import { type A2UIAction, type A2UISurfaceState } from '../a2ui';
+import { AssistantResponseProcessor } from './response-processor';
 import { AgentRequestError, requestAgent, requestAgentAction, type AgentReply } from './agent';
 import { supabase } from '@/lib/supabase';
 import { verifySession } from '../auth/auth-service';
@@ -18,7 +19,7 @@ export function useAssistant(currentUserId: string) {
   const [error, setError] = useState<string | null>(null);
   const [lastQuery, setLastQuery] = useState('');
   const request = useRef<{ id: number; controller?: AbortController }>({ id: 0 });
-  const processor = useRef(new A2UIMessageProcessor());
+  const processor = useRef(new AssistantResponseProcessor());
   const lastRequest = useRef<{ query: string; action?: A2UIAction } | null>(null);
 
   useEffect(() => () => {
@@ -49,15 +50,15 @@ export function useAssistant(currentUserId: string) {
         ? await requestAgentAction({ baseUrl: agentBaseUrl, action, userId: currentUserId, accessToken, signal: controller.signal })
         : await requestAgent({ baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, accessToken, signal: controller.signal });
       if (request.current.id === id) {
-        const processed = reply.messages ? processor.current.process(reply.messages) : null;
-        const effectiveReply = processed && !processed.ok
+        const processed = processor.current.process(reply.messages, !action);
+        const effectiveReply = !processed.ok
           ? { ...reply, a2uiError: processed.error }
           : reply;
-        setSurface((current) => ({
+        setSurface({
           reply: effectiveReply,
           revision: id,
-          a2uiSurfaces: processed?.surfaces ?? current?.a2uiSurfaces ?? processor.current.snapshot(),
-        }));
+          a2uiSurfaces: processed.surfaces,
+        });
       }
     } catch (cause) {
       if (request.current.id !== id || controller.signal.aborted) return;

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   A2UI_BASIC_CATALOG_ID,
+  A2UI_BANKING_CATALOG_ID,
   A2UI_FINANCE_CATALOG_ID,
   A2UI_LIMITS,
   A2UI_VERSION,
@@ -9,6 +10,7 @@ import {
   type JSONValue,
 } from './types.ts';
 import { a2uiChartInputSchema } from './components/chart-model.ts';
+import { a2uiBankingViewInputSchema } from './components/banking-view-model.ts';
 import { isSafeJsonPointer } from './json-pointer.ts';
 
 const identifier = z
@@ -92,6 +94,7 @@ export const a2uiComponentSchema = z.discriminatedUnion('component', [
     component: z.literal('Chart'),
     chart: a2uiChartInputSchema,
   }).strict(),
+  z.object({ ...common, component: z.literal('BankingView'), view: a2uiBankingViewInputSchema }).strict(),
 ]);
 
 const theme = z
@@ -109,6 +112,7 @@ const createSurface = z.object({
     catalogId: z.union([
       z.literal(A2UI_BASIC_CATALOG_ID),
       z.literal(A2UI_FINANCE_CATALOG_ID),
+      z.literal(A2UI_BANKING_CATALOG_ID),
     ]),
     theme: theme.optional(),
     sendDataModel: z.boolean().optional(),
@@ -158,6 +162,9 @@ export const a2uiMessageSequenceSchema = z
       }
       if (!('updateComponents' in message)) continue;
       const catalog = catalogs.get(message.updateComponents.surfaceId);
+      if (catalog && catalog !== A2UI_BANKING_CATALOG_ID && message.updateComponents.components.some(c => c.component === 'BankingView')) {
+        context.addIssue({ code: 'custom', message: 'BankingView requires the Finance v2 catalog.' });
+      }
       if (
         catalog === A2UI_BASIC_CATALOG_ID
         && message.updateComponents.components.some((component) => component.component === 'Chart')
