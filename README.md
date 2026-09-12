@@ -2,7 +2,7 @@
 
 Aplicación de banca personal con Expo SDK 57, React Native y A2UI. La experiencia financiera vive en una única pantalla: las respuestas del agente deben reemplazar su interfaz generativa según las peticiones del usuario. No hay tabs por funcionalidad.
 
-El drawer contiene únicamente **Configuración** y **Cerrar sesión**. Configuración permite editar nombre y correo; la flecha del encabezado regresa a Inicio sin abandonar la superficie principal.
+El drawer contiene **Configuración**, **Cerrar sesión** y, temporalmente, **Componentes** para revisar la biblioteca visual. Configuración permite editar nombre y correo; la flecha del encabezado regresa a Inicio sin abandonar la superficie principal. El catálogo recupera las variantes anteriores y agrega una vista local de los cuatro componentes A2UI del agente, sin peticiones de red.
 
 ## Ejecutar
 
@@ -36,26 +36,62 @@ Para agregar autenticación obligatoria más adelante, conecta el flujo de login
 
 ## A2UI, agente y MCP
 
-La navegación es solo el contenedor de la experiencia. Las acciones financieras deben volver al agente como eventos y sus respuestas deben actualizar Inicio, sin añadir rutas para cuentas, gastos o simulaciones.
+El flujo financiero es **app → agente → MCP → Supabase → agente → app**. El móvil solo habla con el agente. No importa archivos de los otros repositorios ni usa claves de MCP. Supabase Auth mantiene una conexión separada para sesión y perfil.
 
-Se revisaron `hackmty2026-agent` y `hackmty2026-mcp` como contexto, sin importar sus archivos ni modificar sus servicios:
+Inicio permite escribir consultas, elegir uno de los perfiles de demostración (`ana`, `luis`, `sofia`) y mostrar la respuesta en la misma pantalla. Ya no usa el dashboard estático de ejemplo.
 
-- El agente ofrece `POST /api/v1/agent/chat`, con `{ query, persona }`, y devuelve `a2ui/v1` con `meta` y `surface`. Sus componentes son `Banner`, `Button`, `InteractiveSlider` y `MetricCard`.
-- El renderer móvil actual usa un árbol `GenerativeNode` y un registro de componentes validado por Zod. Inicio todavía muestra datos sintéticos y captura `UIActionEvent` localmente; **la conexión HTTP y el adaptador al contrato `a2ui/v1` del agente siguen pendientes**. No se debe enviar ese payload directamente al renderer actual ni confundirlo con su árbol local.
-- MCP es de solo lectura y proporciona contexto financiero al agente. El móvil no llama a MCP ni escribe en sus tablas. La configuración de cuenta usa exclusivamente Supabase Auth.
-- El endpoint actual del agente selecciona personas de demostración; todavía no vincula el JWT de Supabase con el usuario financiero.
+### Activar después del despliegue
 
-La biblioteca y sus reglas de validación están documentadas en [src/components/README.MD](src/components/README.MD).
+En `.env.local`, configura el origen del agente, sin añadir `/api/v1/agent/chat`:
 
-Configuración basada en la documentación de [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/), [Drawer de Expo Router](https://docs.expo.dev/router/advanced/drawer/) y [Supabase Auth para React Native](https://supabase.com/docs/guides/auth/quickstarts/react-native).
+```dotenv
+EXPO_PUBLIC_AGENT_URL=https://your-deployed-agent.example.com
+```
+
+Reinicia Metro o recompila el bundle al cambiar esta variable. Por ahora queda vacía: **no hay fallback a localhost, no se inicia ningún servidor y no se envían consultas sin configuración**. La app muestra que el asistente estará disponible cuando se configure su conexión.
+
+El cliente realiza `POST /api/v1/agent/chat` con el contrato que ya acepta el agente:
+
+```json
+{ "query": "Revisar mis suscripciones", "persona": "luis" }
+```
+
+`MCP_SERVER_URL`, `MCP_AUTH_MODE` y `HORIZON_API_KEY` son configuración exclusiva del agente. No deben exponerse como variables `EXPO_PUBLIC_*`. El despliegue del agente debe conectar MCP por su cuenta. Su código de referencia actual usa stdio local para MCP; la conexión al MCP remoto debe resolverse en ese repositorio. Para usar la versión web, el agente también debe permitir su origen mediante CORS.
+
+### Renderizado y acciones
+
+- `src/features/assistant/agent.ts` valida `a2ui/v1`, `meta`, `surface`, IDs únicos, tipos, propiedades y acciones usando Zod. Rechaza versiones, componentes o propiedades no soportadas antes de mostrar la respuesta.
+- `A2UISurface` registra `Banner`, `Button`, `InteractiveSlider` y `MetricCard`, que corresponden a las tres plantillas actuales: liquidez, suscripciones y simulación. Aplica tamaño de texto, contraste y controles grandes desde `meta.accessibility` y los tags conocidos.
+- Cada respuesta válida reemplaza la superficie anterior, incluso si reutiliza IDs. Si falla la red o el contrato, conserva la última respuesta y ofrece reintentar. Las consultas tienen un límite de 60 segundos y pueden cancelarse.
+- Cambiar de persona o cerrar sesión descarta la superficie y cancela peticiones pendientes. Una respuesta anterior no puede reemplazar la de una consulta más reciente.
+- Los botones producen un evento `A2UI_DISPATCH`. Como el backend actual no tiene un endpoint de acciones, el cliente lo serializa dentro de `query`, junto con una petición legible, y usa el mismo endpoint de chat. No envía campos adicionales que el backend no procese.
+- Al confirmar una simulación, `months` se obtiene del slider y se valida contra su rango y paso. Los demás campos del payload del agente se conservan. Las acciones son consultas y simulaciones: no contratan préstamos ni modifican suscripciones.
+
+El endpoint usa personas de demostración, todavía no una identidad financiera derivada del JWT de Supabase. El agente puede usar su fallback interno cuando MCP o Gemini fallen; su respuesta actual no incluye un indicador de procedencia. Por ello, la app identifica toda esta experiencia como demostración y no afirma que sean datos de una cuenta autenticada.
+
+El clasificador de fallback del agente de referencia fija el plazo en seis meses. El móvil sí envía el plazo seleccionado; para respetarlo también cuando Gemini no esté disponible, el agente deberá interpretarlo en su fallback. El móvil muestra lo que devuelve el servidor.
+
+La biblioteca anterior `src/generative-ui` continúa disponible, pero su árbol `GenerativeNode` no es el contrato de red. La integración nueva usa directamente el formato de `hackmty2026-agent/schemas/a2ui.py`; no ejecuta código ni estilos enviados por el agente.
+
+Configuración basada en la documentación de [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/), [Slider compatible con SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/slider/) y [Supabase Auth para React Native](https://supabase.com/docs/guides/auth/quickstarts/react-native).
+
+## Banco de preguntas
+
+Inicio incluye un banco desplegable con **13 áreas y 25 preguntas**: resumen financiero, movimientos, análisis de gastos, flujo de efectivo, presupuestos, pagos recurrentes, tarjeta de crédito, deudas, transferencias, seguridad de tarjeta, metas de ahorro, información bancaria y educación financiera.
+
+La fuente reutilizable es `src/features/assistant/question-bank.json`. Cada área conserva un identificador, las preguntas naturales, la vista esperada (`expectedDisplay`) y las acciones posibles (`possibleActions`). Estos últimos campos describen requisitos del producto, no capacidades implementadas del backend.
+
+El banco permite buscar por tema o pregunta sin distinguir mayúsculas ni acentos. Al abrir un área se muestran sus ejemplos y su referencia funcional. Elegir un ejemplo llena el campo de consulta y permite editarlo; no lo envía automáticamente ni ejecuta una operación. El banco se puede consultar sin configurar el agente; el envío sigue requiriendo su URL desplegada.
 
 ## Verificar
 
 ```bash
 npx tsc --noEmit
 npm run lint
-npm run test:auth
-npx expo export --platform web
+npm test
+npx expo export --platform all
 ```
 
 Prueba manual: abrir/cerrar el drawer, entrar a Configuración y volver; guardar datos de invitado y recargar; cerrar sesión y comprobar que el formulario se limpia. Con una cuenta de prueba autenticada, comprobar restauración al reiniciar, edición de nombre/correo y cierre de sesión. No se necesita una cuenta para navegar.
+
+Las pruebas de integración del cliente usan respuestas y transporte simulados, sin conexión al agente ni a un servidor local. Cubren las tres plantillas, solicitudes HTTP, validación, selección de meses, cancelación, timeout y errores. Después del despliegue, comprueba las tres consultas sugeridas y confirma una simulación con un plazo distinto de seis meses.

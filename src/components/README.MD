@@ -4,7 +4,7 @@ Aplicacion movil de banca personal construida para el reto de UI generativa de B
 
 El proyecto explora una experiencia financiera en la que un agente de inteligencia artificial no se limita a responder con texto. El agente interpreta la intencion del usuario, consulta datos y herramientas financieras, selecciona componentes registrados y produce una descripcion estructurada de la interfaz que la aplicacion renderiza en tiempo real.
 
-> Estado actual: la infraestructura local de UI generativa y la primera biblioteca de componentes ya funcionan con datos sinteticos. La conexion real con un agente LLM y un servidor MCP todavia no esta implementada.
+> Estado actual: Inicio ya usa un cliente HTTP y un renderer para el contrato `a2ui/v1` del agente. La conexión se activa al configurar `EXPO_PUBLIC_AGENT_URL` con su despliegue; no hay conexión local. Esta documentación describe principalmente la biblioteca anterior `GenerativeNode`, que sigue disponible. Consulta el [README principal](../../README.md) para la integración vigente.
 
 ## Objetivo del reto
 
@@ -137,8 +137,8 @@ HackMTY2026_Mobile/
 - Renderer recursivo sin un `switch` especifico por componente.
 - Fallback visual para nodos invalidos.
 - Dispatcher de acciones estaticas y payload dinamico explicito.
-- Interfaz financiera sintetica en `src/app/index.tsx`.
-- Drawer de cuenta con Configuración y Cerrar sesión; sin tabs ni ruta Explore.
+- Inicio conversacional con cliente HTTP y renderer A2UI en `src/features/assistant`; el árbol financiero sintético queda como ejemplo de la biblioteca anterior.
+- Drawer de cuenta con Configuración, Cerrar sesión y acceso temporal al catálogo de Componentes; sin tabs.
 - Soporte de tema claro y oscuro mediante tokens existentes.
 
 ### Componentes de layout
@@ -357,7 +357,7 @@ Reglas obligatorias:
 
 ## Navegación y sesión
 
-La ruta temporal `explore.tsx` y los tabs fueron eliminados. Inicio es la única superficie financiera; Configuración edita datos de cuenta y se abre desde el drawer. Consulta el [README principal](../../README.md) para configurar Supabase, revisar el modo sin sesión y conocer las diferencias pendientes entre el árbol local y el contrato `a2ui/v1` del agente.
+Los tabs fueron eliminados. La ruta temporal `explore.tsx` vuelve a estar disponible desde la opción Componentes del drawer, con el catálogo anterior y los componentes A2UI del agente. Sus interacciones son locales y no hacen peticiones. Inicio es la única superficie financiera; Configuración edita datos de cuenta y se abre desde el drawer. Consulta el [README principal](../../README.md) para configurar Supabase, revisar el modo sin sesión y conocer la integración HTTP y el renderer dedicado al contrato `a2ui/v1` del agente.
 
 ## Ejecucion local
 

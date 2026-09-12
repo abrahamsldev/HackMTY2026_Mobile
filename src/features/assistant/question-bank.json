@@ -1,0 +1,138 @@
+[
+  {
+    "id": "financial-summary",
+    "area": "Resumen financiero",
+    "questions": ["¿Cuánto dinero tengo?", "¿Cómo están mis finanzas?"],
+    "expectedDisplay": "Cuentas, saldo total, ingresos, gastos y dinero disponible",
+    "possibleActions": ["Elegir cuenta", "Cambiar periodo", "Ocultar saldos"]
+  },
+  {
+    "id": "transactions",
+    "area": "Movimientos",
+    "questions": ["¿En qué gasté ayer?", "Busca el cobro de Netflix"],
+    "expectedDisplay": "Lista filtrada de movimientos y detalle",
+    "possibleActions": ["Filtrar", "Buscar", "Categorizar", "Reportar cargo"]
+  },
+  {
+    "id": "spending-analysis",
+    "area": "Análisis de gastos",
+    "questions": ["¿En qué se me fue el dinero?", "¿Estoy gastando más?"],
+    "expectedDisplay": "Gastos por categoría y comparación mensual",
+    "possibleActions": [
+      "Seleccionar categoría",
+      "Crear límite",
+      "Configurar alerta"
+    ]
+  },
+  {
+    "id": "cash-flow",
+    "area": "Flujo de efectivo",
+    "questions": [
+      "¿Me alcanzará para la renta?",
+      "¿Cuánto tendré al final del mes?"
+    ],
+    "expectedDisplay": "Proyección de saldo, próximos ingresos y pagos",
+    "possibleActions": ["Cambiar fecha", "Excluir movimiento", "Crear alerta"]
+  },
+  {
+    "id": "budgets",
+    "area": "Presupuestos",
+    "questions": ["Quiero gastar menos en comida", "Ponme un límite semanal"],
+    "expectedDisplay": "Presupuesto actual, progreso y dinero restante",
+    "possibleActions": [
+      "Crear presupuesto",
+      "Modificar presupuesto",
+      "Pausar presupuesto",
+      "Eliminar presupuesto"
+    ]
+  },
+  {
+    "id": "recurring-payments",
+    "area": "Pagos recurrentes",
+    "questions": ["¿Qué suscripciones estoy pagando?", "¿Qué pagos vienen?"],
+    "expectedDisplay": "Cargos recurrentes, próximas fechas y cantidades",
+    "possibleActions": [
+      "Crear recordatorio",
+      "Marcar como reconocido",
+      "Consultar comercio"
+    ]
+  },
+  {
+    "id": "credit-card",
+    "area": "Tarjeta de crédito",
+    "questions": [
+      "¿Cuándo debo pagar?",
+      "¿Cuánto pago para no generar intereses?"
+    ],
+    "expectedDisplay": "Saldo, fecha límite, mínimo y pago para no generar intereses",
+    "possibleActions": [
+      "Simular pago",
+      "Pagar tarjeta",
+      "Programar recordatorio"
+    ]
+  },
+  {
+    "id": "debts",
+    "area": "Deudas",
+    "questions": ["¿Cómo puedo terminar de pagar más rápido?"],
+    "expectedDisplay": "Comparación de plazos, intereses y pagos mensuales",
+    "possibleActions": [
+      "Simular aportaciones",
+      "Elegir estrategia",
+      "Programar pago"
+    ]
+  },
+  {
+    "id": "transfers",
+    "area": "Transferencias",
+    "questions": [
+      "Transfiere $500 a Ana",
+      "Mueve dinero a mi cuenta de ahorro"
+    ],
+    "expectedDisplay": "Cuenta origen, destinatario, cantidad y resumen",
+    "possibleActions": [
+      "Transferir",
+      "Programar transferencia",
+      "Guardar destinatario"
+    ]
+  },
+  {
+    "id": "card-security",
+    "area": "Seguridad de tarjeta",
+    "questions": ["No reconozco este cargo", "Perdí mi tarjeta"],
+    "expectedDisplay": "Movimiento sospechoso y estado de la tarjeta",
+    "possibleActions": [
+      "Bloquear temporalmente",
+      "Desbloquear",
+      "Reportar movimiento"
+    ]
+  },
+  {
+    "id": "savings-goals",
+    "area": "Metas de ahorro",
+    "questions": [
+      "Quiero ahorrar para una laptop",
+      "¿Cuánto debo guardar al mes?"
+    ],
+    "expectedDisplay": "Meta, avance, fecha estimada y aportación sugerida",
+    "possibleActions": ["Crear meta", "Aportar dinero", "Cambiar fecha"]
+  },
+  {
+    "id": "banking-information",
+    "area": "Información bancaria",
+    "questions": ["¿Cuál es mi CLABE?", "Muéstrame mi estado de cuenta"],
+    "expectedDisplay": "Datos enmascarados y documentos disponibles",
+    "possibleActions": [
+      "Copiar CLABE",
+      "Compartir estado de cuenta",
+      "Descargar estado de cuenta"
+    ]
+  },
+  {
+    "id": "financial-education",
+    "area": "Educación financiera",
+    "questions": ["¿Qué es el CAT?", "¿Qué pasa si pago solamente el mínimo?"],
+    "expectedDisplay": "Explicación contextual usando datos del usuario",
+    "possibleActions": ["Abrir simulador", "Comparar escenarios"]
+  }
+]

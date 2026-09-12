@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/ui": "~57.0.18",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/slider": "5.2.0",
     "@supabase/supabase-js": "^2.116.0",
     "expo": "~57.0.22",
     "expo-constants": "~57.0.18",
@@ -44,7 +45,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test:auth": "node --experimental-strip-types --test tests/auth.test.mjs"
+    "test:auth": "node --experimental-strip-types --test tests/auth.test.mjs",
+    "test:assistant": "node --experimental-strip-types --test tests/assistant.test.mjs",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "private": true
 }

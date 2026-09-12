@@ -64,6 +64,17 @@ function AccountDrawerContent(props: DrawerContentComponentProps) {
           props.navigation.closeDrawer();
         }}
       />
+      <ActionButton
+        label="Componentes"
+        variant="secondary"
+        size="lg"
+        fullWidth
+        disabled={signingOut}
+        onPress={() => {
+          props.navigation.navigate('explore');
+          props.navigation.closeDrawer();
+        }}
+      />
       <View style={styles.footer}>
         {error && <InfoBanner tone="danger" message={error} />}
         <ActionButton
@@ -81,7 +92,7 @@ function AccountDrawerContent(props: DrawerContentComponentProps) {
 }
 
 function BackToMainButton() {
-  const navigation = useNavigation<DrawerNavigationProp<{ index: undefined; settings: undefined }>>();
+  const navigation = useNavigation<DrawerNavigationProp<{ index: undefined; settings: undefined; explore: undefined }>>();
   return (
     <Pressable
       accessibilityRole="button"
@@ -116,6 +127,7 @@ export function AppDrawer() {
       {/* All banking requests update this A2UI surface; there are no feature tabs. */}
       <Drawer.Screen name="index" options={{ title: 'Inicio' }} />
       <Drawer.Screen name="settings" options={{ title: 'Configuración', headerLeft: () => <BackToMainButton /> }} />
+      <Drawer.Screen name="explore" options={{ title: 'Componentes', headerLeft: () => <BackToMainButton /> }} />
     </Drawer>
   );
 }
