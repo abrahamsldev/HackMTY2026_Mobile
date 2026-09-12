@@ -109,6 +109,6 @@ test('switching authenticated accounts remounts and clears the previous A2UI sur
   );
 
   assert.match(index, /<AssistantWorkspace key=\{session\.user\.id\}/);
-  assert.match(hook, /useRef\(new A2UIMessageProcessor\(\)\)/);
+  assert.match(hook, /useRef\(new AssistantResponseProcessor\(\)\)/);
   assert.match(hook, /request\.current\.controller\?\.abort\(\)/);
 });

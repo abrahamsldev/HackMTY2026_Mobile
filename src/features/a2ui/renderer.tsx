@@ -6,6 +6,7 @@ import { resolveDynamicString } from './bindings';
 import { A2UIButton } from './components/button';
 import { A2UICard } from './components/card';
 import { A2UIChart } from './components/chart';
+import { A2UIBankingView } from './components/banking-view';
 import { A2UIColumn } from './components/column';
 import { A2UIText } from './components/text';
 import { A2UIUnsupported } from './components/unsupported';
@@ -104,6 +105,9 @@ function renderComponent(
     }
     case 'Chart':
       rendered = <A2UIChart chart={component.chart} dataModel={surface.dataModel} />;
+      break;
+    case 'BankingView':
+      rendered = <A2UIBankingView view={component.view} dataModel={surface.dataModel} />;
       break;
   }
 

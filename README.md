@@ -4,6 +4,8 @@ Aplicación de banca personal con Expo SDK 57, React Native y A2UI. La experienc
 
 El drawer contiene **Configuración**, **Cerrar sesión** y, temporalmente, **Componentes** para revisar la biblioteca visual. Configuración permite editar nombre y correo; la flecha del encabezado regresa a Inicio sin abandonar la superficie principal. El catálogo recupera las variantes anteriores y agrega una vista local de los cuatro componentes A2UI del agente, sin peticiones de red.
 
+La biblioteca incluye **13 vistas financieras**, una por categoría del banco de preguntas, con ejemplos e interacciones locales. El nuevo componente A2UI `BankingView` del catálogo Finance v2 permite recibir esas mismas vistas desde el agente con datos estructurados. Consulta el [mapa de preguntas, componentes y contrato del agente](docs/a2ui/financial-views.md). El despliegue remoto debe adoptar este contrato para dejar de responder únicamente con tarjetas de texto.
+
 ## Ejecutar
 
 ```bash

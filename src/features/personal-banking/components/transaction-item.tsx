@@ -13,6 +13,7 @@ export type TransactionItemProps = {
   amount: number;
   currency?: 'MXN' | 'USD';
   occurredAt: string;
+  timeZone?: string;
   category:
     | 'food'
     | 'transport'
@@ -39,7 +40,7 @@ const categoryLabels: Record<TransactionItemProps['category'], string> = {
   other: 'Varios',
 };
 
-function formatOccurredDate(dateString: string): string {
+function formatOccurredDate(dateString: string, timeZone?: string): string {
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
@@ -51,6 +52,7 @@ function formatOccurredDate(dateString: string): string {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
+      timeZone,
     }).format(date);
   } catch {
     return dateString;
@@ -64,6 +66,7 @@ export function TransactionItem({
   amount,
   currency = 'MXN',
   occurredAt,
+  timeZone,
   category,
   status = 'completed',
   onPress,
@@ -89,7 +92,7 @@ export function TransactionItem({
         ? theme.success
         : theme.text;
 
-  const formattedDate = formatOccurredDate(occurredAt);
+  const formattedDate = formatOccurredDate(occurredAt, timeZone);
   const categoryLabel = categoryLabels[category] ?? category;
 
   const accessibilityLabel = `Movimiento: ${title}. Categoría: ${categoryLabel}. Monto: ${displayAmount} ${currency}. Fecha: ${formattedDate}.${
@@ -188,12 +191,15 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: Spacing.two,
   },
   mainInfo: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 180,
+    maxWidth: '100%',
     gap: Spacing.half,
   },
   subInfo: {
@@ -201,6 +207,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   amountContainer: {
+    maxWidth: '100%',
     alignItems: 'flex-end',
     gap: Spacing.half,
   },
