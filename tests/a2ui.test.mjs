@@ -152,6 +152,12 @@ test('button actions resolve only declared context into the official five fields
   });
 });
 
+test('A2UI actions reject identity fields in declarative context', () => {
+  const action = structuredClone(components);
+  action.updateComponents.components.at(-1).action.event.context = { filters: [{ email: 'person@example.com' }] };
+  assert.equal(a2uiMessageSchema.safeParse(action).success, false);
+});
+
 test('multiple surfaces stay independent and invalid payloads preserve the last valid snapshot', () => {
   const processor = new A2UIMessageProcessor();
   processor.process(template);

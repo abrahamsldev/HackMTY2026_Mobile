@@ -13,7 +13,7 @@ const examples = JSON.parse(readFileSync(new URL('../src/features/financial-ui/e
 write('banking-view.schema.json', { $id: `${A2UI_BANKING_CATALOG_ID}/banking-view.schema.json`, ...z.toJSONSchema(bankingViewSchema, { io: 'input' }) });
 write('banking-view.examples.json', examples.map(input => {
   const data = bankingViewSchema.parse(input);
-  return { intent: data.intent, message: 'Vista de ejemplo; los datos son ficticios.', data: {}, a2ui: { resource_uri: `a2ui://banking/${data.intent}`, messages: bankingViewMessages(data) } };
+  return { intent: data.intent, message: 'Vista de ejemplo; los datos son ficticios.', data: {}, a2ui: { resource_uri: 'a2ui://finance/view', messages: bankingViewMessages(data) } };
 }));
 write('banking-view.catalog.json', { catalogId: A2UI_BANKING_CATALOG_ID, component: 'BankingView', prop: 'view', intents: financialViewCatalog });
 console.log(`Exported schema, mapping and ${examples.length} A2UI example responses.`);

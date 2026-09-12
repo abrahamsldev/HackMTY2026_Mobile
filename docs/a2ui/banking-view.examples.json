@@ -4,25 +4,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/financial-summary",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-financial-summary",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-financial-summary",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -31,7 +62,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-financial-summary",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -39,6 +70,7 @@
                 "subtitle": "Septiembre de 2026",
                 "currency": "MXN",
                 "intent": "financial-summary",
+                "totalOwnedBalance": 20500,
                 "accounts": [
                   {
                     "accountId": "example-checking",
@@ -67,7 +99,9 @@
                 ],
                 "income": 22000,
                 "expenses": 15000
-              }
+              },
+              "actionLabel": "Ver gastos del último mes",
+              "requestIntent": "transactions"
             }
           }
         }
@@ -79,25 +113,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/transactions",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-transactions",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-transactions",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -106,7 +171,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-transactions",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -144,7 +209,9 @@
                     "status": "completed"
                   }
                 ]
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }
@@ -156,25 +223,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/spending-analysis",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-spending-analysis",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-spending-analysis",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -183,7 +281,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-spending-analysis",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -191,6 +289,7 @@
                 "subtitle": "Septiembre frente a agosto de 2026",
                 "currency": "MXN",
                 "intent": "spending-analysis",
+                "totalSpent": 15000,
                 "categories": [
                   {
                     "category": "food",
@@ -214,6 +313,7 @@
                   }
                 ],
                 "previousTotal": 14000,
+                "insight": "Los gastos de alimentos y compras concentran la mayor parte del periodo.",
                 "trend": {
                   "title": "Ingresos y gastos",
                   "data": [
@@ -311,7 +411,9 @@
                   "initialView": "month",
                   "tone": "orange"
                 }
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }
@@ -323,25 +425,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/cash-flow",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-cash-flow",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-cash-flow",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -350,7 +483,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-cash-flow",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -418,7 +551,9 @@
                     "direction": "expense"
                   }
                 ]
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }
@@ -430,25 +565,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/budgets",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-budgets",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-budgets",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -457,7 +623,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-budgets",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -482,7 +648,9 @@
                     "status": "active"
                   }
                 ]
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }
@@ -494,25 +662,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/recurring-payments",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-recurring-payments",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-recurring-payments",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -521,7 +720,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-recurring-payments",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -554,7 +753,9 @@
                     "status": "active"
                   }
                 ]
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }
@@ -566,25 +767,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/credit-card",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-credit-card",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-credit-card",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -593,7 +825,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-credit-card",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -607,7 +839,9 @@
                 "minimumPayment": 420,
                 "interestFreePayment": 6200,
                 "dueDate": "2026-09-25"
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }
@@ -619,25 +853,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/debts",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-debts",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-debts",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -646,7 +911,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-debts",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -671,7 +936,9 @@
                     "totalInterest": 3600
                   }
                 ]
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }
@@ -683,25 +950,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/transfers",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-transfers",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-transfers",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -710,7 +1008,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-transfers",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -722,7 +1020,9 @@
                 "amount": 500,
                 "fee": 0,
                 "scheduledDate": "2026-09-12"
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }
@@ -734,25 +1034,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/card-security",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-card-security",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-card-security",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -761,7 +1092,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-card-security",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -781,7 +1112,9 @@
                   "status": "completed"
                 },
                 "guidance": "Si no reconoces el movimiento, revisa primero los detalles del comercio y solicita la revisión desde los canales de tu banco."
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }
@@ -793,25 +1126,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/savings-goals",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-savings-goals",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-savings-goals",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -820,7 +1184,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-savings-goals",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -837,7 +1201,9 @@
                     "monthlyContribution": 1800
                   }
                 ]
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }
@@ -849,25 +1215,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/banking-information",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-banking-information",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-banking-information",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -876,7 +1273,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-banking-information",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -900,7 +1297,9 @@
                     "status": "processing"
                   }
                 ]
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }
@@ -912,25 +1311,56 @@
     "message": "Vista de ejemplo; los datos son ficticios.",
     "data": {},
     "a2ui": {
-      "resource_uri": "a2ui://banking/financial-education",
+      "resource_uri": "a2ui://finance/view",
       "messages": [
         {
           "version": "v0.9.1",
           "createSurface": {
-            "surfaceId": "banking-financial-education",
+            "surfaceId": "financial-view",
             "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2"
           }
         },
         {
           "version": "v0.9.1",
           "updateComponents": {
-            "surfaceId": "banking-financial-education",
+            "surfaceId": "financial-view",
             "components": [
               {
                 "id": "root",
+                "component": "Column",
+                "children": [
+                  "banking_view",
+                  "request_financial_view_button"
+                ]
+              },
+              {
+                "id": "banking_view",
                 "component": "BankingView",
                 "view": {
                   "path": "/view"
+                }
+              },
+              {
+                "id": "request_financial_view_label",
+                "component": "Text",
+                "text": {
+                  "path": "/actionLabel"
+                }
+              },
+              {
+                "id": "request_financial_view_button",
+                "component": "Button",
+                "child": "request_financial_view_label",
+                "variant": "primary",
+                "action": {
+                  "event": {
+                    "name": "request_financial_view",
+                    "context": {
+                      "intent": {
+                        "path": "/requestIntent"
+                      }
+                    }
+                  }
                 }
               }
             ]
@@ -939,7 +1369,7 @@
         {
           "version": "v0.9.1",
           "updateDataModel": {
-            "surfaceId": "banking-financial-education",
+            "surfaceId": "financial-view",
             "path": "/",
             "value": {
               "view": {
@@ -968,7 +1398,9 @@
                     "totalInterest": 3600
                   }
                 ]
-              }
+              },
+              "actionLabel": "Volver al panorama financiero",
+              "requestIntent": "financial-summary"
             }
           }
         }

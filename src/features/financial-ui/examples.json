@@ -3,6 +3,7 @@
     "intent": "financial-summary",
     "title": "Tu panorama financiero",
     "subtitle": "Septiembre de 2026",
+    "totalOwnedBalance": 20500,
     "accounts": [
       {
         "accountId": "example-checking",
@@ -73,6 +74,7 @@
     "intent": "spending-analysis",
     "title": "Así estás gastando",
     "subtitle": "Septiembre frente a agosto de 2026",
+    "totalSpent": 15000,
     "categories": [
       {
         "category": "food",
@@ -96,6 +98,7 @@
       }
     ],
     "previousTotal": 14000,
+    "insight": "Los gastos de alimentos y compras concentran la mayor parte del periodo.",
     "trend": {
       "title": "Ingresos y gastos",
       "series": [

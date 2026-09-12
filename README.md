@@ -94,7 +94,7 @@ El frontend consume exclusivamente mensajes oficiales A2UI `v0.9.1`; rechaza `a2
 
 Los cuerpos abreviados del ejemplo representan los envelopes completos. El agente debe resolver `_meta.ui.resourceUri`, leer la plantilla estática del MCP y devolver en `messages` la secuencia ordenada `createSurface` → `updateComponents` → `updateDataModel`. Expo no resuelve ni descarga `a2ui://...`, no habla directamente con MCP y no usa la URI como URL ejecutable.
 
-La capa aislada `src/features/a2ui` valida los mensajes con Zod, mantiene estado inmutable por superficie, aplica actualizaciones incrementales y JSON Pointer RFC 6901, resuelve bindings y renderiza `root`. Permite exactamente el Basic Catalog oficial y `https://fluidbank.app/a2ui/catalogs/finance/v1`:
+La capa aislada `src/features/a2ui` valida los mensajes con Zod, mantiene estado inmutable por superficie, aplica actualizaciones incrementales y JSON Pointer RFC 6901, resuelve bindings y renderiza `root`. Permite exactamente el Basic Catalog oficial, Finance v1 y `https://fluidbank.app/a2ui/catalogs/finance/v2`:
 
 | A2UI | Adaptador React Native existente |
 | --- | --- |
@@ -102,7 +102,8 @@ La capa aislada `src/features/a2ui` valida los mensajes con Zod, mantiene estado
 | `Button` | `ActionButton` |
 | `Card` | `Card` |
 | `Column` | `Stack` vertical |
-| `Chart` (solo Finance v1) | adaptador explícito a `AreaChart` o `HeatmapChart` |
+| `Chart` (Finance v1/v2) | adaptador explícito a `AreaChart` o `HeatmapChart` |
+| `BankingView` (Finance v2) | vista financiera validada para las 13 intenciones; admite composición con otros componentes mediante referencias |
 
 Componentes Basic no implementados, `Chart` bajo Basic, catálogos desconocidos y propiedades adicionales fallan de forma acotada. El componente de red `Chart` usa `{kind: "area" | "heatmap", accessibleSummary?, props}` y vuelve a validar el valor resuelto antes de delegar. Acepta hasta 240 puntos y cuatro series de área o 500 celdas de heatmap; exige identificadores de serie estables, números finitos y fechas reales, y permite arreglos vacíos para reutilizar los estados vacíos existentes. No acepta callbacks, estilos, formateadores, elementos React, nombres de componente ni valores ejecutables. La galería incluye previews locales de ambos mensajes Finance completos.
 
@@ -116,7 +117,7 @@ Comprobaciones del despliegue: `/health` y `/openapi.json` respondieron HTTP 200
 
 - Cada respuesta válida actualiza el texto y procesa sus mensajes en orden. Una respuesta solo textual o con A2UI inválido conserva las últimas superficies válidas. Si falla la red o el contrato HTTP, conserva la última respuesta y ofrece reintentar. Las consultas tienen un límite de 60 segundos y pueden cancelarse.
 - Cambiar de persona o cerrar sesión descarta la respuesta y cancela peticiones pendientes. Una respuesta anterior no puede reemplazar la de una consulta más reciente.
-- Los botones producen la acción oficial con `name`, `surfaceId`, `sourceComponentId`, `timestamp` y el `context` declarado resuelto contra el modelo de datos. El adaptador conserva temporalmente la acción serializada dentro de `query` y envía `user_id` como campo separado; el renderer no conoce esta compatibilidad. Las acciones siguen siendo consultas o simulaciones de solo lectura.
+- Los botones producen la acción oficial con `name`, `surfaceId`, `sourceComponentId`, `timestamp` y el `context` declarado resuelto contra el modelo de datos. El cliente envía preferentemente `{ action, user_id }`; reintenta la serialización temporal dentro de `query` solo si un agente anterior rechaza la rama estructurada con HTTP 422. `user_id` nunca entra en `context` y el renderer no conoce la compatibilidad de transporte. Las acciones siguen siendo consultas o simulaciones de solo lectura.
 - La biblioteca `src/generative-ui` continúa disponible; su árbol `GenerativeNode` es un registro local, no un contrato que el agente desplegado emita actualmente.
 
 El agente local ya puede resolver y combinar superficies Basic y Finance cuando una llamada MCP devuelve `_meta.ui`. Para usar el gráfico con preguntas bancarias reales todavía se debe desplegar esta versión de los tres repositorios, configurar el allowlist de tablas/vistas y enseñar al flujo de selección de herramientas del agente cuándo y con qué columnas invocar `visualize_allowed_data`.

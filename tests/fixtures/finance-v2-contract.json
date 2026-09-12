@@ -1,0 +1,26 @@
+{
+  "version": "v0.9.1",
+  "catalogId": "https://fluidbank.app/a2ui/catalogs/finance/v2",
+  "component": "BankingView",
+  "intents": [
+    "financial-summary",
+    "transactions",
+    "spending-analysis",
+    "cash-flow",
+    "budgets",
+    "recurring-payments",
+    "credit-card",
+    "debts",
+    "transfers",
+    "card-security",
+    "savings-goals",
+    "banking-information",
+    "financial-education"
+  ],
+  "financialSummaryRequired": ["intent", "title", "totalOwnedBalance", "accounts"],
+  "spendingAnalysisRequired": ["intent", "title", "totalSpent", "categories"],
+  "summaryAction": {
+    "name": "request_financial_view",
+    "context": { "intent": "transactions" }
+  }
+}

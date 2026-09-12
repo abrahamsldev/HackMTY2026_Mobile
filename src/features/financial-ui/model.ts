@@ -37,7 +37,19 @@ const unique = <T extends z.ZodType>(schema: T, key: string, max = 30) => z.arra
   .refine((rows) => new Set(rows.map((row) => (row as Record<string, unknown>)[key])).size === rows.length, 'Identificadores duplicados.');
 
 export const readyBankingViewSchema = z.discriminatedUnion('intent', [
-  z.object({ ...common, intent: z.literal('financial-summary'), accounts: unique(accountSchema, 'accountId'), income: money.optional(), expenses: money.optional() }).strict(),
+  z.object({
+    ...common,
+    intent: z.literal('financial-summary'),
+    totalOwnedBalance: signedMoney,
+    accounts: unique(accountSchema, 'accountId'),
+    income: money.optional(),
+    expenses: money.optional(),
+  }).strict().refine((view) => {
+    const expected = view.accounts
+      .filter((account) => account.accountType !== 'credit')
+      .reduce((total, account) => total + account.availableBalance, 0);
+    return Math.abs(expected - view.totalOwnedBalance) < 0.000_001;
+  }, 'El saldo propio no coincide con las cuentas de débito y ahorro.'),
   z.object({ ...common, intent: z.literal('transactions'), startDate: day, endDate: day, timeZone: z.literal('America/Monterrey'), transactions: unique(transactionSchema, 'transactionId', 100) }).strict()
     .refine((v) => v.startDate <= v.endDate, 'Periodo inválido.')
     .refine(v => v.transactions.every(row => {
@@ -45,11 +57,14 @@ export const readyBankingViewSchema = z.discriminatedUnion('intent', [
       const localDay = transactionDay(row.occurredAt);
       return localDay >= v.startDate && localDay <= v.endDate;
     }), 'Hay movimientos fuera del periodo solicitado.'),
-  z.object({ ...common, intent: z.literal('spending-analysis'), categories: z.array(z.object({
+  z.object({ ...common, intent: z.literal('spending-analysis'), totalSpent: money, categories: z.array(z.object({
     category: z.enum(['food', 'transport', 'entertainment', 'utilities', 'health', 'shopping', 'transfer', 'other']), amount: money,
-  }).strict()).max(8).refine((v) => new Set(v.map(c => c.category)).size === v.length), previousTotal: money.optional(),
+  }).strict()).max(8).refine((v) => new Set(v.map(c => c.category)).size === v.length), previousTotal: money.optional(), insight: description.optional(),
     trend: areaChartPropsSchema.optional(), activity: heatmapChartPropsSchema.refine(v => v.data.length <= 366).optional(),
-  }).strict(),
+  }).strict().refine((view) => {
+    const expected = view.categories.reduce((total, category) => total + category.amount, 0);
+    return Math.abs(expected - view.totalSpent) < 0.000_001;
+  }, 'El gasto total no coincide con las categorías.'),
   z.object({ ...common, intent: z.literal('cash-flow'), projectedBalance: signedMoney, targetDate: day, assumptions: description,
     projection: areaChartPropsSchema, upcoming: unique(scheduleItem, 'id'),
   }).strict(),
@@ -87,10 +102,6 @@ export type ReadyBankingView = z.infer<typeof readyBankingViewSchema>;
 export type TransactionData = z.infer<typeof transactionSchema>;
 export type ScenarioData = z.infer<typeof scenario>;
 
-export function ownedBalance(accounts: z.infer<typeof accountSchema>[]) {
-  // Available credit is a borrowing limit, not the user's money.
-  return accounts.filter(a => a.accountType !== 'credit').reduce((sum, a) => sum + a.availableBalance, 0);
-}
 export function budgetProgress(spent: number, limit: number) {
   return { percentage: Math.min(100, spent / limit * 100), remaining: limit - spent };
 }

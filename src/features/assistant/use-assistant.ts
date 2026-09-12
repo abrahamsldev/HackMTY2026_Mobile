@@ -20,22 +20,23 @@ export function useAssistant(currentUserId: string) {
   const [lastQuery, setLastQuery] = useState('');
   const request = useRef<{ id: number; controller?: AbortController }>({ id: 0 });
   const processor = useRef(new AssistantResponseProcessor());
-  const lastRequest = useRef<{ query: string; action?: A2UIAction } | null>(null);
+  const lastRequest = useRef<{ query: string } | { action: A2UIAction } | null>(null);
 
   useEffect(() => () => {
     request.current.controller?.abort();
     request.current.id += 1;
   }, []);
 
-  async function run(query: string, action?: A2UIAction) {
-    const normalized = query.trim();
-    if (!normalized) return;
+  async function run(input: string | A2UIAction) {
+    const action = typeof input === 'string' ? undefined : input;
+    const normalized = typeof input === 'string' ? input.trim() : '';
+    if (!action && !normalized) return;
     request.current.controller?.abort();
     const controller = new AbortController();
     const id = request.current.id + 1;
     request.current = { id, controller };
-    lastRequest.current = { query: normalized, action };
-    setLastQuery(normalized);
+    lastRequest.current = action ? { action } : { query: normalized };
+    if (!action) setLastQuery(normalized);
     setPending(true);
     setError(null);
     try {
@@ -79,12 +80,12 @@ export function useAssistant(currentUserId: string) {
   }
 
   function dispatch(action: A2UIAction) {
-    void run(`Acción de interfaz: ${action.name}`, action);
+    void run(action);
   }
 
   function retry() {
     const previous = lastRequest.current;
-    if (previous) return run(previous.query, previous.action);
+    if (previous) return run('action' in previous ? previous.action : previous.query);
   }
 
   return { surface, pending, error, lastQuery, send, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry };

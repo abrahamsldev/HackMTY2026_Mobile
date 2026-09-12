@@ -6,7 +6,7 @@ Las 13 categorías tienen una composición implementada en `src/features/financi
 
 | Categoría | Pregunta representativa | Vista implementada | Componentes reutilizados |
 | --- | --- | --- | --- |
-| Resumen financiero | ¿Cuánto dinero tengo? | Saldo propio protagonista, métricas del periodo, tarjetas por cuenta y ocultación de importes | AccountBalanceCard, FinancialStatCard, Card, ActionButton |
+| Resumen financiero | ¿Cuánto dinero tengo? | Saldo propio protagonista, cuentas agrupadas por tipo, crédito separado, métricas del periodo y ocultación de importes | Card, Divider, FinancialStatCard, StatusBadge, ActionButton |
 | Movimientos | ¿En qué gasté ayer? | Periodo explícito, gasto total filtrado, buscador, filtros y detalle expandible | TransactionList, TransactionItem, FinancialStatCard, EmptyState |
 | Análisis de gastos | ¿En qué se me fue el dinero? | Comparación de totales, distribución, evolución y actividad diaria con zoom | SpendingCategoryChart, AreaChart, HeatmapChart |
 | Flujo de efectivo | ¿Me alcanzará para la renta? | Proyección de saldo, supuestos y agenda de ingresos/pagos | AreaChart, FinancialStatCard, InfoBanner; nueva ScheduleList |
@@ -26,19 +26,21 @@ Las 13 categorías tienen una composición implementada en `src/features/financi
 
 Extensión del cliente sobre A2UI **v0.9.1**; no es un componente del catálogo Basic. El catálogo nuevo es `https://fluidbank.app/a2ui/catalogs/finance/v2`. Es un identificador de protocolo, no implica que esta URL esté publicada. Basic y Finance v1 (Chart) siguen funcionando.
 
-El componente tiene esta forma:
+La vista semántica tiene esta forma dentro de la composición canónica:
 
 ```json
-{"id":"root","component":"BankingView","view":{"path":"/view"}}
+{"id":"banking_view","component":"BankingView","view":{"path":"/view"}}
 ```
 
 El agente envía, en orden:
 
 1. `createSurface`, con el catálogo Finance v2.
-2. `updateComponents`, con el componente BankingView. Puede estar dentro de un Column junto a botones A2UI.
-3. `updateDataModel`, con `path: "/"` y `value: {"view": ...}`.
+2. `updateComponents`, con el grafo estable `root` (`Column`), `banking_view`, `request_financial_view_label` y `request_financial_view_button` definido por MCP.
+3. `updateDataModel`, con `path: "/"` y `value: {"view": ..., "actionLabel": ..., "requestIntent": ...}`.
 
-El objeto `view` incluye `intent` (el mismo ID del banco), `title`, `currency` (`MXN` o `USD`), `subtitle` opcional y los campos específicos de su categoría. También se admite un valor literal en `view`.
+Todas las respuestas Finance v2 usan `resource_uri: "a2ui://finance/view"` y `surfaceId: "financial-view"`. El texto del botón se enlaza a `/actionLabel` y su `context.intent` a `/requestIntent`; los IDs, referencias y bindings no cambian entre intenciones.
+
+El objeto `view` incluye `intent` (el mismo ID del banco), `title`, `currency` (`MXN` o `USD`), `subtitle` opcional y los campos específicos de su categoría. También se admite un valor literal en `view`. `financial-summary` recibe `totalOwnedBalance` ya calculado y validado por el backend; `spending-analysis` recibe `totalSpent` y puede incluir `insight`. El renderer no deriva estos importes desde las cuentas o categorías.
 
 - **Esquema exportado:** `banking-view.schema.json`.
 - **13 respuestas completas de ejemplo:** `banking-view.examples.json`.
@@ -56,7 +58,7 @@ node --experimental-strip-types scripts/export-banking-contract.mjs
 ## Reglas al preparar datos
 
 - Elegir `intent` según la solicitud y obtener los datos con el UUID autenticado a través del agente/MCP. No extraer importes de un párrafo ni usar los ejemplos como respuesta al usuario.
-- No agrupar crédito disponible con dinero propio. El resumen suma únicamente cheques y ahorro; todas las cantidades de una vista deben estar en la moneda declarada, sin conversiones implícitas.
+- No agrupar crédito disponible con dinero propio. El backend envía `totalOwnedBalance` con únicamente cheques/débito y ahorro; el crédito se presenta en una sección explícitamente separada. Todas las cantidades de una vista deben estar en la moneda declarada, sin conversiones implícitas.
 - Para movimientos, enviar `amount` negativo para gastos y positivo para ingresos. Mapear las categorías de la base al enum visual; por ejemplo, `salary → income`, `groceries/dining → food`, `rent → other`, sin cambiar la descripción original del movimiento.
 - Resolver “ayer” en `America/Monterrey`, tomando la fecha actual de la solicitud. Enviar `startDate`, `endDate` y timestamps con offset. La app comprueba que los movimientos pertenezcan al periodo; no infiere la fecha desde el texto del LLM.
 - Las tarjetas muestran datos faltantes como ausencia, no como saldo cero inventado. No inventar terminaciones de cuentas, mínimos, fechas límite, tasas, metas ni presupuestos.
@@ -68,7 +70,9 @@ node --experimental-strip-types scripts/export-banking-contract.mjs
 
 ## Acciones y límites actuales
 
-Las interacciones locales implementadas son ocultar saldos, buscar/filtrar/expandir movimientos, inspeccionar gráficos, ampliar el mapa por mes/semana y seleccionar escenarios. Se componen con los botones estándar A2UI para las consultas adicionales; estos conservan `name`, `surfaceId`, `sourceComponentId`, `timestamp` y `context`.
+Las interacciones locales implementadas son ocultar saldos, buscar/filtrar/expandir movimientos, inspeccionar gráficos, ampliar el mapa por mes/semana y seleccionar escenarios. Se componen con los botones estándar A2UI para las consultas adicionales; estos conservan exactamente `name`, `surfaceId`, `sourceComponentId`, `timestamp` y `context`. El CTA del resumen usa `request_financial_view`; el binding resuelve `context: { "intent": "transactions" }` desde `/requestIntent` y nunca añade identidad al contexto.
+
+El transporte preferido envía `{ "action": <acción A2UI>, "user_id": <UUID autenticado> }` al endpoint del agente. Mientras se despliega esa rama, el cliente reintenta la serialización heredada dentro de `query` únicamente cuando un agente anterior rechaza el cuerpo estructurado con HTTP 422.
 
 Crear presupuestos, registrar metas, pagar, transferir, bloquear tarjetas y descargar documentos requieren endpoints y datos del backend. La galería no los ejecuta ni muestra éxito ficticio. El borrador de transferencia siempre está por confirmar. El MCP de lectura no debe convertirse en una API de escritura para resolver estas acciones.
 

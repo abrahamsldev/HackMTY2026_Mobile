@@ -45,6 +45,16 @@ const dynamicValue = z.union([
   z.array(jsonValueSchema).max(100),
   binding,
 ]);
+const identityKeys = new Set(['user_id', 'userId', 'email']);
+function containsIdentity(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(containsIdentity);
+  if (value === null || typeof value !== 'object') return false;
+  return Object.entries(value).some(([key, child]) => identityKeys.has(key) || containsIdentity(child));
+}
+const actionContext = z.record(z.string().min(1).max(128), dynamicValue)
+  .refine((value) => !containsIdentity(value), {
+    message: 'Identity does not belong in A2UI action context.',
+  });
 const accessibility = z
   .object({ label: dynamicString.optional(), description: dynamicString.optional() })
   .strict();
@@ -59,7 +69,7 @@ const serverAction = z
     event: z
       .object({
         name: identifier,
-        context: z.record(z.string().min(1).max(128), dynamicValue).optional(),
+        context: actionContext.optional(),
       })
       .strict(),
   })
@@ -182,5 +192,8 @@ export const a2uiActionSchema = z.object({
   surfaceId: identifier,
   sourceComponentId: identifier,
   timestamp: z.string().datetime({ offset: true }),
-  context: z.record(z.string().min(1).max(128), jsonValueSchema),
+  context: z.record(z.string().min(1).max(128), jsonValueSchema)
+    .refine((value) => !containsIdentity(value), {
+      message: 'Identity does not belong in A2UI action context.',
+    }),
 }).strict();

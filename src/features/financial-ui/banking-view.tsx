@@ -3,10 +3,10 @@ import { StyleSheet, View } from 'react-native';
 import { TextInput } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
 import { ActionButton, AreaChart, Card, Divider, EmptyState, HeatmapChart, InfoBanner, ProgressBar, StatusBadge, TextBlock } from '@/components/ui';
-import { AccountBalanceCard, FinancialStatCard, SpendingCategoryChart, TransactionItem, TransactionList } from '@/features/personal-banking';
+import { FinancialStatCard, SpendingCategoryChart, TransactionItem, TransactionList } from '@/features/personal-banking';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { budgetProgress, filterTransactions, ownedBalance, type BankingViewData, type ReadyBankingView, type ScenarioData } from './model';
+import { budgetProgress, filterTransactions, type BankingViewData, type ReadyBankingView, type ScenarioData } from './model';
 
 const money = (value: number, currency: string) => new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(value);
 const date = (value: string) => new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T12:00:00Z`));
@@ -30,16 +30,116 @@ function Missing({ description = 'Todavía no hay datos para esta consulta.' }: 
   return <EmptyState title="Sin información disponible" description={description} />;
 }
 
-function Summary({ data }: { data: Extract<ReadyBankingView, { intent: 'financial-summary' }> }) {
+type SummaryData = Extract<ReadyBankingView, { intent: 'financial-summary' }>;
+type SummaryAccount = SummaryData['accounts'][number];
+
+const accountTypeLabel: Record<SummaryAccount['accountType'], string> = {
+  checking: 'Débito',
+  savings: 'Ahorro',
+  credit: 'Crédito disponible',
+};
+
+function AccountRow({ account, currency, hidden }: {
+  account: SummaryAccount;
+  currency: SummaryData['currency'];
+  hidden: boolean;
+}) {
+  const theme = useTheme();
+  const isCredit = account.accountType === 'credit';
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${account.accountName}. ${accountTypeLabel[account.accountType]}. ${hidden ? 'Importe oculto' : money(account.availableBalance, currency)}.`}
+      style={styles.accountRow}>
+      <View style={styles.accountIdentity}>
+        <ThemedText type="smallBold">{account.accountName}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {accountTypeLabel[account.accountType]}{account.accountLastFour ? ` · •••• ${account.accountLastFour}` : ''}
+        </ThemedText>
+        {account.status !== 'active' && (
+          <StatusBadge
+            size="sm"
+            label={account.status === 'blocked' ? 'Bloqueada' : 'Inactiva'}
+            tone={account.status === 'blocked' ? 'danger' : 'neutral'}
+          />
+        )}
+      </View>
+      <ThemedText
+        selectable={!hidden}
+        type="smallBold"
+        style={[styles.accountAmount, isCredit && { color: theme.info }]}>
+        {hidden ? '••••••' : money(account.availableBalance, currency)}
+      </ThemedText>
+    </View>
+  );
+}
+
+function AccountGroup({ title, accounts, currency, hidden, credit = false }: {
+  title: string;
+  accounts: SummaryAccount[];
+  currency: SummaryData['currency'];
+  hidden: boolean;
+  credit?: boolean;
+}) {
+  if (!accounts.length) return null;
+  return (
+    <View style={styles.accountGroup}>
+      <View style={styles.sectionHeading}>
+        <ThemedText type="smallBold">{title}</ThemedText>
+        {credit && <ThemedText type="small" themeColor="textSecondary">No forma parte de tu saldo</ThemedText>}
+      </View>
+      <Card variant="outlined" padding="md">
+        {accounts.map((account, index) => (
+          <View key={account.accountId}>
+            {index > 0 && <Divider />}
+            <AccountRow account={account} currency={currency} hidden={hidden} />
+          </View>
+        ))}
+      </Card>
+    </View>
+  );
+}
+
+function Summary({ data }: { data: SummaryData }) {
   const [hidden, setHidden] = useState(false);
   if (!data.accounts.length) return <Missing description="No hay cuentas vinculadas para mostrar un saldo." />;
+  const ownedAccounts = data.accounts.filter(account => account.accountType !== 'credit');
+  const creditAccounts = data.accounts.filter(account => account.accountType === 'credit');
+  const accountLabel = `${ownedAccounts.length} ${ownedAccounts.length === 1 ? 'cuenta' : 'cuentas'}`;
   return group(<>
-    <ActionButton label={hidden ? 'Mostrar saldos' : 'Ocultar saldos'} variant="outline" onPress={() => setHidden(v => !v)} />
-    {hidden ? <InfoBanner message="Tus saldos están ocultos." /> : <>
-      <Hero label="Tu dinero disponible" value={money(ownedBalance(data.accounts), data.currency)} note="Suma de cheques y ahorro. El crédito disponible se muestra en su propia cuenta." />
-      <View style={styles.metrics}>{data.income !== undefined && <View style={styles.metric}><Metric label="Ingresos del periodo" value={data.income} currency={data.currency} tone="positive" /></View>}{data.expenses !== undefined && <View style={styles.metric}><Metric label="Gastos del periodo" value={data.expenses} currency={data.currency} /></View>}</View>
-      {data.accounts.map(account => account.accountLastFour ? <AccountBalanceCard key={account.accountId} {...account} accountLastFour={account.accountLastFour} currency={data.currency} /> : <Card key={account.accountId} variant="outlined">{group(<><ThemedText type="smallBold">{account.accountName}</ThemedText><Detail label={account.accountType === 'credit' ? 'Crédito disponible' : 'Saldo disponible'} value={money(account.availableBalance, data.currency)} /></>)}</Card>)}
-    </>}
+    <Card variant="elevated" padding="lg">
+      <View style={styles.summaryHero}>
+        <View style={styles.summaryHeader}>
+          <View style={styles.summaryLabel}>
+            <ThemedText type="smallBold">Balance disponible</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">Disponible entre {accountLabel}</ThemedText>
+          </View>
+          <ActionButton
+            label={hidden ? 'Mostrar' : 'Ocultar'}
+            size="sm"
+            variant="outline"
+            onPress={() => setHidden(value => !value)}
+          />
+        </View>
+        <View style={styles.balanceRow}>
+          <ThemedText accessibilityLiveRegion="polite" selectable={!hidden} style={styles.balanceAmount}>
+            {hidden ? '••••••' : money(data.totalOwnedBalance, data.currency)}
+          </ThemedText>
+          {!hidden && <ThemedText type="smallBold" themeColor="textSecondary">{data.currency}</ThemedText>}
+        </View>
+      </View>
+    </Card>
+    <AccountGroup title="Tu dinero" accounts={ownedAccounts} currency={data.currency} hidden={hidden} />
+    <AccountGroup title="Líneas de crédito" accounts={creditAccounts} currency={data.currency} hidden={hidden} credit />
+    {(data.income !== undefined || data.expenses !== undefined) && (
+      <View style={styles.periodSection}>
+        <ThemedText type="smallBold">Actividad del periodo</ThemedText>
+        <View style={styles.metrics}>
+          {data.income !== undefined && <View style={styles.metric}><Metric label="Ingresos" value={data.income} currency={data.currency} tone="positive" /></View>}
+          {data.expenses !== undefined && <View style={styles.metric}><Metric label="Gastos" value={data.expenses} currency={data.currency} /></View>}
+        </View>
+      </View>
+    )}
   </>);
 }
 
@@ -87,11 +187,12 @@ function Content({ data }: { data: ReadyBankingView }) {
     case 'financial-summary': return <Summary data={data} />;
     case 'transactions': return <Movements data={data} />;
     case 'spending-analysis': {
-      const total = sum(data.categories.map(c => c.amount));
       return group(<>
-        {data.categories.length ? <><Metric label="Gasto del periodo" value={total} currency={currency} />{data.previousTotal !== undefined && <ThemedText themeColor="textSecondary">{total >= data.previousTotal ? 'Aumento' : 'Reducción'} de {money(Math.abs(total - data.previousTotal), currency)} frente al periodo anterior.</ThemedText>}<SpendingCategoryChart categories={data.categories} currency={currency} title="¿Dónde se fue tu dinero?" showPercentages /></> : <Missing />}
+        <Hero label="Gasto total del periodo" value={money(data.totalSpent, currency)} note={data.previousTotal !== undefined ? `Periodo anterior · ${money(data.previousTotal, currency)}` : undefined} />
+        {data.categories.length ? <SpendingCategoryChart categories={data.categories} currency={currency} title="Distribución por categoría" subtitle="Del mayor al menor gasto" showPercentages /> : <Missing />}
         {data.trend && <AreaChart {...data.trend} currency={currency} />}
         {data.activity && <HeatmapChart {...data.activity} currency={currency} />}
+        {data.insight && <InfoBanner title="Lectura rápida" message={data.insight} />}
       </>);
     }
     case 'cash-flow': return group(<>
@@ -157,7 +258,7 @@ function Content({ data }: { data: ReadyBankingView }) {
 
 export function BankingView({ data }: { data: BankingViewData }) {
   return <View style={styles.stack}>
-    <View style={styles.heading}><ThemedText accessibilityRole="header" type="subtitle">{data.title}</ThemedText>{data.subtitle && <ThemedText themeColor="textSecondary">{data.subtitle}</ThemedText>}</View>
+    <View style={styles.heading}><ThemedText accessibilityRole="header" style={styles.viewTitle}>{data.title}</ThemedText>{data.subtitle && <ThemedText themeColor="textSecondary">{data.subtitle}</ThemedText>}</View>
     {'state' in data ? <Missing description={data.description} /> : <Content key={data.intent} data={data} />}
   </View>;
 }
@@ -165,8 +266,20 @@ export function BankingView({ data }: { data: BankingViewData }) {
 const styles = StyleSheet.create({
   stack: { gap: Spacing.four, width: '100%' },
   heading: { gap: Spacing.one },
+  viewTitle: { fontSize: 28, fontWeight: '700', lineHeight: 36 },
   hero: { borderLeftWidth: 4, borderRadius: 16, padding: Spacing.five, gap: Spacing.two },
   heroAmount: { fontSize: 32, fontWeight: '700', lineHeight: 40 },
+  summaryHero: { gap: Spacing.four },
+  summaryHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.three },
+  summaryLabel: { flexGrow: 1, flexBasis: 180, gap: Spacing.half },
+  balanceRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: Spacing.two },
+  balanceAmount: { fontSize: 36, fontWeight: '700', lineHeight: 44, letterSpacing: -1 },
+  accountGroup: { gap: Spacing.two },
+  sectionHeading: { gap: Spacing.half },
+  accountRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.three },
+  accountIdentity: { flexGrow: 1, flexBasis: 160, gap: Spacing.half },
+  accountAmount: { textAlign: 'right' },
+  periodSection: { gap: Spacing.two },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
   metric: { flexGrow: 1, flexBasis: 240, maxWidth: '100%' },
   detail: { gap: Spacing.one },

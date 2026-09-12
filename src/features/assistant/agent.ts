@@ -1,3 +1,4 @@
+import { a2uiActionSchema } from '../a2ui/schemas.ts';
 import { extractA2UITransportReply, serializeActionForLegacyChat } from '../a2ui/transport.ts';
 import type { A2UIAction, A2UIMessage } from '../a2ui/types.ts';
 import { z } from 'zod';
@@ -21,11 +22,13 @@ export function parseAgentReply(input: unknown): AgentReply {
 
 export class AgentRequestError extends Error {
   code: 'configuration' | 'network' | 'timeout' | 'response' | 'contract' | 'authentication';
+  readonly httpStatus?: number;
 
-  constructor(code: AgentRequestError['code'], message: string) {
+  constructor(code: AgentRequestError['code'], message: string, httpStatus?: number) {
     super(message);
     this.name = 'AgentRequestError';
     this.code = code;
+    this.httpStatus = httpStatus;
   }
 }
 
@@ -39,15 +42,16 @@ export type AgentRequestOptions = {
   fetchImpl?: typeof fetch;
 };
 
-export async function requestAgent({
+type AgentTransportOptions = Omit<AgentRequestOptions, 'query'>;
+
+async function requestAgentPayload({
   baseUrl,
-  query,
   userId,
   accessToken,
   signal,
   timeoutMs = 60_000,
   fetchImpl = fetch,
-}: AgentRequestOptions): Promise<AgentReply> {
+}: AgentTransportOptions, payload: { query: string } | { action: A2UIAction }): Promise<AgentReply> {
   let endpoint: URL;
   try {
     endpoint = new URL(`${baseUrl.replace(/\/$/, '')}/api/v1/agent/chat`);
@@ -59,10 +63,6 @@ export async function requestAgent({
     throw new AgentRequestError('configuration', 'Falta configurar la dirección del agente.');
   }
 
-  const normalizedQuery = query.trim();
-  if (!normalizedQuery || normalizedQuery.length > 8_000) {
-    throw new AgentRequestError('response', 'Escribe una consulta de hasta 8000 caracteres.');
-  }
   const parsedUserId = z.uuid().safeParse(userId);
   if (!parsedUserId.success) {
     throw new AgentRequestError('configuration', 'La cuenta no tiene un identificador válido.');
@@ -83,7 +83,7 @@ export async function requestAgent({
     const response = await fetchImpl(endpoint.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ query: normalizedQuery, user_id: parsedUserId.data }),
+      body: JSON.stringify({ ...payload, user_id: parsedUserId.data }),
       signal: controller.signal,
     });
     if (!response.ok) {
@@ -94,6 +94,7 @@ export async function requestAgent({
           : response.status === 401 || response.status === 403
           ? 'Tu sesión no tiene acceso al agente. Vuelve a iniciar sesión.'
           : 'El agente no pudo atender la consulta. Inténtalo de nuevo.',
+        response.status,
       );
     }
     const body = await response.text();
@@ -133,11 +134,30 @@ export async function requestAgent({
   }
 }
 
-export function requestAgentAction(
+export async function requestAgent({ query, ...options }: AgentRequestOptions): Promise<AgentReply> {
+  const normalizedQuery = query.trim();
+  if (!normalizedQuery || normalizedQuery.length > 8_000) {
+    throw new AgentRequestError('response', 'Escribe una consulta de hasta 8000 caracteres.');
+  }
+  return requestAgentPayload(options, { query: normalizedQuery });
+}
+
+export async function requestAgentAction(
   options: Omit<AgentRequestOptions, 'query'> & { action: A2UIAction },
 ): Promise<AgentReply> {
   const { action, ...requestOptions } = options;
-  return requestAgent({ ...requestOptions, query: serializeActionForLegacyChat(action) });
+  const parsed = a2uiActionSchema.safeParse(action);
+  if (!parsed.success) {
+    throw new AgentRequestError('response', 'La acción de la interfaz no es válida.');
+  }
+  try {
+    return await requestAgentPayload(requestOptions, { action: parsed.data as A2UIAction });
+  } catch (error) {
+    // Deployed agents predating the structured branch reject the missing `query`
+    // with 422 before executing anything. Keep this narrow fallback during rollout.
+    if (!(error instanceof AgentRequestError) || error.httpStatus !== 422) throw error;
+    return requestAgentPayload(requestOptions, { query: serializeActionForLegacyChat(parsed.data as A2UIAction) });
+  }
 }
 
 export type { A2UIAction, A2UIMessage };

@@ -1,17 +1,20 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { bankingViewSchema, ownedBalance, budgetProgress, filterTransactions, transactionDay } from '../src/features/financial-ui/model.ts';
+import { bankingViewSchema, budgetProgress, filterTransactions, intentIds, transactionDay } from '../src/features/financial-ui/model.ts';
 import { financialViewCatalog } from '../src/features/financial-ui/catalog.ts';
 import { bankingViewMessages } from '../src/features/financial-ui/a2ui.ts';
+import { createA2UIAction } from '../src/features/a2ui/action.ts';
 import { A2UIMessageProcessor } from '../src/features/a2ui/message-processor.ts';
 import { buildRenderPlan } from '../src/features/a2ui/catalog.ts';
 import { parseAgentReply } from '../src/features/assistant/agent.ts';
-import { A2UI_BASIC_CATALOG_ID, A2UI_FINANCE_CATALOG_ID } from '../src/features/a2ui/types.ts';
+import { A2UI_BASIC_CATALOG_ID, A2UI_BANKING_CATALOG_ID, A2UI_FINANCE_CATALOG_ID, A2UI_VERSION } from '../src/features/a2ui/types.ts';
 
 const read = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const bank = read('../src/features/assistant/question-bank.json');
 const examples = read('../src/features/financial-ui/examples.json');
+const parity = read('./fixtures/finance-v2-contract.json');
+const canonicalTemplate = read('../../mcp/src/supabase_mcp/a2ui_support/templates/financial_view.json');
 const example = intent => structuredClone(examples.find(v => v.intent === intent));
 
 test('every question-bank category has exactly one UI design and a validated example', () => {
@@ -23,13 +26,15 @@ test('every question-bank category has exactly one UI design and a validated exa
 for (const input of examples) {
   test(`${input.intent}: agent transport → A2UI processor → BankingView`, () => {
     const value = bankingViewSchema.parse(input);
-    const reply = parseAgentReply({ message: 'Vista disponible', data: {}, a2ui: { resource_uri: `a2ui://banking/${value.intent}`, messages: bankingViewMessages(value) } });
+    const reply = parseAgentReply({ message: 'Vista disponible', data: {}, a2ui: { resource_uri: 'a2ui://finance/view', messages: bankingViewMessages(value) } });
     assert.equal(reply.a2uiError, null);
     const result = new A2UIMessageProcessor().process(reply.messages);
     assert.equal(result.ok, true);
     const plan = buildRenderPlan(result.surfaces[0]);
     assert.equal(plan.status, 'ready');
-    assert.equal(plan.component.component, 'BankingView');
+    assert.equal(plan.component.component, 'Column');
+    assert.equal(plan.children[0].component.component, 'BankingView');
+    assert.equal(plan.children[1].component.component, 'Button');
     assert.deepEqual(result.surfaces[0].dataModel.view, value);
     const empty = bankingViewSchema.parse({ intent: value.intent, title: value.title, state: 'empty', description: 'No hay información para esta consulta.' });
     assert.equal(new A2UIMessageProcessor().process(bankingViewMessages(empty)).ok, true);
@@ -51,10 +56,50 @@ test('banking views require their own versioned catalog and invalid bound data s
   assert.deepEqual(rejected.surfaces, initial.surfaces);
 });
 
-test('money owned excludes available credit, even when credit exceeds cash', () => {
+test('financial summary presents a server-supplied owned balance and keeps credit separate', () => {
   const data = bankingViewSchema.parse(example('financial-summary'));
-  assert.equal(ownedBalance(data.accounts), 20500);
-  assert.equal(ownedBalance(data.accounts.filter(a => a.accountType === 'credit')), 0);
+  assert.equal(data.totalOwnedBalance, 20500);
+  assert.equal(data.accounts.find(account => account.accountType === 'credit').availableBalance, 1500);
+  const withoutTotal = example('financial-summary');
+  delete withoutTotal.totalOwnedBalance;
+  assert.equal(bankingViewSchema.safeParse(withoutTotal).success, false);
+});
+
+test('financial summary composes BankingView and CTA and emits exactly the five action fields', () => {
+  const processor = new A2UIMessageProcessor();
+  const messages = bankingViewMessages(bankingViewSchema.parse(example('financial-summary')));
+  assert.deepEqual(messages.slice(0, 2), canonicalTemplate);
+  const result = processor.process(messages);
+  assert.equal(result.ok, true);
+  const surface = result.surfaces[0];
+  const button = surface.components.get('request_financial_view_button');
+  assert.deepEqual(createA2UIAction(surface, button, new Date('2026-09-12T12:00:00.000Z')), {
+    name: 'request_financial_view',
+    surfaceId: 'financial-view',
+    sourceComponentId: 'request_financial_view_button',
+    timestamp: '2026-09-12T12:00:00.000Z',
+    context: { intent: 'transactions' },
+  });
+});
+
+test('spending analysis retains category, area, heatmap and insight data together', () => {
+  const data = bankingViewSchema.parse(example('spending-analysis'));
+  assert.equal(data.totalSpent, 15000);
+  assert.ok(data.categories.length > 0);
+  assert.ok(data.trend.data.length > 0);
+  assert.ok(data.activity.data.length > 0);
+  assert.ok(data.insight.length > 0);
+});
+
+test('Finance v2 parity fixture matches the mobile contract boundary', () => {
+  assert.equal(parity.version, A2UI_VERSION);
+  assert.equal(parity.catalogId, A2UI_BANKING_CATALOG_ID);
+  assert.deepEqual(parity.intents, [...intentIds]);
+  const summary = example('financial-summary');
+  const spending = example('spending-analysis');
+  assert.ok(parity.financialSummaryRequired.every(key => Object.hasOwn(summary, key)));
+  assert.ok(parity.spendingAnalysisRequired.every(key => Object.hasOwn(spending, key)));
+  assert.deepEqual(parity.summaryAction, { name: 'request_financial_view', context: { intent: 'transactions' } });
 });
 
 test('budgets distinguish overspending from remaining budget and clamp only the visual bar', () => {
