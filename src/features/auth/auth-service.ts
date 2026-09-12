@@ -7,7 +7,7 @@ export const signInSchema = z.object({ email: emailSchema, password: z.string().
 export const signUpSchema = signInSchema.extend({ password: passwordSchema, fullName: z.string().trim().min(1, 'Escribe tu nombre.').max(80) });
 
 export function isRealUser(user: User | null | undefined): user is User {
-  return Boolean(user?.id && user.email && user.email_confirmed_at && !user.is_anonymous);
+  return Boolean(user?.id && user.email && !user.is_anonymous);
 }
 export async function verifySession(client: SupabaseClient, candidate: Session | null): Promise<Session | null> {
   if (!candidate) return null;
@@ -23,9 +23,9 @@ export async function signInWithAccount(client: SupabaseClient, input: z.input<t
   if (!session) throw new Error('account_required');
   return session;
 }
-export async function registerAccount(client: SupabaseClient, input: z.input<typeof signUpSchema>, redirectTo: string) {
+export async function registerAccount(client: SupabaseClient, input: z.input<typeof signUpSchema>) {
   const { email, password, fullName } = signUpSchema.parse(input);
-  const { data, error } = await client.auth.signUp({ email, password, options: { data: { full_name: fullName }, emailRedirectTo: redirectTo } });
+  const { data, error } = await client.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
   if (error) throw error;
   return data.session ? verifySession(client, data.session) : null;
 }
@@ -34,7 +34,7 @@ export function authErrorMessage(error: unknown): string {
   const code = typeof error === 'object' && error && 'code' in error ? error.code : undefined;
   switch (code) {
     case 'invalid_credentials': return 'El correo o la contraseña no son correctos.';
-    case 'email_not_confirmed': return 'Confirma tu correo antes de iniciar sesión.';
+    case 'email_not_confirmed': return 'No se pudo iniciar sesión. Revisa la configuración de acceso en Supabase.';
     case 'user_already_exists': case 'email_exists': return 'No se pudo crear la cuenta. Intenta iniciar sesión o recuperar tu contraseña.';
     case 'weak_password': return 'Elige una contraseña más segura.';
     case 'same_password': return 'Elige una contraseña diferente de la anterior.';
