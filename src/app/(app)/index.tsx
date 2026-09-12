@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -6,27 +6,32 @@ import {
   ScrollView,
   StyleSheet,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { type TextInputHandle } from '@/components/accessible-primitives';
-import { InfoBanner } from '@/components/ui/info-banner';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { type TextInputHandle } from "@/components/accessible-primitives";
+import { InfoBanner } from "@/components/ui/info-banner";
+import { MaxContentWidth, Spacing } from "@/constants/theme";
+import {
+  messageSurfaceId,
+  type A2UIAction,
+  type A2UISurfaceState,
+} from "@/features/a2ui";
+import { useAccessibility } from "@/features/accessibility/accessibility-provider";
+import type { AgentReply } from "@/features/assistant/agent";
 import {
   AssistantWelcome,
   ChatComposer,
   ChatMessage,
   QuestionBank,
   extractFirstName,
-} from '@/features/assistant/components';
-import { useAssistant } from '@/features/assistant/use-assistant';
-import { useAccessibility } from '@/features/accessibility/accessibility-provider';
-import { useSession } from '@/features/auth/session-provider';
-import { useTheme } from '@/hooks/use-theme';
-import { messageSurfaceId, type A2UIAction, type A2UISurfaceState } from '@/features/a2ui';
-import type { AgentReply } from '@/features/assistant/agent';
+} from "@/features/assistant/components";
+import { A2UIResponseViewer } from "@/features/assistant/components/a2ui-response-viewer";
+import { useAssistant } from "@/features/assistant/use-assistant";
+import { useSession } from "@/features/auth/session-provider";
+import { useTheme } from "@/hooks/use-theme";
 
-export type AssistantLayoutMode = 'welcome' | 'conversation';
+export type AssistantLayoutMode = "welcome" | "conversation";
 
 type ArchivedTurn = {
   id: string;
@@ -43,10 +48,16 @@ export default function HomeScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
       {session && (
-        <AssistantWorkspace key={session.user.id} currentUserId={session.user.id} userMetadata={session.user.user_metadata} profileFullName={profile.fullName} />
+        <AssistantWorkspace
+          key={session.user.id}
+          currentUserId={session.user.id}
+          userMetadata={session.user.user_metadata}
+          profileFullName={profile.fullName}
+        />
       )}
     </KeyboardAvoidingView>
   );
@@ -70,10 +81,10 @@ function AssistantWorkspace({
   const [activeQuery, setActiveQuery] = useState<string | null>(null);
   const [activeTurnId, setActiveTurnId] = useState<string | null>(null);
   const [activeResponseFloor, setActiveResponseFloor] = useState(0);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [showQuestionBank, setShowQuestionBank] = useState(false);
   const [editingTurnId, setEditingTurnId] = useState<string | null>(null);
-  const [editingQuery, setEditingQuery] = useState('');
+  const [editingQuery, setEditingQuery] = useState("");
 
   const queryInput = useRef<TextInputHandle>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -81,14 +92,19 @@ function AssistantWorkspace({
 
   const firstName = extractFirstName(userMetadata, profileFullName);
   const isConversation = Boolean(activeQuery) || pastTurns.length > 0;
-  const mode: AssistantLayoutMode = isConversation ? 'conversation' : 'welcome';
-  const activeResponse = assistant.surface && assistant.surface.revision > activeResponseFloor
-    ? assistant.surface
-    : null;
+  const mode: AssistantLayoutMode = isConversation ? "conversation" : "welcome";
+  const activeResponse =
+    assistant.surface && assistant.surface.revision > activeResponseFloor
+      ? assistant.surface
+      : null;
   const activeSurfaces = useMemo(() => {
     if (!activeResponse?.reply.messages) return [];
-    const responseSurfaceIds = new Set(activeResponse.reply.messages.map(messageSurfaceId));
-    return activeResponse.a2uiSurfaces.filter(({ surfaceId }) => responseSurfaceIds.has(surfaceId));
+    const responseSurfaceIds = new Set(
+      activeResponse.reply.messages.map(messageSurfaceId),
+    );
+    return activeResponse.a2uiSurfaces.filter(({ surfaceId }) =>
+      responseSurfaceIds.has(surfaceId),
+    );
   }, [activeResponse]);
 
   useEffect(() => {
@@ -124,7 +140,13 @@ function AssistantWorkspace({
 
   function handleSubmit(submittedText: string) {
     const text = submittedText.trim();
-    if (!text || assistant.pending || submissionLocked.current || !assistant.isConfigured) return;
+    if (
+      !text ||
+      assistant.pending ||
+      submissionLocked.current ||
+      !assistant.isConfigured
+    )
+      return;
     submissionLocked.current = true;
 
     archiveActiveTurn();
@@ -133,10 +155,10 @@ function AssistantWorkspace({
     setActiveResponseFloor(assistant.surface?.revision ?? 0);
     setActiveQuery(text);
     setActiveTurnId(nextId);
-    setQuery('');
+    setQuery("");
     setShowQuestionBank(false);
     setEditingTurnId(null);
-    setEditingQuery('');
+    setEditingQuery("");
     Keyboard.dismiss();
 
     void assistant.send(text).finally(() => {
@@ -172,12 +194,13 @@ function AssistantWorkspace({
 
   function handleCancelEdit() {
     setEditingTurnId(null);
-    setEditingQuery('');
+    setEditingQuery("");
   }
 
   function handleSubmitEdit() {
     const text = editingQuery.trim();
-    if (!text || !activeQuery || assistant.pending || submissionLocked.current) return;
+    if (!text || !activeQuery || assistant.pending || submissionLocked.current)
+      return;
     if (text === activeQuery) {
       handleCancelEdit();
       return;
@@ -187,7 +210,7 @@ function AssistantWorkspace({
     setActiveResponseFloor(assistant.surface?.revision ?? 0);
     setActiveQuery(text);
     setEditingTurnId(null);
-    setEditingQuery('');
+    setEditingQuery("");
     setShowQuestionBank(false);
 
     void assistant.send(text).finally(() => {
@@ -211,7 +234,7 @@ function AssistantWorkspace({
     setActiveQuery(actionQuery);
     setActiveTurnId(nextId);
     setEditingTurnId(null);
-    setEditingQuery('');
+    setEditingQuery("");
     void assistant.dispatch(action).finally(() => {
       submissionLocked.current = false;
     });
@@ -227,12 +250,13 @@ function AssistantWorkspace({
       )}
 
       {/* Main Conversation or Welcome Stream */}
-      {mode === 'welcome' ? (
+      {mode === "welcome" ? (
         <ScrollView
           ref={scrollViewRef}
           contentContainerStyle={styles.welcomeScrollContent}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.welcomeInner}>
             <AssistantWelcome
               firstName={firstName}
@@ -273,12 +297,17 @@ function AssistantWorkspace({
             style={styles.messagesScroll}
             contentContainerStyle={styles.messagesContent}
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.messagesInner}>
               {/* Past archived turns */}
               {pastTurns.map((turn) => (
                 <View key={turn.id} style={styles.turnContainer}>
-                  <ChatMessage role="user" content={turn.query} animate={false} />
+                  <ChatMessage
+                    role="user"
+                    content={turn.query}
+                    animate={false}
+                  />
                   <ChatMessage
                     role="assistant"
                     content={turn.reply?.message}
@@ -318,6 +347,12 @@ function AssistantWorkspace({
                     onDispatch={handleDispatch}
                     disabled={assistant.pending}
                   />
+                  {activeResponse && (
+                    <A2UIResponseViewer
+                      reply={activeResponse.reply}
+                      surfaces={activeSurfaces}
+                    />
+                  )}
                 </View>
               )}
 
@@ -337,11 +372,12 @@ function AssistantWorkspace({
           <View
             style={[
               styles.bottomComposerContainer,
-                {
-                  backgroundColor: theme.background,
-                  paddingBottom: Math.max(insets.bottom, Spacing.two),
-                },
-            ]}>
+              {
+                backgroundColor: theme.background,
+                paddingBottom: Math.max(insets.bottom, Spacing.two),
+              },
+            ]}
+          >
             <View style={styles.bottomComposerInner}>
               <ChatComposer
                 inputRef={queryInput}
@@ -372,34 +408,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
     maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    width: '100%',
+    alignSelf: "center",
+    width: "100%",
   },
   welcomeScrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.four,
   },
   welcomeInner: {
-    width: '100%',
+    width: "100%",
     maxWidth: MaxContentWidth,
-    alignItems: 'center',
+    alignItems: "center",
     gap: Spacing.four,
   },
   welcomeComposerWrapper: {
-    width: '100%',
+    width: "100%",
     marginTop: Spacing.two,
   },
   questionBankWrapper: {
-    width: '100%',
+    width: "100%",
     maxWidth: 720,
     marginTop: Spacing.two,
   },
   conversationContainer: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   messagesScroll: {
     flex: 1,
@@ -411,9 +447,9 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.four,
   },
   messagesInner: {
-    width: '100%',
+    width: "100%",
     maxWidth: MaxContentWidth,
-    alignSelf: 'center',
+    alignSelf: "center",
     gap: Spacing.three,
   },
   turnContainer: {
@@ -427,8 +463,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.three,
   },
   bottomComposerInner: {
-    width: '100%',
+    width: "100%",
     maxWidth: MaxContentWidth,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
 });
