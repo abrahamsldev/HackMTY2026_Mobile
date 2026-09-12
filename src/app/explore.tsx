@@ -15,7 +15,7 @@ import {
   StatusBadge,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import type { A2UIDispatch, A2UIPayload } from '@/features/assistant/agent';
+import { A2UI_BASIC_CATALOG_ID, A2UIMessageProcessor, type A2UIAction } from '@/features/a2ui';
 import { A2UISurface } from '@/features/assistant/components/a2ui-surface';
 import {
   AccountBalanceCard,
@@ -37,27 +37,40 @@ const heatmapDemo = Array.from({ length: 365 }, (_, index) => ({
   value: index % 7 === 0 ? 0 : (index * 137 + 53) % 2400,
 })).filter((_, index) => index % 19 !== 0);
 
-const a2uiPreview: A2UIPayload = {
-  version: 'a2ui/v1',
-  template_id: 'Template_Projection',
-  applied_tags: [],
-  meta: {
-    narrative: 'Vista de ejemplo de los cuatro componentes del agente.',
-    accessibility: { font_scale: 'md', contrast: 'normal', hit_target: 'large' },
+const previewProcessor = new A2UIMessageProcessor();
+const previewResult = previewProcessor.process([
+  {
+    version: 'v0.9.1',
+    createSurface: { surfaceId: 'catalog-preview', catalogId: A2UI_BASIC_CATALOG_ID },
   },
-  surface: {
-    layout: 'vertical_stack',
-    components: [
-      { id: 'catalog_banner', type: 'Banner', tags: [], props: { title: 'Banner', variant: 'info', message: 'Esta vista usa datos de ejemplo y no hace peticiones.' } },
-      { id: 'catalog_metric', type: 'MetricCard', tags: [], props: { title: 'MetricCard · Gastos de ejemplo', value: 3200, currency: 'MXN' } },
-      { id: 'catalog_slider', type: 'InteractiveSlider', tags: [], props: { label: 'InteractiveSlider · Meses', min: 3, max: 18, step: 3, default_value: 6 } },
-      { id: 'catalog_button', type: 'Button', tags: [], props: { label: 'Button · Probar evento', action: { type: 'A2UI_DISPATCH', intent: 'CONFIRM_SIMULATION', payload: { months: 6 } } } },
-    ],
+  {
+    version: 'v0.9.1',
+    updateComponents: {
+      surfaceId: 'catalog-preview',
+      components: [
+        { id: 'root', component: 'Card', child: 'preview_column' },
+        { id: 'preview_column', component: 'Column', children: ['preview_title', 'preview_body', 'preview_button'] },
+        { id: 'preview_title', component: 'Text', text: { path: '/title' }, variant: 'h2' },
+        { id: 'preview_body', component: 'Text', text: { path: '/body' } },
+        { id: 'preview_label', component: 'Text', text: 'Button · Probar evento' },
+        { id: 'preview_button', component: 'Button', child: 'preview_label', variant: 'primary', action: { event: { name: 'preview_action', context: { source: 'component-gallery' } } } },
+      ],
+    },
   },
-};
+  {
+    version: 'v0.9.1',
+    updateDataModel: {
+      surfaceId: 'catalog-preview',
+      path: '/',
+      value: { title: 'A2UI v0.9.1', body: 'Vista local de Card, Column, Text y Button; no hace peticiones.' },
+    },
+  },
+]);
+if (!previewResult.ok) throw new Error('Invalid local A2UI preview');
+const a2uiPreview = previewResult.surfaces[0];
 
 export default function ComponentCatalogScreen() {
-  const [debugEvent, setDebugEvent] = useState<TestCatalogEvent | A2UIDispatch | null>(null);
+  const [debugEvent, setDebugEvent] = useState<TestCatalogEvent | A2UIAction | null>(null);
 
   const handlePrimaryAction = () => {
     setDebugEvent({
@@ -412,7 +425,7 @@ export default function ComponentCatalogScreen() {
           <ThemedText type="smallBold" style={styles.sectionTitle}>
             Componentes A2UI del agente
           </ThemedText>
-          <A2UISurface payload={a2uiPreview} disabled={false} onDispatch={setDebugEvent} />
+          <A2UISurface surface={a2uiPreview} disabled={false} onDispatch={setDebugEvent} />
         </Section>
       </Stack>
     </Page>

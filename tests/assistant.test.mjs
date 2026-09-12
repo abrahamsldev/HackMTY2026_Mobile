@@ -2,71 +2,63 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { a2uiSchema, createDispatch, dispatchToQuery, requestAgent, parseAgentReply } from '../src/features/assistant/agent.ts';
+import { requestAgent, requestAgentAction, parseAgentReply } from '../src/features/assistant/agent.ts';
 
-const fixtures = JSON.parse(readFileSync(new URL('./fixtures/agent-responses.json', import.meta.url)));
-const options = { baseUrl: 'https://agent.example.com', query: 'Revisar suscripciones', email: 'luis.demo@fluidbank.test' };
+const fixture = JSON.parse(readFileSync(new URL('./fixtures/agent-responses.json', import.meta.url)));
+const messages = fixture.databaseOverview;
+const options = { baseUrl: 'https://agent.example.com', query: 'Revisar base', email: 'luis.demo@fluidbank.test' };
 
-for (const fixture of fixtures) {
-  test(`accepts the wire contract of ${fixture.template_id}`, () => {
-    assert.deepEqual(a2uiSchema.parse(fixture), fixture);
-  });
-}
-
-test('rejects unknown types, executable props, duplicate IDs and incorrect versions', () => {
-  const unknown = structuredClone(fixtures[0]);
-  unknown.surface.components[0].type = 'WebView';
-  assert.equal(a2uiSchema.safeParse(unknown).success, false);
-  const executable = structuredClone(fixtures[0]);
-  executable.surface.components[0].props.onPress = 'eval("code")';
-  assert.equal(a2uiSchema.safeParse(executable).success, false);
-  const duplicate = structuredClone(fixtures[0]);
-  duplicate.surface.components.push(duplicate.surface.components[0]);
-  assert.equal(a2uiSchema.safeParse(duplicate).success, false);
-  assert.equal(a2uiSchema.safeParse({ ...fixtures[0], version: 'a2ui/v2' }).success, false);
-});
-
-test('rejects invalid slider values and action intents', () => {
-  const invalid = structuredClone(fixtures[2]);
-  invalid.surface.components[1].props.step = 0;
-  assert.equal(a2uiSchema.safeParse(invalid).success, false);
-  invalid.surface.components[1].props.step = 3;
-  invalid.surface.components[1].props.default_value = 19;
-  assert.equal(a2uiSchema.safeParse(invalid).success, false);
-  invalid.surface.components[1].props.default_value = 6;
-  invalid.surface.components[2].props.action.intent = 'EXECUTE_SQL';
-  assert.equal(a2uiSchema.safeParse(invalid).success, false);
-});
-
-test('dispatch uses the selected months and preserves protected static payload values', () => {
-  const payload = a2uiSchema.parse(fixtures[2]);
-  payload.surface.components[2].props.action.payload.amount = 2500;
-  const event = createDispatch(payload, 'projection_confirm', { projection_term: 12, amount: 1 });
-  assert.deepEqual(event.action.payload, { months: 12, amount: 2500 });
-  assert.equal(payload.surface.components[2].props.action.payload.months, 6);
-  assert.match(dispatchToQuery(event), /12 meses/);
-  assert.match(dispatchToQuery(event), /A2UI_DISPATCH/);
-  assert.throws(() => createDispatch(payload, 'projection_confirm', { projection_term: 7 }));
-  assert.throws(() => createDispatch(payload, 'projection_term', {}));
-});
-
-test('sends the actual chat contract without MCP credentials or unsupported request fields', async () => {
-  let called = false;
-  const result = await requestAgent({ ...options, query: ' Revisar suscripciones ', fetchImpl: async (url, init) => {
-    called = true;
+test('extracts ordered official messages from the application transport wrapper', async () => {
+  const result = await requestAgent({ ...options, fetchImpl: async (url, init) => {
     assert.equal(url, 'https://agent.example.com/api/v1/agent/chat');
     assert.equal(init.method, 'POST');
-    assert.deepEqual(JSON.parse(init.body), { query: 'Revisar suscripciones', email: 'luis.demo@fluidbank.test' });
+    assert.deepEqual(JSON.parse(init.body), { query: 'Revisar base', email: 'luis.demo@fluidbank.test' });
     assert.deepEqual(init.headers, { 'Content-Type': 'application/json', Accept: 'application/json' });
-    return new Response(JSON.stringify(fixtures[1]), { status: 200 });
+    return new Response(JSON.stringify({
+      message: 'Resumen disponible', data: {}, a2ui: { resource_uri: 'a2ui://database/overview', messages },
+    }));
   } });
-  assert.equal(called, true);
-  assert.equal(result.payload.template_id, 'Template_Subscriptions');
+  assert.deepEqual(result.messages, messages);
+  assert.equal(result.a2uiError, null);
+});
+
+test('plain text and invalid A2UI remain recoverable transport results', () => {
+  assert.deepEqual(parseAgentReply({ message: 'Hola', data: {}, a2ui: null }), {
+    message: 'Hola', messages: null, a2uiError: null,
+  });
+  const invalid = parseAgentReply({
+    message: 'Conserva este texto', data: {},
+    a2ui: { resourceUri: 'a2ui://database/overview', messages: [{ version: 'a2ui/v1' }] },
+  });
+  assert.equal(invalid.message, 'Conserva este texto');
+  assert.equal(invalid.messages, null);
+  assert.ok(invalid.a2uiError);
+  assert.throws(() => parseAgentReply(messages[0]), { code: 'contract' });
+});
+
+test('structured actions keep the official five fields behind legacy query serialization', async () => {
+  const action = {
+    name: 'refresh_database_overview', surfaceId: 'database-overview',
+    sourceComponentId: 'refresh_button', timestamp: '2026-09-12T12:00:00.000Z', context: { limit: 50 },
+  };
+  await requestAgentAction({
+    baseUrl: options.baseUrl, email: 'ana.demo@fluidbank.test', action,
+    fetchImpl: async (_url, init) => {
+      const body = JSON.parse(init.body);
+      assert.deepEqual(Object.keys(body).sort(), ['email', 'query']);
+      assert.match(body.query, /Acción A2UI:/);
+      assert.match(body.query, /refresh_database_overview/);
+      return new Response(JSON.stringify({ message: 'Actualizado', data: {}, a2ui: null }));
+    },
+  });
 });
 
 test('missing deployment URL never makes a network request or uses localhost', async () => {
   let called = false;
-  await assert.rejects(requestAgent({ ...options, baseUrl: '', fetchImpl: async () => { called = true; } }), { code: 'configuration' });
+  await assert.rejects(
+    requestAgent({ ...options, baseUrl: '', fetchImpl: async () => { called = true; } }),
+    { code: 'configuration' },
+  );
   assert.equal(called, false);
 });
 
@@ -78,28 +70,30 @@ test('an unusable email never makes a network request', async () => {
 
 test('email is trimmed and lowercased before it reaches the agent', async () => {
   const result = await requestAgent({ ...options, email: '  Luis.Demo@FluidBank.test  ', fetchImpl: async (url, init) => {
-    assert.deepEqual(JSON.parse(init.body), { query: 'Revisar suscripciones', email: 'luis.demo@fluidbank.test' });
-    return new Response(JSON.stringify(fixtures[1]), { status: 200 });
+    assert.deepEqual(JSON.parse(init.body), { query: 'Revisar base', email: 'luis.demo@fluidbank.test' });
+    return new Response(JSON.stringify({
+      message: 'Resumen disponible', data: {}, a2ui: { resource_uri: 'a2ui://database/overview', messages },
+    }));
   } });
-  assert.equal(result.payload.template_id, 'Template_Subscriptions');
+  assert.deepEqual(result.messages, messages);
 });
 
-test('malformed and incompatible agent responses fail recoverably', async () => {
-  for (const body of ['not json', JSON.stringify({ ...fixtures[0], version: 'unknown' })]) {
-    await assert.rejects(requestAgent({ ...options, fetchImpl: async () => new Response(body) }), { code: 'contract' });
-  }
+test('malformed responses and HTTP failures are sanitized', async () => {
+  await assert.rejects(
+    requestAgent({ ...options, fetchImpl: async () => new Response('not json') }),
+    { code: 'contract' },
+  );
+  await assert.rejects(
+    requestAgent({ ...options, fetchImpl: async () => new Response('private database error', { status: 500 }) }),
+    (error) => error.code === 'response' && !/database/u.test(error.message),
+  );
 });
 
-test('HTTP failures do not expose backend error text', async () => {
-  await assert.rejects(requestAgent({ ...options, fetchImpl: async () => new Response('private database error', { status: 500 }) }), (error) => {
-    assert.equal(error.code, 'response');
-    assert.doesNotMatch(error.message, /database/);
-    return true;
-  });
-});
-
-test('network errors, timeout and cancellation are distinct', async () => {
-  await assert.rejects(requestAgent({ ...options, fetchImpl: async () => { throw new TypeError('Failed to fetch'); } }), { code: 'network' });
+test('network errors, 60-second-compatible timeout and cancellation stay distinct', async () => {
+  await assert.rejects(
+    requestAgent({ ...options, fetchImpl: async () => { throw new TypeError('Failed to fetch'); } }),
+    { code: 'network' },
+  );
   const pendingFetch = (_url, init) => new Promise((_resolve, reject) => {
     init.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
   });
@@ -110,26 +104,13 @@ test('network errors, timeout and cancellation are distinct', async () => {
   await assert.rejects(pending, { name: 'AbortError' });
 });
 
-
 test('a request cancelled before sending never reaches the transport', async () => {
   const controller = new AbortController();
   controller.abort();
   let called = false;
-  await assert.rejects(requestAgent({ ...options, signal: controller.signal, fetchImpl: async () => { called = true; } }), { name: 'AbortError' });
+  await assert.rejects(
+    requestAgent({ ...options, signal: controller.signal, fetchImpl: async () => { called = true; } }),
+    { name: 'AbortError' },
+  );
   assert.equal(called, false);
-});
-
-
-test('deployed chat replies display message without requiring a generated surface', async () => {
-  const response = { message: 'Hola, ¿en qué puedo ayudarte?', data: { internal_context: 'not for display' }, a2ui: null };
-  const result = await requestAgent({ ...options, fetchImpl: async () => new Response(JSON.stringify(response)) });
-  assert.deepEqual(result, { message: response.message, payload: null, hasUnsupportedSurface: false });
-  assert.equal('data' in result, false);
-  assert.deepEqual(parseAgentReply({ message: 'Hola', data: {} }), { message: 'Hola', payload: null, hasUnsupportedSurface: false });
-});
-
-test('future MCP envelopes preserve the reply without executing or fetching their contents', () => {
-  const response = { message: 'Resumen disponible', data: {}, a2ui: { resource_uri: 'https://untrusted.example/surface', messages: [{ component: 'WebView', code: 'arbitrary script' }] } };
-  assert.deepEqual(parseAgentReply(response), { message: response.message, payload: null, hasUnsupportedSurface: true });
-  for (const invalid of [{ ...response, message: '' }, { ...response, data: [] }, { ...response, a2ui: { code: 'eval' } }]) assert.throws(() => parseAgentReply(invalid), { code: 'contract' });
 });

@@ -1,42 +1,53 @@
-[
-  {
-    "version": "a2ui/v1",
-    "template_id": "Template_Crisis_Flujo",
-    "applied_tags": ["#alerta-roja", "#high-contrast", "#big-targets"],
-    "meta": {
-      "narrative": "Atención: tienes un riesgo alto de sobregiro antes del viernes.",
-      "accessibility": {"font_scale": "lg", "contrast": "high", "hit_target": "large"}
+{
+  "databaseOverview": [
+    {
+      "version": "v0.9.1",
+      "createSurface": {
+        "surfaceId": "database-overview",
+        "catalogId": "https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json"
+      }
     },
-    "surface": {"layout": "vertical_stack", "components": [
-      {"id": "alert_card_01", "type": "Banner", "tags": ["#alerta-roja"], "props": {"variant": "warning", "title": "Riesgo de Liquidez"}},
-      {"id": "action_btn_01", "type": "Button", "tags": ["#big-targets"], "props": {"label": "Solicitar Préstamo Express", "action": {"type": "A2UI_DISPATCH", "intent": "REQUEST_CREDIT", "payload": {"amount": 5000}}}}
-    ]}
-  },
-  {
-    "version": "a2ui/v1",
-    "template_id": "Template_Subscriptions",
-    "applied_tags": ["#high-contrast", "#action-first"],
-    "meta": {
-      "narrative": "Revisemos tus gastos recurrentes para encontrar oportunidades de ahorro.",
-      "accessibility": {"font_scale": "md", "contrast": "normal", "hit_target": "normal"}
+    {
+      "version": "v0.9.1",
+      "updateComponents": {
+        "surfaceId": "database-overview",
+        "components": [
+          { "id": "root", "component": "Card", "child": "overview_column" },
+          {
+            "id": "overview_column",
+            "component": "Column",
+            "children": ["overview_title", "overview_summary", "overview_objects", "refresh_button"]
+          },
+          { "id": "overview_title", "component": "Text", "text": { "path": "/title" }, "variant": "h2" },
+          { "id": "overview_summary", "component": "Text", "text": { "path": "/summary" } },
+          { "id": "overview_objects", "component": "Text", "text": { "path": "/objectsText" } },
+          { "id": "refresh_button_label", "component": "Text", "text": "Refresh" },
+          {
+            "id": "refresh_button",
+            "component": "Button",
+            "child": "refresh_button_label",
+            "action": {
+              "event": {
+                "name": "refresh_database_overview",
+                "context": { "limit": { "path": "/limit" } }
+              }
+            }
+          }
+        ]
+      }
     },
-    "surface": {"layout": "vertical_stack", "components": [
-      {"id": "subscriptions_card_01", "type": "MetricCard", "tags": ["#high-contrast"], "props": {"title": "Gastos recurrentes", "value": 3200}},
-      {"id": "subscriptions_btn_01", "type": "Button", "tags": ["#action-first"], "props": {"label": "Administrar suscripciones", "action": {"type": "A2UI_DISPATCH", "intent": "MANAGE_SUBSCRIPTIONS", "payload": {}}}}
-    ]}
-  },
-  {
-    "version": "a2ui/v1",
-    "template_id": "Template_Projection",
-    "applied_tags": ["#high-contrast", "#big-targets"],
-    "meta": {
-      "narrative": "Puedes explorar el impacto mensual de una compra antes de confirmarla.",
-      "accessibility": {"font_scale": "xl", "contrast": "high", "hit_target": "large"}
-    },
-    "surface": {"layout": "vertical_stack", "components": [
-      {"id": "projection_header", "type": "Banner", "tags": ["#high-contrast"], "props": {"variant": "info", "title": "Simulación de compra"}},
-      {"id": "projection_term", "type": "InteractiveSlider", "tags": ["#big-targets"], "props": {"label": "Número de meses", "min": 3, "max": 18, "step": 3, "default_value": 6}},
-      {"id": "projection_confirm", "type": "Button", "tags": ["#big-targets"], "props": {"label": "Confirmar simulación", "action": {"type": "A2UI_DISPATCH", "intent": "CONFIRM_SIMULATION", "payload": {"months": 6}}}}
-    ]}
-  }
-]
+    {
+      "version": "v0.9.1",
+      "updateDataModel": {
+        "surfaceId": "database-overview",
+        "path": "/",
+        "value": {
+          "title": "Database overview",
+          "summary": "One allowlisted table.",
+          "objectsText": "public.customers (table)",
+          "limit": 50
+        }
+      }
+    }
+  ]
+}

@@ -93,8 +93,15 @@ function AssistantWorkspace({ email }: { email: string }) {
           <ThemedText type="smallBold" accessibilityRole="header">Respuesta del asistente</ThemedText>
           <ThemedText selectable>{assistant.surface.reply.message}</ThemedText>
         </View>}
-        {assistant.surface.reply.payload && <A2UISurface payload={assistant.surface.reply.payload} disabled={assistant.pending} onDispatch={assistant.dispatch} />}
-        {assistant.surface.reply.hasUnsupportedSurface && <InfoBanner message="El detalle visual no está disponible. Puedes consultar la respuesta de texto." />}
+        {assistant.surface.a2uiSurfaces.map((surface) => (
+          <A2UISurface
+            key={surface.surfaceId}
+            surface={surface}
+            disabled={assistant.pending}
+            onDispatch={assistant.dispatch}
+          />
+        ))}
+        {assistant.surface.reply.a2uiError && <InfoBanner message={assistant.surface.reply.a2uiError} />}
       </View>}
     </View>
   );
