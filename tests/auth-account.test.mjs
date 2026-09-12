@@ -5,9 +5,10 @@ import { isRealUser, verifySession, signInWithAccount, registerAccount, authErro
 const user = { id: '5b9d23ca-ae95-49cc-9f71-ef62e6aaccb9', email: 'person@example.com', email_confirmed_at: '2026-09-12T12:00:00Z', is_anonymous: false };
 const session = { user, access_token: 'valid-test-token' };
 
-test('only confirmed non-anonymous accounts qualify for protected routes', () => {
+test('only real non-anonymous accounts qualify for protected routes', () => {
   assert.equal(isRealUser(user), true);
-  for (const invalid of [null, { ...user, is_anonymous: true }, { ...user, email: '' }, { ...user, email_confirmed_at: null }]) assert.equal(isRealUser(invalid), false);
+  assert.equal(isRealUser({ ...user, email_confirmed_at: null }), true);
+  for (const invalid of [null, { ...user, is_anonymous: true }, { ...user, email: '' }]) assert.equal(isRealUser(invalid), false);
 });
 test('persisted sessions are verified by Supabase and mismatched/revoked identities are rejected', async () => {
   const client = { auth: { getUser: async (token) => { assert.equal(token, session.access_token); return { data: { user }, error: null }; } } };
@@ -26,15 +27,23 @@ test('password login preserves password bytes, normalizes email and verifies ret
   client.auth.signInWithPassword = async () => ({ data: { session: null }, error: { code: 'invalid_credentials' } });
   await assert.rejects(signInWithAccount(client, { email: user.email, password: 'bad' }), { code: 'invalid_credentials' });
 });
-test('signup without a confirmed session never grants access and sends only profile metadata', async () => {
+test('signup without a session never grants access and sends only profile metadata', async () => {
   const client = { auth: { signUp: async (input) => {
-    assert.deepEqual(input, { email: user.email, password: 'password123', options: { data: { full_name: 'Persona' }, emailRedirectTo: 'hackmty2026mobile://auth/callback' } });
+    assert.deepEqual(input, { email: user.email, password: 'password123', options: { data: { full_name: 'Persona' } } });
     return { data: { session: null }, error: null };
   } } };
-  assert.equal(await registerAccount(client, { email: user.email, password: 'password123', fullName: ' Persona ' }, 'hackmty2026mobile://auth/callback'), null);
-  await assert.rejects(registerAccount(client, { email: user.email, password: 'short', fullName: 'Persona' }, 'unused'));
+  assert.equal(await registerAccount(client, { email: user.email, password: 'password123', fullName: ' Persona ' }), null);
+  await assert.rejects(registerAccount(client, { email: user.email, password: 'short', fullName: 'Persona' }));
 });
 test('auth errors never display raw server messages or tokens', () => {
   assert.match(authErrorMessage({ code: 'invalid_credentials', message: 'secret token' }), /correo o la contraseña/);
   assert.doesNotMatch(authErrorMessage({ message: 'private backend error secret' }), /secret|backend/);
+});
+
+test('signup immediately returns the server-verified session without an email confirmation step', async () => {
+  const client = { auth: {
+    signUp: async () => ({ data: { session }, error: null }),
+    getUser: async (token) => { assert.equal(token, session.access_token); return { data: { user }, error: null }; },
+  } };
+  assert.deepEqual(await registerAccount(client, { email: user.email, password: 'password123', fullName: 'Persona' }), session);
 });

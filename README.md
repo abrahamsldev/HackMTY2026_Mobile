@@ -26,8 +26,8 @@ EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 También se admite `EXPO_PUBLIC_SUPABASE_ANON_KEY` para proyectos con la clave pública anterior. Reinicia Metro después de cambiar estas variables. Las variables públicas se incluyen en el cliente: nunca uses `SUPABASE_SERVICE_ROLE_KEY`.
 
 - Inicio, Configuración y Componentes están en `(app)` y requieren una sesión real verificada por Supabase. Las rutas directas y el botón atrás tampoco permiten acceso sin cuenta. Sin configuración de Auth, el acceso permanece bloqueado.
-- Registro con nombre, correo y contraseña; inicio de sesión; reenvío de confirmación; recuperación por correo y cambio de contraseña. El proyecto consultado tiene correo/registro habilitados y exige confirmar el email.
-- La sesión se persiste y renueva; al restaurar se valida mediante `auth.getUser`. No se aceptan sesiones anónimas, usuarios sin correo confirmado ni IDs alterados. Los errores de restauración permiten reintentar.
+- Registro con nombre, correo y contraseña e inicio de sesión automático; recuperación por correo y cambio de contraseña. La confirmación de correo para nuevas cuentas está desactivada en Supabase.
+- La sesión se persiste y renueva; al restaurar se valida mediante `auth.getUser`. No se aceptan sesiones anónimas, usuarios sin correo ni IDs alterados. Los errores de restauración permiten reintentar.
 - Configuración actualiza los datos reales con `auth.updateUser`. Los cambios de correo conservan la dirección vigente hasta confirmación. Ya no se guarda un perfil invitado para acceder.
 - Cerrar sesión elimina el acceso y descarta las pantallas/datos del usuario. Las preferencias de accesibilidad continúan separadas por cuenta; los ajustes de lectura también están disponibles antes de iniciar sesión.
 
@@ -136,6 +136,6 @@ npm test
 npx expo export --platform all
 ```
 
-Prueba manual: registrar una cuenta con un correo propio, confirmarlo e iniciar sesión; reiniciar para verificar restauración; editar el perfil y cambiar contraseña; cerrar sesión y abrir directamente /settings o /explore para comprobar el bloqueo. Probar recuperación por correo en el mismo dispositivo. Estas pruebas con correo real no se realizaron automáticamente.
+Prueba manual: registrar una cuenta con un correo propio y verificar el acceso automático; reiniciar para verificar restauración; editar el perfil y cambiar contraseña; cerrar sesión y abrir directamente /settings o /explore para comprobar el bloqueo. Probar recuperación por correo en el mismo dispositivo. Estas pruebas con correo real no se realizaron automáticamente.
 
 Las pruebas de integración del cliente usan respuestas y transporte simulados, sin conexión al agente ni a un servidor local. Cubren los cuatro envelopes oficiales, procesamiento incremental, bindings, acciones, límites de render, JSON Pointer, superficies independientes, solicitudes HTTP, cancelación, timeout y errores.
