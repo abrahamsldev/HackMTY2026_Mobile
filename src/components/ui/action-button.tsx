@@ -1,11 +1,6 @@
+import { Text, Pressable } from '@/components/accessible-primitives';
 import React from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -40,15 +35,15 @@ export function ActionButton({
     }
     switch (variant) {
       case 'primary':
-        return pressed ? '#1A73E8' : '#208AEF';
+        return pressed ? theme.accent : theme.accent;
       case 'secondary':
         return pressed ? theme.backgroundSelected : theme.backgroundElement;
       case 'outline':
         return pressed ? theme.backgroundElement : 'transparent';
       case 'danger':
-        return pressed ? '#DC2626' : '#EF4444';
+        return theme.dangerBackground;
       default:
-        return '#208AEF';
+        return theme.accent;
     }
   };
 
@@ -58,6 +53,7 @@ export function ActionButton({
     }
     switch (variant) {
       case 'primary':
+        return theme.onAccent;
       case 'danger':
         return '#FFFFFF';
       case 'secondary':

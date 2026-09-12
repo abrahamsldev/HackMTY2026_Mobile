@@ -1,7 +1,8 @@
+import { Text, Pressable } from '@/components/accessible-primitives';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
-import { ActivityIndicator, Animated, PanResponder, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, PanResponder, Platform, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 
 import { useTheme } from '@/hooks/use-theme';
 import { areaChartPropsSchema, chartDomain, smoothPath, type AreaChartData } from './area-chart-model';
@@ -9,7 +10,6 @@ import { areaChartPropsSchema, chartDomain, smoothPath, type AreaChartData } fro
 export type AreaChartProps = AreaChartData & {
   onPointSelect?: (event: { index: number; label: string; values: number[] }) => void;
 };
-const palette = { blue: '#3B82F6', violet: '#A78BFA', green: '#22C55E', orange: '#F59E0B' };
 const tones = ['blue', 'violet', 'green', 'orange'] as const;
 
 export function AreaChart(props: AreaChartProps) {
@@ -27,7 +27,8 @@ function AreaChartContent({ title, subtitle, data, series, height = 260, currenc
   const [width, setWidth] = useState(320);
   const [selected, setSelected] = useState<number | null>(null);
   const [reveal] = useState(() => new Animated.Value(0));
-  const reducedMotion = useReducedMotion();
+  const { settings, ready } = useAccessibility();
+  const reducedMotion = settings.reduceMotion || !ready;
   useEffect(() => {
     const animation = Animated.timing(reveal, { toValue: 1, duration: reducedMotion ? 0 : 700, useNativeDriver: false });
     animation.start();
@@ -41,7 +42,7 @@ function AreaChartContent({ title, subtitle, data, series, height = 260, currenc
   const [min, max] = chartDomain(data);
   const x = (index: number) => data.length === 1 ? (left + right) / 2 : left + index * (right - left) / Math.max(1, data.length - 1);
   const y = (value: number) => bottom - (value - min) / (max - min) * (bottom - top);
-  const color = (index: number) => palette[series[index].tone ?? tones[index]];
+  const color = (index: number) => theme.chartColors[tones.indexOf(series[index].tone ?? tones[index])];
   const format = (value: number, compact = false) => new Intl.NumberFormat('es-MX', {
     ...(currency && !compact ? { style: 'currency', currency } : {}),
     notation: compact ? 'compact' : 'standard', maximumFractionDigits: compact ? 1 : 2,
@@ -63,7 +64,7 @@ function AreaChartContent({ title, subtitle, data, series, height = 260, currenc
   const indices = Array.from({ length: tickCount }, (_, i) => Math.round(i * (data.length - 1) / Math.max(1, tickCount - 1)));
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.backgroundSelected }]}>
+    <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
       {title && <Text accessibilityRole="header" style={[styles.title, { color: theme.text }]}>{title}</Text>}
       {subtitle && <Text style={{ color: theme.textSecondary }}>{subtitle}</Text>}
       <View style={styles.legend}>
@@ -105,7 +106,7 @@ function AreaChartContent({ title, subtitle, data, series, height = 260, currenc
                   const path = smoothPath(points);
                   return <Path key={`fill${i}`} d={`${path} L${x(data.length - 1)},${y(0)} L${x(0)},${y(0)} Z`} fill={`url(#${id}fill${i})`} />;
                 })}
-                {series.map((_, i) => <Path key={`line${i}`} d={smoothPath(data.map((point, index) => ({ x: x(index), y: y(point.values[i]) })))} fill="none" stroke={color(i)} strokeWidth={2.5} strokeLinecap="round" />)}
+                {series.map((_, i) => <Path key={`line${i}`} d={smoothPath(data.map((point, index) => ({ x: x(index), y: y(point.values[i]) })))} fill="none" stroke={color(i)} strokeDasharray={settings.colorPalette === 'default' ? undefined : [undefined, '8 4', '2 4', '8 3 2 3'][i]} strokeWidth={settings.highContrast ? 3.5 : 2.5} strokeLinecap="round" />)}
                 {data.length === 1 && series.map((_, i) => <Circle key={`single${i}`} cx={x(0)} cy={y(data[0].values[i])} r={4} fill={color(i)} />)}
                 {indices.map((index) => <SvgText key={index} x={x(index)} y={height - 8} textAnchor={index === 0 ? 'start' : index === data.length - 1 ? 'end' : 'middle'} fill={theme.textSecondary} fontSize={10}>{data[index].label}</SvgText>)}
                 {selected !== null && <Line x1={x(selected)} x2={x(selected)} y1={top} y2={bottom} stroke={theme.textSecondary} strokeDasharray="4 4" />}
@@ -114,11 +115,15 @@ function AreaChartContent({ title, subtitle, data, series, height = 260, currenc
             </Animated.View>
           </Pressable>
           </View>
-          {active && <View pointerEvents="none" accessibilityLiveRegion="polite" style={[styles.tooltip, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected, left: Math.max(0, Math.min(width - Math.min(180, width), x(selected!) - 90)), maxWidth: Math.min(180, width) }]}>
+          {active && !settings.showChartData && <View pointerEvents="none" accessibilityLiveRegion="polite" style={[styles.tooltip, { backgroundColor: theme.backgroundElement, borderColor: theme.border, left: Math.max(0, Math.min(width - Math.min(180, width), x(selected!) - 90)), maxWidth: Math.min(180, width) }]}>
             <Text style={{ color: theme.text, fontWeight: '600' }}>{active.label}</Text>
             {series.map((item, i) => <Text key={i} style={{ color: theme.text, fontSize: 12 }}>{item.label}: {format(active.values[i])}</Text>)}
           </View>}
         </View>}
+      {settings.showChartData && status === 'ready' && data.length > 0 && <View style={{ gap: 8 }}>
+        <Text accessibilityRole="header" style={{ color: theme.text, fontWeight: '700' }}>Datos del gráfico</Text>
+        {data.map((point, index) => <Pressable key={index} accessibilityRole="button" accessibilityLabel={`${point.label}: ${point.values.map((value, i) => `${series[i].label} ${format(value)}`).join(', ')}`} onPress={() => choose(x(index), true)} style={{ padding: 10, borderWidth: 1, borderRadius: 8, borderColor: theme.border }}><Text style={{ color: theme.text }}>{point.label}{'\n'}{point.values.map((value, i) => `${series[i].label}: ${format(value)}`).join('\n')}</Text></Pressable>)}
+      </View>}
     </View>
   );
 }

@@ -1,5 +1,6 @@
+import { Text } from '@/components/accessible-primitives';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -21,27 +22,27 @@ export function StatusBadge({
     switch (tone) {
       case 'info':
         return {
-          bg: '#E0F2FE',
-          text: '#0284C7',
-          dot: '#0284C7',
+          bg: theme.backgroundElement,
+          text: theme.info,
+          dot: theme.info,
         };
       case 'success':
         return {
-          bg: '#DCFCE7',
-          text: '#16A34A',
-          dot: '#16A34A',
+          bg: theme.backgroundElement,
+          text: theme.success,
+          dot: theme.success,
         };
       case 'warning':
         return {
-          bg: '#FEF3C7',
-          text: '#D97706',
-          dot: '#D97706',
+          bg: theme.backgroundElement,
+          text: theme.warning,
+          dot: theme.warning,
         };
       case 'danger':
         return {
-          bg: '#FEE2E2',
-          text: '#DC2626',
-          dot: '#DC2626',
+          bg: theme.backgroundElement,
+          text: theme.danger,
+          dot: theme.danger,
         };
       case 'neutral':
       default:

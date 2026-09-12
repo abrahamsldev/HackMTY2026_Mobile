@@ -1,5 +1,6 @@
+import { Text } from '@/components/accessible-primitives';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -26,14 +27,14 @@ export function ProgressBar({
   const getToneColor = () => {
     switch (tone) {
       case 'success':
-        return '#10B981';
+        return theme.success;
       case 'warning':
-        return '#F59E0B';
+        return theme.warning;
       case 'danger':
-        return '#EF4444';
+        return theme.danger;
       case 'default':
       default:
-        return '#208AEF';
+        return theme.accent;
     }
   };
 

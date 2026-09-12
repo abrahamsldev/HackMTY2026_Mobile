@@ -1,5 +1,7 @@
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
+import { Text, Pressable } from '@/components/accessible-primitives';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { calendarDate, dateKey, heatLevel, heatmapChartPropsSchema, periodBounds, periodCells, shiftPeriod, type HeatmapChartData, type HeatmapView } from './heatmap-chart-model';
@@ -27,13 +29,14 @@ export function HeatmapChart({ onDaySelect, onPeriodChange, ...input }: HeatmapC
 
 function HeatmapContent({ data, title, subtitle, initialDate, initialView = 'year', tone = 'green', currency, status = 'ready', onDaySelect, onPeriodChange }: HeatmapChartProps) {
   const theme = useTheme();
+  const { settings } = useAccessibility();
   const [focus, setFocus] = useState(() => initialDate ?? data.map((day) => day.date).sort().at(-1) ?? dateKey(new Date()));
   const [view, setView] = useState<HeatmapView>(initialView);
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState<number | null>(null);
   const values = new Map(data.map((day) => [day.date, day.value]));
   const maximum = data.reduce((max, day) => Math.max(max, day.value), 0);
-  const colors = [theme.backgroundSelected, ...palettes[tone]];
+  const colors = [theme.backgroundSelected, ...(settings.colorPalette === 'monochrome' ? ['#E5E5E5', '#AAAAAA', '#555555', '#111111'] : palettes[settings.colorPalette === 'blue-orange' ? 'blue' : tone])];
   const cells = periodCells(focus, view);
   const bounds = periodBounds(focus, view);
   const format = (value: number) => new Intl.NumberFormat('es-MX', { ...(currency ? { style: 'currency', currency } : {}), maximumFractionDigits: 2 }).format(value);
@@ -46,7 +49,7 @@ function HeatmapContent({ data, title, subtitle, initialDate, initialView = 'yea
     if (!key) return <View key={`blank${index}`} style={view === 'year' ? styles.tiny : styles.monthCell} />;
     const value = values.get(key); const level = heatLevel(value, maximum);
     const active = selected === key;
-    return <Pressable key={key} accessibilityRole="button" accessibilityLabel={`${displayDate(key, { dateStyle: 'full' })}: ${value === undefined ? 'Sin datos' : format(value)}`} accessibilityState={{ selected: active }} onPress={() => { setSelected(key); setFocus(key); onDaySelect?.({ date: key, value: value ?? null }); }} style={[
+    return <Pressable compact key={key} accessibilityRole="button" accessibilityLabel={`${displayDate(key, { dateStyle: 'full' })}: ${value === undefined ? 'Sin datos' : format(value)}`} accessibilityState={{ selected: active }} onPress={() => { setSelected(key); setFocus(key); onDaySelect?.({ date: key, value: value ?? null }); }} style={[
       view === 'year' ? styles.tiny : view === 'month' ? styles.monthCell : styles.weekCell,
       { backgroundColor: level === null ? theme.background : colors[level], borderColor: active ? theme.text : theme.backgroundSelected, borderWidth: active ? 2 : level === null ? 1 : 0, borderStyle: level === null ? 'dashed' : 'solid', opacity: filter !== null && level !== filter ? 0.22 : 1 },
     ]}>
@@ -56,7 +59,7 @@ function HeatmapContent({ data, title, subtitle, initialDate, initialView = 'yea
   };
   const periodLabel = view === 'year' ? focus.slice(0, 4) : view === 'month' ? displayDate(focus, { month: 'long', year: 'numeric' }) : `${displayDate(bounds.startDate, { day: 'numeric', month: 'short', year: 'numeric' })} – ${displayDate(bounds.endDate, { day: 'numeric', month: 'short', year: 'numeric' })}`;
   const previous = shiftPeriod(focus, view, -1); const next = shiftPeriod(focus, view, 1);
-  return <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.backgroundSelected }]}>
+  return <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
     {title && <Text accessibilityRole="header" style={[styles.title, { color: theme.text }]}>{title}</Text>}
     {subtitle && <Text style={{ color: theme.textSecondary }}>{subtitle}</Text>}
     <View style={styles.row}>{(['year', 'month', 'week'] as const).map((mode) => <View key={mode}>{button(viewLabels[mode], () => navigate(mode, selected ?? focus), mode === view)}</View>)}</View>
@@ -68,7 +71,7 @@ function HeatmapContent({ data, title, subtitle, initialDate, initialView = 'yea
           <View style={{ flexDirection: 'row', gap: 3, paddingBottom: 10 }}>{Array.from({ length: cells.length / 7 }, (_, week) => {
             const days = cells.slice(week * 7, week * 7 + 7);
             const monthStart = days.find((day) => day?.endsWith('-01'));
-            return <View key={week} style={{ gap: 3 }}><View style={{ height: 27, width: 14, overflow: 'visible' }}>{monthStart && <Pressable accessibilityRole="button" accessibilityLabel={`Ampliar ${displayDate(monthStart, { month: 'long' })}`} onPress={() => navigate('month', monthStart)} style={{ width: 48, height: 27 }}><Text style={{ color: theme.textSecondary, fontSize: 11 }}>{displayDate(monthStart, { month: 'short' })}</Text></Pressable>}</View>{days.map(renderCell)}</View>;
+            return <View key={week} style={{ gap: 3 }}><View style={{ height: 27, width: 14, overflow: 'visible' }}>{monthStart && <Pressable compact accessibilityRole="button" accessibilityLabel={`Ampliar ${displayDate(monthStart, { month: 'long' })}`} onPress={() => navigate('month', monthStart)} style={{ width: 48, height: 27 }}><Text style={{ color: theme.textSecondary, fontSize: 11 }}>{displayDate(monthStart, { month: 'short' })}</Text></Pressable>}</View>{days.map(renderCell)}</View>;
           })}</View>
         </View>
       </ScrollView> : view === 'month' ? <View><View style={styles.calendar}>{weekdays.map((day, i) => <Text key={i} style={[styles.weekday, { color: theme.textSecondary }]}>{day}</Text>)}</View><View style={styles.calendar}>{cells.map(renderCell)}</View></View> : <View style={{ gap: 5 }}>{cells.map((key, index) => <View key={key ?? index} style={styles.weekRow}><Text style={{ color: theme.textSecondary, width: 38 }}>{key && displayDate(key, { weekday: 'short' })}</Text>{renderCell(key, index)}</View>)}</View>}
@@ -76,6 +79,7 @@ function HeatmapContent({ data, title, subtitle, initialDate, initialView = 'yea
       <Text style={{ color: theme.textSecondary, fontSize: 12 }}>Borde punteado: sin datos. {view === 'year' ? 'Toca un mes para ampliar o selecciona un día.' : 'Selecciona un día para ver su valor.'}{filter !== null ? ' Toca el color activo para quitar el filtro.' : ''}</Text>
       {!cells.some((key) => key && values.has(key)) && <Text style={{ color: theme.textSecondary }}>No hay datos en este periodo.</Text>}
       {selected && <View style={[styles.detail, { backgroundColor: theme.backgroundElement }]}><Text accessibilityLiveRegion="polite" style={{ color: theme.text, fontWeight: '600' }}>{displayDate(selected, { dateStyle: 'full' })}{'\n'}{values.has(selected) ? format(values.get(selected)!) : 'Sin datos'}</Text><View style={styles.row}>{view !== 'month' && button('Ampliar mes', () => navigate('month', selected))}{view !== 'week' && button('Ampliar semana', () => navigate('week', selected))}</View></View>}
+      {settings.showChartData && <View style={{ gap: 8 }}><Text accessibilityRole="header" style={{ color: theme.text, fontWeight: '700' }}>Datos del periodo</Text>{cells.filter((key): key is string => key !== null).map((key) => <Pressable key={key} accessibilityRole="button" accessibilityState={{ selected: selected === key }} onPress={() => { setSelected(key); setFocus(key); onDaySelect?.({ date: key, value: values.get(key) ?? null }); }} style={{ padding: 10, borderWidth: 1, borderColor: theme.border, borderRadius: 8 }}><Text style={{ color: theme.text }}>{displayDate(key, { dateStyle: 'medium' })}: {values.has(key) ? format(values.get(key)!) : 'Sin datos'}</Text></Pressable>)}</View>}
     </>}
   </View>;
 }

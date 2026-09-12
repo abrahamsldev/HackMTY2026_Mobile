@@ -1,5 +1,6 @@
+import { TextInput, Pressable } from '@/components/accessible-primitives';
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -17,7 +18,7 @@ export function QuestionBank({ onSelect, disabled = false }: {
   const results = searchQuestions(search);
 
   return (
-    <View style={[styles.container, { borderColor: theme.backgroundSelected }]}>
+    <View style={[styles.container, { borderColor: theme.border }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
@@ -73,7 +74,7 @@ export function QuestionBank({ onSelect, disabled = false }: {
                     setExpanded(false);
                     onSelect(question);
                   }}
-                  style={({ pressed }) => [styles.question, { borderColor: theme.backgroundSelected, opacity: disabled ? 0.5 : pressed ? 0.7 : 1 }]}>
+                  style={({ pressed }) => [styles.question, { borderColor: theme.border, opacity: disabled ? 0.5 : pressed ? 0.7 : 1 }]}>
                   <ThemedText>{question}</ThemedText>
                 </Pressable>
               ))}

@@ -1,5 +1,6 @@
+import { Pressable } from '@/components/accessible-primitives';
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -85,7 +86,7 @@ export function TransactionItem({
     status === 'declined'
       ? theme.textSecondary
       : amount > 0
-        ? '#10B981'
+        ? theme.success
         : theme.text;
 
   const formattedDate = formatOccurredDate(occurredAt);
@@ -140,7 +141,7 @@ export function TransactionItem({
               styles.badge,
               { backgroundColor: theme.backgroundSelected },
             ]}>
-            <ThemedText type="small" style={styles.declinedBadgeText}>
+            <ThemedText type="small" style={[styles.declinedBadgeText, { color: theme.danger }]}>
               Rechazado
             </ThemedText>
           </View>

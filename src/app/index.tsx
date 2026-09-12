@@ -1,5 +1,6 @@
+import { TextInput, Pressable, type TextInputHandle } from '@/components/accessible-primitives';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 
 import { Page } from '@/components/layout/page';
 import { ThemedText } from '@/components/themed-text';
@@ -56,7 +57,7 @@ function AssistantWorkspace({ persona }: { persona: Persona }) {
   const theme = useTheme();
   const assistant = useAssistant(persona);
   const [query, setQuery] = useState('');
-  const queryInput = useRef<TextInput>(null);
+  const queryInput = useRef<TextInputHandle>(null);
 
   function submit(value: string) {
     if (!value.trim() || assistant.pending || !assistant.isConfigured) return;
@@ -85,7 +86,7 @@ function AssistantWorkspace({ persona }: { persona: Persona }) {
           maxLength={4000}
           editable={!assistant.pending}
           textAlignVertical="top"
-          style={[styles.input, { backgroundColor: theme.backgroundElement, color: theme.text, borderColor: theme.backgroundSelected }]}
+          style={[styles.input, { backgroundColor: theme.backgroundElement, color: theme.text, borderColor: theme.border }]}
         />
         <ActionButton label="Consultar" fullWidth size="lg" loading={assistant.pending} disabled={!query.trim() || !assistant.isConfigured} onPress={() => submit(query)} />
       </View>

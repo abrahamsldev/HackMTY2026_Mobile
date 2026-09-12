@@ -1,5 +1,6 @@
+import { Text } from '@/components/accessible-primitives';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -21,31 +22,31 @@ export function InfoBanner({
     switch (tone) {
       case 'success':
         return {
-          borderColor: '#16A34A',
+          borderColor: theme.success,
           badgeText: 'Éxito',
-          badgeColor: '#16A34A',
+          badgeColor: theme.success,
           bgColor: theme.backgroundElement,
         };
       case 'warning':
         return {
-          borderColor: '#D97706',
+          borderColor: theme.warning,
           badgeText: 'Aviso',
-          badgeColor: '#D97706',
+          badgeColor: theme.warning,
           bgColor: theme.backgroundElement,
         };
       case 'danger':
         return {
-          borderColor: '#DC2626',
+          borderColor: theme.danger,
           badgeText: 'Alerta',
-          badgeColor: '#DC2626',
+          badgeColor: theme.danger,
           bgColor: theme.backgroundElement,
         };
       case 'info':
       default:
         return {
-          borderColor: '#0284C7',
+          borderColor: theme.info,
           badgeText: 'Información',
-          badgeColor: '#0284C7',
+          badgeColor: theme.info,
           bgColor: theme.backgroundElement,
         };
     }

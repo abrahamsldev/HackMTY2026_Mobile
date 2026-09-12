@@ -1,5 +1,6 @@
+import { Text } from '@/components/accessible-primitives';
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { Fonts } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -23,9 +24,9 @@ export function TextBlock({
     color === 'muted'
       ? theme.textSecondary
       : color === 'success'
-        ? '#10B981'
+        ? theme.success
         : color === 'danger'
-          ? '#EF4444'
+          ? theme.danger
           : theme.text;
 
   return (

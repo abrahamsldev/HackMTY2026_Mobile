@@ -1,4 +1,5 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import { Text } from '@/components/accessible-primitives';
+import { Platform, StyleSheet, type TextProps } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -22,6 +23,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
         type === 'subtitle' && styles.subtitle,
         type === 'link' && styles.link,
         type === 'linkPrimary' && styles.linkPrimary,
+        type === 'linkPrimary' && { color: theme.info, textDecorationLine: 'underline' },
         type === 'code' && styles.code,
         style,
       ]}

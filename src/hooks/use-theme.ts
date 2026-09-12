@@ -1,14 +1,8 @@
-/**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
- */
-
 import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
+import { accessibleColors } from '@/features/accessibility/theme';
 
 export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
-
-  return Colors[theme];
+  const { colorScheme, settings } = useAccessibility();
+  return accessibleColors(Colors[colorScheme], colorScheme, settings);
 }

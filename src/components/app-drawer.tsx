@@ -1,13 +1,14 @@
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
+import { Pressable } from '@/components/accessible-primitives';
 import { useNavigation } from 'expo-router';
 import {
   Drawer,
   DrawerContentScrollView,
-  DrawerToggleButton,
   type DrawerContentComponentProps,
   type DrawerNavigationProp,
 } from 'expo-router/drawer';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ActionButton } from '@/components/ui/action-button';
@@ -104,8 +105,14 @@ function BackToMainButton() {
   );
 }
 
+function OpenMenuButton() {
+  const navigation = useNavigation<DrawerNavigationProp<{ index: undefined }>>();
+  return <Pressable accessibilityRole="button" accessibilityLabel="Abrir menú" style={styles.headerButton} onPress={() => navigation.openDrawer()}><ThemedText style={{ fontSize: 22 }}>☰</ThemedText></Pressable>;
+}
+
 export function AppDrawer() {
   const theme = useTheme();
+  const { settings } = useAccessibility();
   const { session, resetVersion } = useSession();
   return (
     <Drawer
@@ -117,12 +124,13 @@ export function AppDrawer() {
       screenOptions={{
         drawerType: 'front',
         drawerStyle: { backgroundColor: theme.background, width: 300 },
-        headerStyle: { backgroundColor: theme.background },
         headerTintColor: theme.text,
         headerShadowVisible: false,
         sceneStyle: { backgroundColor: theme.background },
         overlayAccessibilityLabel: 'Cerrar menú',
-        headerLeft: () => <DrawerToggleButton accessibilityLabel="Abrir menú" tintColor={theme.text} />,
+        headerLeft: () => <OpenMenuButton />,
+        headerTitle: ({ children }) => <ThemedText type="smallBold">{children}</ThemedText>,
+        headerStyle: { backgroundColor: theme.background, height: Math.max(64, 56 * settings.textScale) },
       }}>
       {/* All banking requests update this A2UI surface; there are no feature tabs. */}
       <Drawer.Screen name="index" options={{ title: 'Inicio' }} />

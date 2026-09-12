@@ -1,5 +1,7 @@
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
+import { Pressable } from '@/components/accessible-primitives';
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
@@ -63,6 +65,7 @@ export function SpendingCategoryChart({
   onCategoryPress,
 }: SpendingCategoryChartProps) {
   const theme = useTheme();
+  const { settings } = useAccessibility();
 
   // Calcular el gasto total acumulado
   const totalAmount = categories.reduce(
@@ -113,10 +116,10 @@ export function SpendingCategoryChart({
           </View>
         ) : (
           <View style={styles.chartBody}>
-            {sortedCategories.map((item) => {
+            {sortedCategories.map((item, index) => {
               const categoryKey = item.category;
               const label = categoryLabels[categoryKey] ?? categoryKey;
-              const barColor = categoryColors[categoryKey] ?? '#64748B';
+              const barColor = settings.colorPalette === 'default' ? categoryColors[categoryKey] ?? '#64748B' : theme.chartColors[index % theme.chartColors.length];
               const percentage =
                 totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0;
               const formattedPercentage = `${percentage.toFixed(1)}%`;

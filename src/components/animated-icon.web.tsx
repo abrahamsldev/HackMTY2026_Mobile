@@ -1,3 +1,4 @@
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 import Animated, { Keyframe, Easing } from 'react-native-reanimated';
@@ -55,6 +56,8 @@ const glowKeyframe = new Keyframe({
 });
 
 export function AnimatedIcon() {
+  const { settings, ready } = useAccessibility();
+  if (settings.reduceMotion || !ready) return <View style={styles.iconContainer}><Image style={styles.image} source={require('@/assets/images/expo-logo.png')} /></View>;
   return (
     <View style={styles.iconContainer}>
       <Animated.View entering={glowKeyframe.duration(60 * 1000 * 4)} style={styles.glow}>

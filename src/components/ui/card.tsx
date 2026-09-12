@@ -1,5 +1,7 @@
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
+import { Pressable } from '@/components/accessible-primitives';
 import React from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -26,6 +28,7 @@ export function Card({
   onPress,
 }: CardProps) {
   const theme = useTheme();
+  const { settings } = useAccessibility();
 
   const isElevated = variant === 'elevated';
   const isOutlined = variant === 'outlined';
@@ -38,15 +41,15 @@ export function Card({
         ? theme.backgroundElement
         : theme.background;
 
-  const borderColor = isHighlighted
-    ? '#208AEF'
+  const borderColor = settings.highContrast ? theme.border : isHighlighted
+    ? theme.border
     : isOutlined
-      ? theme.backgroundSelected
+      ? theme.border
       : isElevated
-        ? theme.backgroundSelected
+        ? theme.border
         : 'transparent';
 
-  const borderWidth = isHighlighted ? 1.5 : isOutlined || isElevated ? 1 : 0;
+  const borderWidth = settings.highContrast ? 1.5 : isHighlighted ? 1.5 : isOutlined || isElevated ? 1 : 0;
 
   const cardStyle = [
     styles.card,

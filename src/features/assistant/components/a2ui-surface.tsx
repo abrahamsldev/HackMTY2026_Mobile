@@ -1,12 +1,14 @@
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
+import { Text, Pressable } from '@/components/accessible-primitives';
 import Slider from '@react-native-community/slider';
 import { useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { createDispatch, type A2UIComponent, type A2UIDispatch, type A2UIPayload } from '../agent';
 
-type Presentation = { color: string; background: string; border: string; fontSize: number; target: number };
+type Presentation = { color: string; background: string; border: string; fontSize: number; target: number; accent: string; onAccent: string };
 type ComponentProps = {
   component: A2UIComponent;
   presentation: Presentation;
@@ -50,8 +52,8 @@ const registry: Record<A2UIComponent['type'], (props: ComponentProps) => ReactNo
         accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={onPress}
-        style={({ pressed }) => [styles.button, { minHeight: p.target, opacity: disabled ? 0.5 : pressed ? 0.8 : 1 }]}>
-        <Text style={{ color: '#FFFFFF', fontSize: p.fontSize, fontWeight: '700', textAlign: 'center' }}>{component.props.label}</Text>
+        style={({ pressed }) => [styles.button, { minHeight: p.target, backgroundColor: p.accent, opacity: disabled ? 0.5 : pressed ? 0.8 : 1 }]}>
+        <Text style={{ color: p.onAccent, fontSize: p.fontSize, fontWeight: '700', textAlign: 'center' }}>{component.props.label}</Text>
       </Pressable>
     );
   },
@@ -75,6 +77,10 @@ const registry: Record<A2UIComponent['type'], (props: ComponentProps) => ReactNo
           thumbTintColor={p.color}
           style={{ height: p.target, width: '100%' }}
         />
+        <View style={[styles.range, { flexWrap: 'wrap', gap: 8 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Disminuir ${props.label}`} disabled={disabled || (value ?? props.default_value) <= props.min} onPress={() => onValue(Math.max(props.min, Number(((value ?? props.default_value) - props.step).toFixed(8))))} style={{ padding: 12, borderWidth: 1, borderColor: p.border, borderRadius: 8 }}><Text style={{ color: p.color }}>− Disminuir</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Aumentar ${props.label}`} disabled={disabled || (value ?? props.default_value) >= props.max} onPress={() => onValue(Math.min(props.max, Number(((value ?? props.default_value) + props.step).toFixed(8))))} style={{ padding: 12, borderWidth: 1, borderColor: p.border, borderRadius: 8 }}><Text style={{ color: p.color }}>+ Aumentar</Text></Pressable>
+        </View>
         <View style={styles.range}>
           <Text style={{ color: p.color, fontSize: p.fontSize * 0.85 }}>{props.min}</Text>
           <Text style={{ color: p.color, fontSize: p.fontSize * 0.85 }}>{props.max}</Text>
@@ -88,20 +94,23 @@ export function A2UISurface({ payload, disabled, onDispatch }: {
   payload: A2UIPayload; disabled: boolean; onDispatch: (event: A2UIDispatch) => void;
 }) {
   const theme = useTheme();
+  const { settings } = useAccessibility();
   const [values, setValues] = useState<Record<string, number>>(() => Object.fromEntries(
     payload.surface.components.filter((c) => c.type === 'InteractiveSlider').map((c) => [c.id, c.props.default_value]),
   ));
   const [error, setError] = useState<string | null>(null);
-  const fontSize = 18 * { sm: 0.9, md: 1, lg: 1.2, xl: 1.4 }[payload.meta.accessibility.font_scale];
+  const fontSize = 18 * { sm: 1, md: 1, lg: 1.2, xl: 1.4 }[payload.meta.accessibility.font_scale];
   function presentation(componentTags: string[] = []): Presentation {
     const tags = [...payload.applied_tags, ...componentTags];
-    const highContrast = payload.meta.accessibility.contrast === 'high' || tags.includes('#high-contrast');
+    const highContrast = settings.highContrast || payload.meta.accessibility.contrast === 'high' || tags.includes('#high-contrast');
     return {
       color: theme.text,
+      accent: theme.accent,
+      onAccent: theme.onAccent,
       background: highContrast ? theme.background : theme.backgroundElement,
       border: highContrast ? theme.text : theme.backgroundSelected,
       fontSize,
-      target: payload.meta.accessibility.hit_target === 'large' || tags.includes('#big-targets') ? 64 : 48,
+      target: Math.max(settings.minTargetSize, payload.meta.accessibility.hit_target === 'large' || tags.includes('#big-targets') ? 64 : 48),
     };
   }
   return (

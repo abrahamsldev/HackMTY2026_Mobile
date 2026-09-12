@@ -1,5 +1,7 @@
+import { AccessibilitySettings } from '@/features/accessibility/accessibility-settings';
+import { TextInput } from '@/components/accessible-primitives';
 import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 
 import { Page } from '@/components/layout/page';
 import { ThemedText } from '@/components/themed-text';
@@ -26,6 +28,7 @@ export default function SettingsScreen() {
               isGuest={!session}
             />
           )}
+          <AccessibilitySettings />
         </View>
       </Page>
     </KeyboardAvoidingView>
@@ -87,7 +90,7 @@ function ProfileForm({ initialProfile, isGuest }: { initialProfile: UserProfile;
           maxLength={80}
           placeholder="Tu nombre"
           placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.backgroundElement }]}
+          style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
         />
       </View>
       <View style={styles.field}>
@@ -107,7 +110,7 @@ function ProfileForm({ initialProfile, isGuest }: { initialProfile: UserProfile;
           placeholderTextColor={theme.textSecondary}
           returnKeyType="done"
           onSubmitEditing={save}
-          style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.backgroundElement }]}
+          style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
         />
       </View>
       {feedback && <View accessibilityLiveRegion="polite"><InfoBanner {...feedback} /></View>}

@@ -1,3 +1,4 @@
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { useState } from 'react';
@@ -9,10 +10,11 @@ const INITIAL_SCALE_FACTOR = Dimensions.get('screen').height / 90;
 const DURATION = 600;
 
 export function AnimatedSplashOverlay() {
+  const { settings, ready } = useAccessibility();
   const [animate, setAnimate] = useState(false);
   const [visible, setVisible] = useState(true);
 
-  if (!visible) return null;
+  if (!visible || (animate && (settings.reduceMotion || !ready))) return null;
 
   const splashKeyframe = new Keyframe({
     0: {
@@ -96,6 +98,8 @@ const glowKeyframe = new Keyframe({
 });
 
 export function AnimatedIcon() {
+  const { settings, ready } = useAccessibility();
+  if (settings.reduceMotion || !ready) return <View style={styles.iconContainer}><Image style={styles.image} source={require('@/assets/images/expo-logo.png')} /></View>;
   return (
     <View style={styles.iconContainer}>
       <Animated.View entering={glowKeyframe.duration(60 * 1000 * 4)} style={styles.glow}>

@@ -1,6 +1,7 @@
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { version } from 'expo/package.json';
 import { Image } from 'expo-image';
-import { useColorScheme, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -8,7 +9,7 @@ import { ThemedView } from './themed-view';
 import { Spacing } from '@/constants/theme';
 
 export function WebBadge() {
-  const scheme = useColorScheme();
+  const { colorScheme: scheme } = useAccessibility();
 
   return (
     <ThemedView style={styles.container}>

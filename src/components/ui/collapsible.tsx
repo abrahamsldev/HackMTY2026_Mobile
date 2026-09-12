@@ -1,6 +1,8 @@
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
+import { Pressable } from '@/components/accessible-primitives';
 import { SymbolView } from 'expo-symbols';
 import { PropsWithChildren, useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,10 +13,13 @@ import { useTheme } from '@/hooks/use-theme';
 export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const theme = useTheme();
+  const { settings } = useAccessibility();
 
   return (
     <ThemedView>
       <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isOpen }}
         style={({ pressed }) => [styles.heading, pressed && styles.pressedHeading]}
         onPress={() => setIsOpen((value) => !value)}>
         <ThemedView type="backgroundElement" style={styles.button}>
@@ -30,7 +35,7 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
         <ThemedText type="small">{title}</ThemedText>
       </Pressable>
       {isOpen && (
-        <Animated.View entering={FadeIn.duration(200)}>
+        <Animated.View entering={settings.reduceMotion ? undefined : FadeIn.duration(200)}>
           <ThemedView type="backgroundElement" style={styles.content}>
             {children}
           </ThemedView>
