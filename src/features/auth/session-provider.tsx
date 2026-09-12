@@ -15,7 +15,6 @@ type SessionContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<boolean>;
   requestPasswordReset: (email: string) => Promise<void>;
-  resendConfirmation: (email: string) => Promise<void>;
   changePassword: (password: string) => Promise<void>;
   completeAuthCallback: (code: string, recovery?: boolean) => Promise<void>;
   retrySession: () => Promise<void>;
@@ -127,16 +126,12 @@ export function SessionProvider({ children }: PropsWithChildren) {
     generation.current += 1; setSession(verified); setError(null); setLoading(false);
   }
   async function signUp(email: string, password: string, fullName: string) {
-    const verified = await registerAccount(requireClient(), { email, password, fullName }, authRedirect());
+    const verified = await registerAccount(requireClient(), { email, password, fullName });
     if (verified) { generation.current += 1; setSession(verified); setError(null); setLoading(false); }
     return Boolean(verified);
   }
   async function requestPasswordReset(email: string) {
     const { error: failure } = await requireClient().auth.resetPasswordForEmail(emailSchema.parse(email), { redirectTo: authRedirect(true) });
-    if (failure) throw failure;
-  }
-  async function resendConfirmation(email: string) {
-    const { error: failure } = await requireClient().auth.resend({ type: 'signup', email: emailSchema.parse(email), options: { emailRedirectTo: authRedirect() } });
     if (failure) throw failure;
   }
   async function changePassword(password: string) {
@@ -153,7 +148,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     await clearUserSession({ client: requireClient(), session, storage: AsyncStorage });
     generation.current += 1; setSession(null); setError(null); setLoading(false);
   }
-  return <SessionContext.Provider value={{ session, profile: session ? profileFromUser(session.user) : emptyProfile, isLoading, isConfigured: isSupabaseConfigured, error, resetVersion, isRecovering, updateProfile, signOut, signIn, signUp, requestPasswordReset, resendConfirmation, changePassword, completeAuthCallback, retrySession }}>{children}</SessionContext.Provider>;
+  return <SessionContext.Provider value={{ session, profile: session ? profileFromUser(session.user) : emptyProfile, isLoading, isConfigured: isSupabaseConfigured, error, resetVersion, isRecovering, updateProfile, signOut, signIn, signUp, requestPasswordReset, changePassword, completeAuthCallback, retrySession }}>{children}</SessionContext.Provider>;
 }
 export function useSession() {
   const context = useContext(SessionContext);
