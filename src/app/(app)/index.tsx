@@ -8,6 +8,7 @@ import { ActionButton } from '@/components/ui/action-button';
 import { InfoBanner } from '@/components/ui/info-banner';
 import { Spacing } from '@/constants/theme';
 import { A2UISurface } from '@/features/assistant/components/a2ui-surface';
+import { AssistantFallback } from '@/features/assistant/components/assistant-fallback';
 import { QuestionBank } from '@/features/assistant/components/question-bank';
 import { useAssistant } from '@/features/assistant/use-assistant';
 import { useSession } from '@/features/auth/session-provider';
@@ -72,16 +73,17 @@ function AssistantWorkspace({ currentUserId }: { currentUserId: string }) {
         <ThemedText themeColor="textSecondary">Preparando tu respuesta…</ThemedText>
         <ActionButton label="Cancelar consulta" variant="outline" onPress={assistant.cancel} />
       </View>}
-      {assistant.error && <View style={styles.intro} accessibilityLiveRegion="polite">
-        <InfoBanner tone="danger" message={assistant.error} />
-        <ActionButton label="Reintentar" variant="outline" onPress={() => { void assistant.retry(); }} />
-      </View>}
-      {assistant.surface && <View key={assistant.surface.revision} style={styles.content}>
+      {!assistant.pending && assistant.error && <AssistantFallback
+        message={assistant.error}
+        onRetry={() => { void assistant.retry(); }}
+        onEdit={() => queryInput.current?.focus()}
+      />}
+      {!assistant.pending && !assistant.error && assistant.surface && <View key={assistant.surface.revision} style={styles.content}>
         {assistant.surface.reply.message !== '' && <View style={styles.intro} accessibilityLiveRegion="polite">
           <ThemedText type="smallBold" accessibilityRole="header">Respuesta del asistente</ThemedText>
           <ThemedText selectable>{assistant.surface.reply.message}</ThemedText>
         </View>}
-        {assistant.surface.a2uiSurfaces.map((surface) => (
+        {!assistant.surface.reply.a2uiError && assistant.surface.a2uiSurfaces.map((surface) => (
           <A2UISurface
             key={surface.surfaceId}
             surface={surface}
@@ -89,7 +91,11 @@ function AssistantWorkspace({ currentUserId }: { currentUserId: string }) {
             onDispatch={assistant.dispatch}
           />
         ))}
-        {assistant.surface.reply.a2uiError && <InfoBanner message={assistant.surface.reply.a2uiError} />}
+        {assistant.surface.reply.a2uiError && <AssistantFallback
+          message={assistant.surface.reply.a2uiError}
+          onRetry={() => { void assistant.retry(); }}
+          onEdit={() => queryInput.current?.focus()}
+        />}
       </View>}
     </View>
   );

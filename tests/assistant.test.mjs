@@ -93,6 +93,15 @@ test('malformed responses and HTTP failures are sanitized', async () => {
   );
 });
 
+test('empty responses produce a recoverable error for the fallback instead of blank content', async () => {
+  for (const body of ['', '{}', JSON.stringify({ message: '   ', data: {}, a2ui: null })]) {
+    await assert.rejects(
+      requestAgent({ ...options, fetchImpl: async () => new Response(body) }),
+      (error) => error.code === 'contract' && error.message.trim().length > 0,
+    );
+  }
+});
+
 test('network errors, 60-second-compatible timeout and cancellation stay distinct', async () => {
   await assert.rejects(
     requestAgent({ ...options, fetchImpl: async () => { throw new TypeError('Failed to fetch'); } }),
