@@ -58,7 +58,35 @@ El cliente realiza `POST /api/v1/agent/chat` con:
 
 El OpenAPI desplegado define la respuesta actual como `{ "message": "…", "data": {}, "a2ui": null }`. La app muestra `message` como texto accesible en la pantalla principal. Valida `data` pero no muestra ni conserva ese contexto interno. El servidor actualmente declara que `a2ui` permanece nulo hasta disponer de las herramientas A2UI del MCP.
 
-El transporte también acepta las superficies anteriores `a2ui/v1` con sus cuatro componentes registrados. Si una versión futura devuelve un envelope MCP `{ resource_uri, messages }`, la app conserva la respuesta de texto y avisa que el detalle visual no está disponible; no descarga URIs ni ejecuta componentes desconocidos. El renderer de esos mensajes deberá implementarse cuando exista su contrato concreto.
+El frontend consume exclusivamente mensajes oficiales A2UI `v0.9.1`; rechaza `a2ui/v1`, versiones distintas, catálogos no permitidos y propiedades desconocidas. La respuesta HTTP sigue siendo un contrato de transporte de la aplicación —no un envelope A2UI— y puede usar `resource_uri` (implementación actual del agente) o `resourceUri` (especificación pendiente del agente):
+
+```json
+{
+  "message": "Encontré una tabla permitida.",
+  "data": {},
+  "a2ui": {
+    "resource_uri": "a2ui://database/overview",
+    "messages": [
+      { "version": "v0.9.1", "createSurface": {} },
+      { "version": "v0.9.1", "updateComponents": {} },
+      { "version": "v0.9.1", "updateDataModel": {} }
+    ]
+  }
+}
+```
+
+Los cuerpos abreviados del ejemplo representan los envelopes completos. El agente debe resolver `_meta.ui.resourceUri`, leer la plantilla estática del MCP y devolver en `messages` la secuencia ordenada `createSurface` → `updateComponents` → `updateDataModel`. Expo no resuelve ni descarga `a2ui://...`, no habla directamente con MCP y no usa la URI como URL ejecutable.
+
+La capa aislada `src/features/a2ui` valida los mensajes con Zod, mantiene estado inmutable por superficie, aplica actualizaciones incrementales y JSON Pointer RFC 6901, resuelve bindings y renderiza `root`. El catálogo permitido es exactamente `https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json`. El subconjunto implementado coincide con la plantilla actual del MCP:
+
+| A2UI | Adaptador React Native existente |
+| --- | --- |
+| `Text` | `TextBlock` |
+| `Button` | `ActionButton` |
+| `Card` | `Card` |
+| `Column` | `Stack` vertical |
+
+Componentes Basic no implementados y catálogos personalizados fallan de forma acotada; nunca ejecutan código, estilos, rutas de componentes ni URLs recibidas. Los gráficos continúan como componentes locales y no forman parte del catálogo A2UI de red. Para incorporarlos después se necesita un único catálogo personalizado, explícitamente versionado y compartido por MCP, agente y Expo; no una herramienta por gráfico o primitiva.
 
 `MCP_SERVER_URL`, `MCP_AUTH_MODE` y las credenciales de MCP son configuración exclusiva del agente. La app únicamente se conecta al agente y no envía tokens de Supabase ni credenciales de MCP en este transporte. Los perfiles `ana`, `luis` y `sofia` siguen siendo perfiles de demostración, independientes de la sesión autenticada del móvil.
 
@@ -66,11 +94,12 @@ Comprobaciones del despliegue: `/health` y `/openapi.json` respondieron HTTP 200
 
 ### Respuestas y acciones
 
-- Cada respuesta válida reemplaza la anterior. Si falla la red o el contrato, conserva la última respuesta y ofrece reintentar. Las consultas tienen un límite de 60 segundos y pueden cancelarse.
+- Cada respuesta válida actualiza el texto y procesa sus mensajes en orden. Una respuesta solo textual o con A2UI inválido conserva las últimas superficies válidas. Si falla la red o el contrato HTTP, conserva la última respuesta y ofrece reintentar. Las consultas tienen un límite de 60 segundos y pueden cancelarse.
 - Cambiar de persona o cerrar sesión descarta la respuesta y cancela peticiones pendientes. Una respuesta anterior no puede reemplazar la de una consulta más reciente.
-- Las superficies anteriores se validan con Zod antes de mostrarlas: versión, IDs únicos, componentes, propiedades y acciones. `A2UISurface` mantiene Banner, Button, InteractiveSlider y MetricCard con las preferencias locales de accesibilidad.
-- Los botones anteriores producen `A2UI_DISPATCH`. El cliente serializa el evento dentro de `query`, junto con una petición legible, porque el endpoint solo recibe query y persona. Las acciones son consultas y simulaciones.
+- Los botones producen la acción oficial con `name`, `surfaceId`, `sourceComponentId`, `timestamp` y el `context` declarado resuelto contra el modelo de datos. Mientras el endpoint solo acepte `{ query, persona }`, el adaptador de transporte serializa temporalmente esa acción dentro de `query`; el renderer no conoce esta compatibilidad. Las acciones siguen siendo consultas o simulaciones de solo lectura.
 - La biblioteca `src/generative-ui` continúa disponible; su árbol `GenerativeNode` es un registro local, no un contrato que el agente desplegado emita actualmente.
+
+El agente local todavía devuelve `a2ui: null`. Para completar el flujo extremo a extremo debe invocar el MCP, resolver y combinar la plantilla con la actualización dinámica, y enrutar las acciones estructuradas al tool `a2ui_action`; no hacen falta cambios adicionales en el renderer móvil para la plantilla `database-overview` actual.
 
 ## Banco de preguntas
 
@@ -91,4 +120,4 @@ npx expo export --platform all
 
 Prueba manual: abrir/cerrar el drawer, entrar a Configuración y volver; guardar datos de invitado y recargar; cerrar sesión y comprobar que el formulario se limpia. Con una cuenta de prueba autenticada, comprobar restauración al reiniciar, edición de nombre/correo y cierre de sesión. No se necesita una cuenta para navegar.
 
-Las pruebas de integración del cliente usan respuestas y transporte simulados, sin conexión al agente ni a un servidor local. Cubren el chat desplegado, envelopes futuros, las tres plantillas anteriores, solicitudes HTTP, validación, selección de meses, cancelación, timeout y errores.
+Las pruebas de integración del cliente usan respuestas y transporte simulados, sin conexión al agente ni a un servidor local. Cubren los cuatro envelopes oficiales, procesamiento incremental, bindings, acciones, límites de render, JSON Pointer, superficies independientes, solicitudes HTTP, cancelación, timeout y errores.

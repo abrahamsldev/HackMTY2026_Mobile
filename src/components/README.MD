@@ -4,7 +4,7 @@ Aplicacion movil de banca personal construida para el reto de UI generativa de B
 
 El proyecto explora una experiencia financiera en la que un agente de inteligencia artificial no se limita a responder con texto. El agente interpreta la intencion del usuario, consulta datos y herramientas financieras, selecciona componentes registrados y produce una descripcion estructurada de la interfaz que la aplicacion renderiza en tiempo real.
 
-> Estado actual: Inicio ya usa un cliente HTTP y un renderer para el contrato `a2ui/v1` del agente. La conexión se activa al configurar `EXPO_PUBLIC_AGENT_URL` con su despliegue; no hay conexión local. Esta documentación describe principalmente la biblioteca anterior `GenerativeNode`, que sigue disponible. Consulta el [README principal](../../README.md) para la integración vigente.
+> Estado actual: Inicio usa un cliente HTTP y un renderer nativo para A2UI oficial `v0.9.1`. La conexión se activa al configurar `EXPO_PUBLIC_AGENT_URL` con su despliegue; no hay conexión local. Esta documentación describe principalmente la biblioteca local anterior `GenerativeNode`, que sigue disponible pero no es el contrato de red. Consulta el [README principal](../../README.md) para la integración vigente.
 
 ## Objetivo del reto
 
@@ -357,7 +357,7 @@ Reglas obligatorias:
 
 ## Navegación y sesión
 
-Los tabs fueron eliminados. La ruta temporal `explore.tsx` vuelve a estar disponible desde la opción Componentes del drawer, con el catálogo anterior y los componentes A2UI del agente. Sus interacciones son locales y no hacen peticiones. Inicio es la única superficie financiera; Configuración edita datos de cuenta y se abre desde el drawer. Consulta el [README principal](../../README.md) para configurar Supabase, revisar el modo sin sesión y conocer la integración HTTP y el renderer dedicado al contrato `a2ui/v1` del agente.
+Los tabs fueron eliminados. La ruta temporal `explore.tsx` vuelve a estar disponible desde la opción Componentes del drawer, con el catálogo local anterior y una vista de los componentes A2UI `v0.9.1` soportados. Sus interacciones son locales y no hacen peticiones. Inicio es la única superficie financiera; Configuración edita datos de cuenta y se abre desde el drawer. Consulta el [README principal](../../README.md) para configurar Supabase, revisar el modo sin sesión y conocer la integración HTTP y el renderer oficial.
 
 ## Ejecucion local
 
@@ -575,7 +575,7 @@ Gráfico de áreas para iOS, Android y web, inspirado en [Bklit Area Chart](http
 
 Acepta hasta cuatro series y 240 puntos. Cada punto debe contener un valor finito por serie; se admiten valores negativos, ceros y una sola muestra. `height` controla la altura (180–500), `status="loading"` muestra carga y `data={[]}` muestra el estado vacío. La paleta admite `blue`, `violet`, `green` y `orange`; no recibe estilos o código arbitrarios desde JSON.
 
-Se registra como `AreaChart` en el renderer local `GenerativeNode`, con `areaChartPropsSchema` y la acción `onPointSelect`. El contrato de red `a2ui/v1` del agente conserva sus cuatro tipos actuales; para recibir gráficos desde ese backend hace falta ampliar su contrato de forma coordinada. Esta adaptación no incluye la API composable web, brush zoom ni ejes dobles de Bklit.
+Se registra como `AreaChart` en el renderer local `GenerativeNode`, con `areaChartPropsSchema` y la acción `onPointSelect`. No forma parte del subconjunto Basic Catalog A2UI `v0.9.1` admitido por la red; para recibir gráficos hace falta definir un catálogo personalizado versionado de forma coordinada en MCP, agente y Expo. Esta adaptación no incluye la API composable web, brush zoom ni ejes dobles de Bklit.
 
 ### HeatmapChart
 

@@ -17,7 +17,7 @@ Configuración → Accesibilidad permite editar diez variables validadas por Zod
 
 `settings` contiene los valores efectivos y los derivados `minTargetSize` y `showChartData`. Las señales de movimiento y lector de pantalla se observan mediante `AccessibilityInfo`; en iOS también negritas. No se intenta encender o apagar VoiceOver/TalkBack desde la aplicación.
 
-Los elementos SVG y las cuadrículas compactas conservan su geometría de gráfico. La lista de datos ofrece textos ampliados y botones completos equivalentes. El slider A2UI incluye botones de aumentar/disminuir para operar sin arrastrar. Las animaciones propias de navegación del drawer siguen bajo control de la librería de navegación.
+Los elementos SVG y las cuadrículas compactas conservan su geometría de gráfico. La lista de datos ofrece textos ampliados y botones completos equivalentes. El subconjunto A2UI actual no incluye controles de entrada; las animaciones propias de navegación del drawer siguen bajo control de la librería de navegación.
 
 ## Persistencia
 
@@ -29,7 +29,7 @@ AsyncStorage usa `accessibility:v1:guest` o `accessibility:v1:user:<id>`. Son pr
 - Usar `useTheme()` para colores y bordes. Los controles compactos solo pueden usar `compact` si ofrecen una alternativa accesible de tamaño completo.
 - Respetar `settings.reduceMotion` para animaciones nuevas y ofrecer valores textuales en nuevos gráficos.
 - No introducir alturas fijas para párrafos o controles con texto. Las etiquetas importantes deben poder ajustarse a varias líneas.
-- El renderer A2UI combina las recomendaciones del agente con estos ajustes: `sm` no reduce la base local, alto contraste se combina con OR y los tamaños táctiles usan el mayor mínimo. No se añadieron campos incompatibles al contrato de red.
+- El renderer A2UI `v0.9.1` usa los componentes visuales existentes, que ya consumen tema y preferencias locales. La accesibilidad del protocolo se limita a sus atributos documentados; no se añadieron los antiguos campos `meta.accessibility` ni etiquetas arbitrarias al contrato de red.
 
 Pruebas: validación y recuperación de preferencias, aislamiento de cuentas, persistencia ordenada y reintentos, precedencia de señales del sistema y contraste de tokens de texto sobre las tres superficies del tema (4.5:1 habitual y 7:1 con alto contraste). Esto no constituye una auditoría completa WCAG ni sustituye pruebas de VoiceOver/TalkBack en dispositivos.
 
