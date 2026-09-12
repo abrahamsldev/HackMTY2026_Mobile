@@ -10,7 +10,7 @@ Configuración → Accesibilidad permite editar diez variables validadas por Zod
 | `boldText` | boolean | Negritas; también se respeta el ajuste del sistema en iOS. |
 | `appearance` | system, light, dark | Tema de contenido y navegación. |
 | `highContrast` | boolean | Texto secundario, estados y bordes reforzados. |
-| `colorPalette` | default, blue-orange, monochrome | Colores semánticos y gráficos. Las series de áreas usan trazos distintos en paletas alternativas. |
+| `colorPalette` | default, blue-orange, monochrome, banorte | Colores semánticos y gráficos. Las series de áreas usan trazos distintos en paletas alternativas. |
 | `reduceMotion` | boolean | Evita animaciones decorativas de logo, splash, colapsables y gráfico de áreas. El sistema puede activarlo aunque la preferencia local sea falsa. |
 | `largeTargets` | boolean | Mínimos de 64 puntos, frente a los 48 habituales, conservando mínimos mayores del componente. |
 | `chartDataTable` | boolean | Listas de valores y controles accesibles para los gráficos. También se muestran con lector de pantalla detectado, ampliación de texto o controles grandes. |
@@ -34,3 +34,5 @@ AsyncStorage usa `accessibility:v1:guest` o `accessibility:v1:user:<id>`. Son pr
 Pruebas: validación y recuperación de preferencias, aislamiento de cuentas, persistencia ordenada y reintentos, precedencia de señales del sistema y contraste de tokens de texto sobre las tres superficies del tema (4.5:1 habitual y 7:1 con alto contraste). Esto no constituye una auditoría completa WCAG ni sustituye pruebas de VoiceOver/TalkBack en dispositivos.
 
 Referencias: [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/), [AccessibilityInfo](https://reactnative.dev/docs/accessibilityinfo) y [Text](https://reactnative.dev/docs/text).
+
+La paleta `banorte` usa el rojo indicado `#EF2945` y blanco `#FFFFFF`, con matices rojos para superficies y gráficos. Conserva el tema oscuro cuando está seleccionado. Sobre el rojo exacto, los botones usan texto negro para mantener legibilidad; alto contraste usa rojo profundo `#8C1024` con texto blanco. Las preferencias existentes conservan su paleta y Banorte se elige desde Configuración → Accesibilidad.

@@ -27,7 +27,7 @@ export function AccessibilitySettings() {
     {toggle('boldText', 'Texto en negritas', 'Refuerza el grosor del texto. También respeta las negritas del sistema en iOS.')}
     {choices('appearance', 'Apariencia', [{ label: 'Sistema', value: 'system' }, { label: 'Clara', value: 'light' }, { label: 'Oscura', value: 'dark' }])}
     {toggle('highContrast', 'Alto contraste', 'Refuerza los textos secundarios y los bordes de los controles y tarjetas.')}
-    {choices('colorPalette', 'Paleta de colores', [{ label: 'Estándar', value: 'default' }, { label: 'Azul y naranja', value: 'blue-orange' }, { label: 'Monocromática', value: 'monochrome' }])}
+    {choices('colorPalette', 'Paleta de colores', [{ label: 'Estándar', value: 'default' }, { label: 'Azul y naranja', value: 'blue-orange' }, { label: 'Monocromática', value: 'monochrome' }, { label: 'Banorte', value: 'banorte' }])}
     <ThemedText type="small" themeColor="textSecondary">Azul y naranja ofrece una alternativa a rojo y verde. Los estados conservan sus etiquetas y los gráficos permiten consultar valores sin depender del color.</ThemedText>
     {toggle('reduceMotion', 'Reducir movimiento', 'Desactiva las animaciones decorativas. La preferencia de movimiento reducido del sistema siempre se respeta.')}
     {toggle('largeTargets', 'Controles grandes', 'Amplía botones y campos a un mínimo de 64 puntos; ofrece controles de detalle para los gráficos.')}

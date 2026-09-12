@@ -7,7 +7,7 @@ export const accessibilityPreferencesSchema = z.object({
   boldText: z.boolean().default(false),
   highContrast: z.boolean().default(false),
   appearance: z.enum(['system', 'light', 'dark']).default('system'),
-  colorPalette: z.enum(['default', 'blue-orange', 'monochrome']).default('default'),
+  colorPalette: z.enum(['default', 'blue-orange', 'monochrome', 'banorte']).default('default'),
   reduceMotion: z.boolean().default(false),
   largeTargets: z.boolean().default(false),
   chartDataTable: z.boolean().default(false),

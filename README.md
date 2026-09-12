@@ -40,40 +40,37 @@ El flujo financiero es **app → agente → MCP → Supabase → agente → app*
 
 Inicio permite escribir consultas, elegir uno de los perfiles de demostración (`ana`, `luis`, `sofia`) y mostrar la respuesta en la misma pantalla. Ya no usa el dashboard estático de ejemplo.
 
-### Activar después del despliegue
+### Agente desplegado
 
-En `.env.local`, configura el origen del agente, sin añadir `/api/v1/agent/chat`:
+`.env.local` y `.env.example` apuntan al origen del agente, sin añadir la ruta del chat:
 
 ```dotenv
-EXPO_PUBLIC_AGENT_URL=https://your-deployed-agent.example.com
+EXPO_PUBLIC_AGENT_URL=https://hackmty2026-agent-855447527444.us-west1.run.app
 ```
 
-Reinicia Metro o recompila el bundle al cambiar esta variable. Por ahora queda vacía: **no hay fallback a localhost, no se inicia ningún servidor y no se envían consultas sin configuración**. La app muestra que el asistente estará disponible cuando se configure su conexión.
+Reinicia Metro y recarga completamente la app, o recompila el bundle, al cambiar esta variable. No hay fallback a localhost; vaciarla deshabilita las consultas.
 
-El cliente realiza `POST /api/v1/agent/chat` con el contrato que ya acepta el agente:
+El cliente realiza `POST /api/v1/agent/chat` con:
 
 ```json
 { "query": "Revisar mis suscripciones", "persona": "luis" }
 ```
 
-`MCP_SERVER_URL`, `MCP_AUTH_MODE` y `HORIZON_API_KEY` son configuración exclusiva del agente. No deben exponerse como variables `EXPO_PUBLIC_*`. El despliegue del agente debe conectar MCP por su cuenta. Su código de referencia actual usa stdio local para MCP; la conexión al MCP remoto debe resolverse en ese repositorio. Para usar la versión web, el agente también debe permitir su origen mediante CORS.
+El OpenAPI desplegado define la respuesta actual como `{ "message": "…", "data": {}, "a2ui": null }`. La app muestra `message` como texto accesible en la pantalla principal. Valida `data` pero no muestra ni conserva ese contexto interno. El servidor actualmente declara que `a2ui` permanece nulo hasta disponer de las herramientas A2UI del MCP.
 
-### Renderizado y acciones
+El transporte también acepta las superficies anteriores `a2ui/v1` con sus cuatro componentes registrados. Si una versión futura devuelve un envelope MCP `{ resource_uri, messages }`, la app conserva la respuesta de texto y avisa que el detalle visual no está disponible; no descarga URIs ni ejecuta componentes desconocidos. El renderer de esos mensajes deberá implementarse cuando exista su contrato concreto.
 
-- `src/features/assistant/agent.ts` valida `a2ui/v1`, `meta`, `surface`, IDs únicos, tipos, propiedades y acciones usando Zod. Rechaza versiones, componentes o propiedades no soportadas antes de mostrar la respuesta.
-- `A2UISurface` registra `Banner`, `Button`, `InteractiveSlider` y `MetricCard`, que corresponden a las tres plantillas actuales: liquidez, suscripciones y simulación. Aplica tamaño de texto, contraste y controles grandes desde `meta.accessibility` y los tags conocidos.
-- Cada respuesta válida reemplaza la superficie anterior, incluso si reutiliza IDs. Si falla la red o el contrato, conserva la última respuesta y ofrece reintentar. Las consultas tienen un límite de 60 segundos y pueden cancelarse.
-- Cambiar de persona o cerrar sesión descarta la superficie y cancela peticiones pendientes. Una respuesta anterior no puede reemplazar la de una consulta más reciente.
-- Los botones producen un evento `A2UI_DISPATCH`. Como el backend actual no tiene un endpoint de acciones, el cliente lo serializa dentro de `query`, junto con una petición legible, y usa el mismo endpoint de chat. No envía campos adicionales que el backend no procese.
-- Al confirmar una simulación, `months` se obtiene del slider y se valida contra su rango y paso. Los demás campos del payload del agente se conservan. Las acciones son consultas y simulaciones: no contratan préstamos ni modifican suscripciones.
+`MCP_SERVER_URL`, `MCP_AUTH_MODE` y las credenciales de MCP son configuración exclusiva del agente. La app únicamente se conecta al agente y no envía tokens de Supabase ni credenciales de MCP en este transporte. Los perfiles `ana`, `luis` y `sofia` siguen siendo perfiles de demostración, independientes de la sesión autenticada del móvil.
 
-El endpoint usa personas de demostración, todavía no una identidad financiera derivada del JWT de Supabase. El agente puede usar su fallback interno cuando MCP o Gemini fallen; su respuesta actual no incluye un indicador de procedencia. Por ello, la app identifica toda esta experiencia como demostración y no afirma que sean datos de una cuenta autenticada.
+Comprobaciones del despliegue: `/health` y `/openapi.json` respondieron HTTP 200. El preflight `OPTIONS /api/v1/agent/chat` para `Origin: http://localhost:8081` respondió HTTP 405, por lo que el backend necesita habilitar CORS para usar Expo Web. Esta restricción del navegador no aplica a peticiones nativas iOS/Android. La copia local `hackmty2026-agent` incluye la corrección de CORS y pruebas de preflight; todavía requiere desplegarse. Una consulta real autorizada con Ana respondió HTTP 200 y fue aceptada por el parser móvil, pero devolvió el mensaje de fallback de Gemini y `a2ui: null`; por tanto, esta prueba confirma conectividad y compatibilidad, no el funcionamiento completo de Gemini/MCP.
 
-El clasificador de fallback del agente de referencia fija el plazo en seis meses. El móvil sí envía el plazo seleccionado; para respetarlo también cuando Gemini no esté disponible, el agente deberá interpretarlo en su fallback. El móvil muestra lo que devuelve el servidor.
+### Respuestas y acciones
 
-La biblioteca anterior `src/generative-ui` continúa disponible, pero su árbol `GenerativeNode` no es el contrato de red. La integración nueva usa directamente el formato de `hackmty2026-agent/schemas/a2ui.py`; no ejecuta código ni estilos enviados por el agente.
-
-Configuración basada en la documentación de [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/), [Slider compatible con SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/slider/) y [Supabase Auth para React Native](https://supabase.com/docs/guides/auth/quickstarts/react-native).
+- Cada respuesta válida reemplaza la anterior. Si falla la red o el contrato, conserva la última respuesta y ofrece reintentar. Las consultas tienen un límite de 60 segundos y pueden cancelarse.
+- Cambiar de persona o cerrar sesión descarta la respuesta y cancela peticiones pendientes. Una respuesta anterior no puede reemplazar la de una consulta más reciente.
+- Las superficies anteriores se validan con Zod antes de mostrarlas: versión, IDs únicos, componentes, propiedades y acciones. `A2UISurface` mantiene Banner, Button, InteractiveSlider y MetricCard con las preferencias locales de accesibilidad.
+- Los botones anteriores producen `A2UI_DISPATCH`. El cliente serializa el evento dentro de `query`, junto con una petición legible, porque el endpoint solo recibe query y persona. Las acciones son consultas y simulaciones.
+- La biblioteca `src/generative-ui` continúa disponible; su árbol `GenerativeNode` es un registro local, no un contrato que el agente desplegado emita actualmente.
 
 ## Banco de preguntas
 
@@ -94,4 +91,4 @@ npx expo export --platform all
 
 Prueba manual: abrir/cerrar el drawer, entrar a Configuración y volver; guardar datos de invitado y recargar; cerrar sesión y comprobar que el formulario se limpia. Con una cuenta de prueba autenticada, comprobar restauración al reiniciar, edición de nombre/correo y cierre de sesión. No se necesita una cuenta para navegar.
 
-Las pruebas de integración del cliente usan respuestas y transporte simulados, sin conexión al agente ni a un servidor local. Cubren las tres plantillas, solicitudes HTTP, validación, selección de meses, cancelación, timeout y errores. Después del despliegue, comprueba las tres consultas sugeridas y confirma una simulación con un plazo distinto de seis meses.
+Las pruebas de integración del cliente usan respuestas y transporte simulados, sin conexión al agente ni a un servidor local. Cubren el chat desplegado, envelopes futuros, las tres plantillas anteriores, solicitudes HTTP, validación, selección de meses, cancelación, timeout y errores.

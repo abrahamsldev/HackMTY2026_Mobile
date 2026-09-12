@@ -1,7 +1,37 @@
 import type { AccessibilityPreferences } from './preferences';
 
+export const banortePalette = {
+  red: '#EF2945',
+  white: '#FFFFFF',
+  strongRed: '#8C1024',
+  heatmap: ['#FFE0E6', '#FF8FA0', '#C51A35', '#8C1024'],
+} as const;
+
 export function accessibleColors(base: { text: string; background: string; backgroundElement: string; backgroundSelected: string; textSecondary: string }, colorScheme: 'light' | 'dark', settings: AccessibilityPreferences) {
   const dark = colorScheme === 'dark';
+  if (settings.colorPalette === 'banorte') {
+    // Exact brand red has insufficient contrast with small white text; use black
+    // labels normally and a deeper red with white labels in high-contrast mode.
+    const readableRed = dark ? '#FF9AA9' : banortePalette.strongRed;
+    return {
+      ...base,
+      background: dark ? base.background : banortePalette.white,
+      backgroundElement: dark ? '#2A171C' : '#FFF1F3',
+      backgroundSelected: dark ? '#3C2027' : '#FFE0E6',
+      textSecondary: settings.highContrast ? base.text : base.textSecondary,
+      border: settings.highContrast ? base.text : banortePalette.red,
+      accent: settings.highContrast ? banortePalette.strongRed : banortePalette.red,
+      onAccent: settings.highContrast ? banortePalette.white : '#000000',
+      info: settings.highContrast ? base.text : readableRed,
+      success: base.text,
+      danger: settings.highContrast ? base.text : readableRed,
+      warning: base.text,
+      dangerBackground: banortePalette.strongRed,
+      chartColors: dark
+        ? [banortePalette.red, banortePalette.white, '#FF9AA9', '#C9BFC1']
+        : [banortePalette.red, banortePalette.strongRed, '#5A0A18', '#6B6163'],
+    };
+  }
   const alternate = settings.colorPalette === 'blue-orange';
   const mono = settings.colorPalette === 'monochrome';
   return {

@@ -1,3 +1,4 @@
+import { banortePalette } from '@/features/accessibility/theme';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { Text, Pressable } from '@/components/accessible-primitives';
 import { useState } from 'react';
@@ -36,7 +37,7 @@ function HeatmapContent({ data, title, subtitle, initialDate, initialView = 'yea
   const [filter, setFilter] = useState<number | null>(null);
   const values = new Map(data.map((day) => [day.date, day.value]));
   const maximum = data.reduce((max, day) => Math.max(max, day.value), 0);
-  const colors = [theme.backgroundSelected, ...(settings.colorPalette === 'monochrome' ? ['#E5E5E5', '#AAAAAA', '#555555', '#111111'] : palettes[settings.colorPalette === 'blue-orange' ? 'blue' : tone])];
+  const colors = [settings.colorPalette === 'banorte' ? theme.backgroundElement : theme.backgroundSelected, ...(settings.colorPalette === 'banorte' ? banortePalette.heatmap : settings.colorPalette === 'monochrome' ? ['#E5E5E5', '#AAAAAA', '#555555', '#111111'] : palettes[settings.colorPalette === 'blue-orange' ? 'blue' : tone])];
   const cells = periodCells(focus, view);
   const bounds = periodBounds(focus, view);
   const format = (value: number) => new Intl.NumberFormat('es-MX', { ...(currency ? { style: 'currency', currency } : {}), maximumFractionDigits: 2 }).format(value);

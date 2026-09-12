@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { a2uiSchema, createDispatch, dispatchToQuery, requestAgent } from '../src/features/assistant/agent.ts';
+import { a2uiSchema, createDispatch, dispatchToQuery, requestAgent, parseAgentReply } from '../src/features/assistant/agent.ts';
 
 const fixtures = JSON.parse(readFileSync(new URL('./fixtures/agent-responses.json', import.meta.url)));
 const options = { baseUrl: 'https://agent.example.com', query: 'Revisar suscripciones', persona: 'luis' };
@@ -61,7 +61,7 @@ test('sends the actual chat contract without MCP credentials or unsupported requ
     return new Response(JSON.stringify(fixtures[1]), { status: 200 });
   } });
   assert.equal(called, true);
-  assert.equal(result.template_id, 'Template_Subscriptions');
+  assert.equal(result.payload.template_id, 'Template_Subscriptions');
 });
 
 test('missing deployment URL never makes a network request or uses localhost', async () => {
@@ -103,4 +103,19 @@ test('a request cancelled before sending never reaches the transport', async () 
   let called = false;
   await assert.rejects(requestAgent({ ...options, signal: controller.signal, fetchImpl: async () => { called = true; } }), { name: 'AbortError' });
   assert.equal(called, false);
+});
+
+
+test('deployed chat replies display message without requiring a generated surface', async () => {
+  const response = { message: 'Hola, ¿en qué puedo ayudarte?', data: { internal_context: 'not for display' }, a2ui: null };
+  const result = await requestAgent({ ...options, fetchImpl: async () => new Response(JSON.stringify(response)) });
+  assert.deepEqual(result, { message: response.message, payload: null, hasUnsupportedSurface: false });
+  assert.equal('data' in result, false);
+  assert.deepEqual(parseAgentReply({ message: 'Hola', data: {} }), { message: 'Hola', payload: null, hasUnsupportedSurface: false });
+});
+
+test('future MCP envelopes preserve the reply without executing or fetching their contents', () => {
+  const response = { message: 'Resumen disponible', data: {}, a2ui: { resource_uri: 'https://untrusted.example/surface', messages: [{ component: 'WebView', code: 'arbitrary script' }] } };
+  assert.deepEqual(parseAgentReply(response), { message: response.message, payload: null, hasUnsupportedSurface: true });
+  for (const invalid of [{ ...response, message: '' }, { ...response, data: [] }, { ...response, a2ui: { code: 'eval' } }]) assert.throws(() => parseAgentReply(invalid), { code: 'contract' });
 });

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { AgentRequestError, dispatchToQuery, requestAgent, type A2UIDispatch, type A2UIPayload, type Persona } from './agent';
+import { AgentRequestError, dispatchToQuery, requestAgent, type A2UIDispatch, type AgentReply, type Persona } from './agent';
 import { agentBaseUrl } from './connection';
 
 export function useAssistant(persona: Persona) {
-  const [surface, setSurface] = useState<{ payload: A2UIPayload; revision: number } | null>(null);
+  const [surface, setSurface] = useState<{ reply: AgentReply; revision: number } | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastQuery, setLastQuery] = useState('');
@@ -26,8 +26,8 @@ export function useAssistant(persona: Persona) {
     setPending(true);
     setError(null);
     try {
-      const payload = await requestAgent({ baseUrl: agentBaseUrl, query: normalized, persona, signal: controller.signal });
-      if (request.current.id === id) setSurface({ payload, revision: id });
+      const reply = await requestAgent({ baseUrl: agentBaseUrl, query: normalized, persona, signal: controller.signal });
+      if (request.current.id === id) setSurface({ reply, revision: id });
     } catch (cause) {
       if (request.current.id !== id || controller.signal.aborted) return;
       setError(cause instanceof AgentRequestError ? cause.message : 'No se pudo mostrar la respuesta. Inténtalo de nuevo.');

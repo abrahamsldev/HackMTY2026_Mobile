@@ -99,7 +99,14 @@ function AssistantWorkspace({ persona }: { persona: Persona }) {
         <InfoBanner tone="danger" message={assistant.error} />
         <ActionButton label="Reintentar" variant="outline" onPress={() => { void assistant.retry(); }} />
       </View>}
-      {assistant.surface && <A2UISurface key={assistant.surface.revision} payload={assistant.surface.payload} disabled={assistant.pending} onDispatch={assistant.dispatch} />}
+      {assistant.surface && <View key={assistant.surface.revision} style={styles.content}>
+        {assistant.surface.reply.message !== '' && <View style={styles.intro} accessibilityLiveRegion="polite">
+          <ThemedText type="smallBold" accessibilityRole="header">Respuesta del asistente</ThemedText>
+          <ThemedText selectable>{assistant.surface.reply.message}</ThemedText>
+        </View>}
+        {assistant.surface.reply.payload && <A2UISurface payload={assistant.surface.reply.payload} disabled={assistant.pending} onDispatch={assistant.dispatch} />}
+        {assistant.surface.reply.hasUnsupportedSurface && <InfoBanner message="El detalle visual no está disponible. Puedes consultar la respuesta de texto." />}
+      </View>}
     </View>
   );
 }

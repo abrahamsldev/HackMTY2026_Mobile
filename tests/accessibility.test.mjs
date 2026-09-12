@@ -29,9 +29,10 @@ test('storage isolates guest and accounts; preferences round-trip independently'
   const guest = createPreferenceWriter(adapter, accessibilityStorageKey(null));
   const account = createPreferenceWriter(adapter, accessibilityStorageKey('alice'));
   await guest({ ...defaults, textScale: 2 });
-  await account({ ...defaults, highContrast: true });
+  await account({ ...defaults, highContrast: true, colorPalette: 'banorte' });
   assert.equal(decodeAccessibilityPreferences(storage.get(accessibilityStorageKey(null))).textScale, 2);
   assert.equal(decodeAccessibilityPreferences(storage.get(accessibilityStorageKey('alice'))).highContrast, true);
+  assert.equal(decodeAccessibilityPreferences(storage.get(accessibilityStorageKey('alice'))).colorPalette, 'banorte');
   assert.equal(decodeAccessibilityPreferences(storage.get(accessibilityStorageKey('bob')) ?? null).highContrast, false);
   assert.notEqual(accessibilityStorageKey('guest'), accessibilityStorageKey(null));
 });
@@ -72,7 +73,7 @@ test('text and button tokens remain readable across all themes and palettes', ()
     const base = mode === 'light'
       ? { text: '#000000', background: '#FFFFFF', backgroundElement: '#F0F0F3', backgroundSelected: '#E0E1E6', textSecondary: '#60646C' }
       : { text: '#FFFFFF', background: '#000000', backgroundElement: '#212225', backgroundSelected: '#2E3135', textSecondary: '#B0B4BA' };
-    for (const colorPalette of ['default', 'blue-orange', 'monochrome']) for (const highContrast of [false, true]) {
+    for (const colorPalette of ['default', 'blue-orange', 'monochrome', 'banorte']) for (const highContrast of [false, true]) {
       const colors = accessibleColors(base, mode, { ...defaults, colorPalette, highContrast });
       for (const token of ['text', 'textSecondary', 'info', 'success', 'danger', 'warning']) for (const surface of ['background', 'backgroundElement', 'backgroundSelected']) {
         assert.ok(contrast(colors[token], colors[surface]) >= (highContrast ? 7 : 4.5), `${mode}/${colorPalette}/${token}/${surface}`);

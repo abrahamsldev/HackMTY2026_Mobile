@@ -56,6 +56,26 @@ export const a2uiSchema = z.object({
 }).strict();
 
 export type A2UIPayload = z.infer<typeof a2uiSchema>;
+
+// Deployed chat contract. Data and MCP envelopes are validated but never executed,
+// fetched by resource URI or displayed as an arbitrary component tree.
+const chatResponseSchema = z.object({
+  message: z.string().trim().min(1).max(16000),
+  data: z.record(z.string(), z.json()),
+  a2ui: z.object({
+    resource_uri: z.string().min(1).max(2048),
+    messages: z.array(z.record(z.string(), z.json())).max(1000),
+  }).strict().nullable().optional(),
+}).strict();
+export type AgentReply = { message: string; payload: A2UIPayload | null; hasUnsupportedSurface: boolean };
+export function parseAgentReply(input: unknown): AgentReply {
+  const chat = chatResponseSchema.safeParse(input);
+  if (chat.success) return { message: chat.data.message, payload: null, hasUnsupportedSurface: chat.data.a2ui != null };
+  const legacy = a2uiSchema.safeParse(input);
+  if (legacy.success) return { message: '', payload: legacy.data, hasUnsupportedSurface: false };
+  throw new AgentRequestError('contract', 'La respuesta recibida no es compatible. Puedes intentar otra consulta.');
+}
+
 export type A2UIComponent = z.infer<typeof componentSchema>;
 export type A2UIAccessibility = z.infer<typeof accessibilitySchema>;
 export type A2UIAction = z.infer<typeof actionSchema>;
@@ -109,7 +129,7 @@ export class AgentRequestError extends Error {
 export async function requestAgent({ baseUrl, query, persona, signal, timeoutMs = 60000, fetchImpl = fetch }: {
   baseUrl: string; query: string; persona: Persona; signal?: AbortSignal;
   timeoutMs?: number; fetchImpl?: typeof fetch;
-}): Promise<A2UIPayload> {
+}): Promise<AgentReply> {
   let endpoint: URL;
   try {
     endpoint = new URL(`${baseUrl.replace(/\/$/, '')}/api/v1/agent/chat`);
@@ -144,9 +164,7 @@ export async function requestAgent({ baseUrl, query, persona, signal, timeoutMs 
     try { data = JSON.parse(body); } catch {
       throw new AgentRequestError('contract', 'El agente devolvió una respuesta que no se puede mostrar.');
     }
-    const parsed = a2uiSchema.safeParse(data);
-    if (!parsed.success) throw new AgentRequestError('contract', 'La interfaz recibida no es compatible. Puedes intentar otra consulta.');
-    return parsed.data;
+    return parseAgentReply(data);
   } catch (error) {
     if (signal?.aborted) {
       const aborted = new Error('Consulta cancelada.');
