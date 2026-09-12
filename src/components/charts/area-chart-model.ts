@@ -4,11 +4,17 @@ export const areaChartPropsSchema = z.object({
   title: z.string().max(100).optional(),
   subtitle: z.string().max(200).optional(),
   data: z.array(z.object({ label: z.string().min(1).max(80), values: z.array(z.number().finite().min(-1e15).max(1e15)).min(1).max(4) }).strict()).max(240),
-  series: z.array(z.object({ label: z.string().min(1).max(80), tone: z.enum(['blue', 'violet', 'green', 'orange']).optional() }).strict()).min(1).max(4),
+  series: z.array(z.object({
+    id: z.string().min(1).max(64).regex(/^[A-Za-z][A-Za-z0-9._:-]*$/),
+    label: z.string().min(1).max(80),
+    tone: z.enum(['blue', 'violet', 'green', 'orange']).optional(),
+  }).strict()).min(1).max(4),
   height: z.number().min(180).max(500).optional(),
   currency: z.enum(['MXN', 'USD']).optional(),
   status: z.enum(['ready', 'loading']).optional(),
-}).strict().refine((p) => p.data.every((point) => point.values.length === p.series.length), { message: 'Cada punto debe tener un valor por serie.' });
+}).strict()
+  .refine((p) => p.data.every((point) => point.values.length === p.series.length), { message: 'Cada punto debe tener un valor por serie.' })
+  .refine((p) => new Set(p.series.map((item) => item.id)).size === p.series.length, { message: 'Los identificadores de serie no deben repetirse.' });
 
 export type AreaChartData = z.infer<typeof areaChartPropsSchema>;
 export type ChartPoint = { x: number; y: number };

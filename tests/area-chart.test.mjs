@@ -10,9 +10,10 @@ test('chart domains handle empty, zero and negative data without division by zer
 });
 
 test('chart schema rejects missing series values and executable properties', () => {
-  const data = { data: [{ label: 'Ene', values: [10] }], series: [{ label: 'Ingresos' }] };
+  const data = { data: [{ label: 'Ene', values: [10] }], series: [{ id: 'income', label: 'Ingresos' }] };
   assert.ok(areaChartPropsSchema.safeParse(data).success);
-  assert.equal(areaChartPropsSchema.safeParse({ ...data, series: [...data.series, { label: 'Gastos' }] }).success, false);
+  assert.equal(areaChartPropsSchema.safeParse({ ...data, series: [...data.series, { id: 'expenses', label: 'Gastos' }] }).success, false);
+  assert.equal(areaChartPropsSchema.safeParse({ ...data, series: [...data.series, { ...data.series[0] }], data: [{ label: 'Ene', values: [10, 5] }] }).success, false);
   assert.equal(areaChartPropsSchema.safeParse({ ...data, style: { color: 'red' } }).success, false);
   assert.equal(areaChartPropsSchema.safeParse({ ...data, data: [{ label: 'Ene', values: [Infinity] }] }).success, false);
 });

@@ -1,7 +1,30 @@
 import { componentChildren } from './message-processor.ts';
-import { A2UI_LIMITS, type A2UIComponent, type A2UISurfaceState } from './types.ts';
+import {
+  A2UI_BASIC_CATALOG_ID,
+  A2UI_FINANCE_CATALOG_ID,
+  A2UI_LIMITS,
+  type A2UICatalogId,
+  type A2UIComponent,
+  type A2UISurfaceState,
+} from './types.ts';
 
 export const SUPPORTED_BASIC_COMPONENTS = ['Text', 'Button', 'Card', 'Column'] as const;
+export const SUPPORTED_FINANCE_COMPONENTS = [
+  'Text',
+  'Button',
+  'Card',
+  'Column',
+  'Chart',
+] as const;
+
+export const SUPPORTED_COMPONENTS_BY_CATALOG: Record<A2UICatalogId, readonly string[]> = {
+  [A2UI_BASIC_CATALOG_ID]: SUPPORTED_BASIC_COMPONENTS,
+  [A2UI_FINANCE_CATALOG_ID]: SUPPORTED_FINANCE_COMPONENTS,
+};
+
+export function isComponentAllowed(catalogId: A2UICatalogId, component: string): boolean {
+  return SUPPORTED_COMPONENTS_BY_CATALOG[catalogId].includes(component);
+}
 
 export type A2UIRenderPlan =
   | { status: 'ready'; component: A2UIComponent; children: readonly A2UIRenderPlan[] }

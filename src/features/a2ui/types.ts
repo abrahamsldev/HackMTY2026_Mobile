@@ -1,6 +1,8 @@
 export const A2UI_VERSION = 'v0.9.1' as const;
 export const A2UI_BASIC_CATALOG_ID =
   'https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json' as const;
+export const A2UI_FINANCE_CATALOG_ID =
+  'https://fluidbank.app/a2ui/catalogs/finance/v1' as const;
 
 export const A2UI_LIMITS = {
   actionContextBytes: 16_384,
@@ -36,6 +38,20 @@ type A2UIComponentCommon = {
   accessibility?: A2UIAccessibility;
 };
 
+export type A2UIAreaChartValue = {
+  kind: 'area';
+  accessibleSummary?: string;
+  props: import('@/components/charts/area-chart-model').AreaChartData;
+};
+
+export type A2UIHeatmapChartValue = {
+  kind: 'heatmap';
+  accessibleSummary?: string;
+  props: import('@/components/charts/heatmap-chart-model').HeatmapChartData;
+};
+
+export type A2UIChartValue = A2UIAreaChartValue | A2UIHeatmapChartValue;
+
 export type A2UITextComponent = A2UIComponentCommon & {
   component: 'Text';
   text: A2UIDynamicString;
@@ -61,11 +77,21 @@ export type A2UIColumnComponent = A2UIComponentCommon & {
   align?: 'start' | 'center' | 'end' | 'stretch';
 };
 
+export type A2UIChartComponent = A2UIComponentCommon & {
+  component: 'Chart';
+  chart: A2UIChartValue | A2UIBinding;
+};
+
 export type A2UIComponent =
   | A2UITextComponent
   | A2UIButtonComponent
   | A2UICardComponent
-  | A2UIColumnComponent;
+  | A2UIColumnComponent
+  | A2UIChartComponent;
+
+export type A2UICatalogId =
+  | typeof A2UI_BASIC_CATALOG_ID
+  | typeof A2UI_FINANCE_CATALOG_ID;
 
 export type A2UITheme = {
   primaryColor?: string;
@@ -77,7 +103,7 @@ export type A2UICreateSurfaceMessage = {
   version: typeof A2UI_VERSION;
   createSurface: {
     surfaceId: string;
-    catalogId: typeof A2UI_BASIC_CATALOG_ID;
+    catalogId: A2UICatalogId;
     theme?: A2UITheme;
     sendDataModel?: boolean;
   };
@@ -106,7 +132,7 @@ export type A2UIMessage =
 
 export type A2UISurfaceState = {
   surfaceId: string;
-  catalogId: typeof A2UI_BASIC_CATALOG_ID;
+  catalogId: A2UICatalogId;
   theme: A2UITheme;
   sendDataModel: boolean;
   components: ReadonlyMap<string, A2UIComponent>;

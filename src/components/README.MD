@@ -563,7 +563,10 @@ Gráfico de áreas para iOS, Android y web, inspirado en [Bklit Area Chart](http
 <AreaChart
   title="Ingresos y gastos"
   currency="MXN"
-  series={[{ label: 'Ingresos', tone: 'blue' }, { label: 'Gastos', tone: 'violet' }]}
+  series={[
+    { id: 'income', label: 'Ingresos', tone: 'blue' },
+    { id: 'spend', label: 'Gastos', tone: 'violet' },
+  ]}
   data={[
     { label: 'Ene', values: [12000, 8500] },
     { label: 'Feb', values: [15800, 9200] },
@@ -575,7 +578,7 @@ Gráfico de áreas para iOS, Android y web, inspirado en [Bklit Area Chart](http
 
 Acepta hasta cuatro series y 240 puntos. Cada punto debe contener un valor finito por serie; se admiten valores negativos, ceros y una sola muestra. `height` controla la altura (180–500), `status="loading"` muestra carga y `data={[]}` muestra el estado vacío. La paleta admite `blue`, `violet`, `green` y `orange`; no recibe estilos o código arbitrarios desde JSON.
 
-Se registra como `AreaChart` en el renderer local `GenerativeNode`, con `areaChartPropsSchema` y la acción `onPointSelect`. No forma parte del subconjunto Basic Catalog A2UI `v0.9.1` admitido por la red; para recibir gráficos hace falta definir un catálogo personalizado versionado de forma coordinada en MCP, agente y Expo. Esta adaptación no incluye la API composable web, brush zoom ni ejes dobles de Bklit.
+Se registra como `AreaChart` en el renderer local `GenerativeNode`, con `areaChartPropsSchema` y la acción local `onPointSelect`. Finance Catalog v1 también lo alcanza exclusivamente mediante el adaptador A2UI `Chart`; ese límite elimina el callback antes de delegar. Esta adaptación no incluye la API composable web, brush zoom ni ejes dobles de Bklit.
 
 ### HeatmapChart
 
@@ -601,4 +604,22 @@ Adaptación nativa del [mapa de calor de Bklit](https://bklit.com/docs/component
 - `tone`: green (predeterminado), blue, violet u orange. `currency`: MXN o USD, opcional. `status`: ready o loading. Contempla datos vacíos y periodos sin registros.
 - Sin fecha inicial, abre el último día disponible; sin datos, usa la fecha actual. Los cambios de datos reinician la navegación y selección.
 
-Registrado como `HeatmapChart` en el registro generativo local, con esquema estricto y acciones `onDaySelect` / `onPeriodChange`. El contrato de red actual del agente conserva sus cuatro tipos: el backend aún debe ampliar su contrato para emitir este componente. La demostración es local y no hace peticiones al agente ni al MCP.
+Registrado como `HeatmapChart` en el registro generativo local, con esquema estricto y acciones locales `onDaySelect` / `onPeriodChange`. Finance Catalog v1 lo alcanza mediante el adaptador A2UI `Chart`, que no acepta ni reenvía esos callbacks. Las demostraciones A2UI de la galería son locales y no hacen peticiones al agente ni al MCP.
+
+## Auditoría de gráficos y componentes generativos para A2UI
+
+El contrato elegido es un solo componente de red `Chart` en `https://fluidbank.app/a2ui/catalogs/finance/v1`. Su valor completo es `{kind: "area", accessibleSummary?, props: AreaChartData}` o `{kind: "heatmap", accessibleSummary?, props: HeatmapChartData}`. La diferencia de modelos permanece dentro de la unión discriminada: área usa 1–4 series con `id` estable y hasta 240 puntos de etiquetas/valores; heatmap usa hasta 500 celdas A2UI con fecha ISO real y valor no negativo. Separarlos en dos componentes de red habría duplicado el mismo límite de confianza y la misma plantilla sin aportar seguridad.
+
+| Archivo | Clasificación y decisión | Modelo, límites y comportamiento |
+| --- | --- | --- |
+| `charts/area-chart.tsx` | Componente visual candidato; se reutiliza sin cambios visuales por el adaptador. | iOS/Android/web mediante React Native SVG. Recibe título/subtítulo, 1–4 series, hasta 240 puntos, altura 180–500, moneda/estado y callback local. Soporta vacío, un punto, negativos y decimales, movimiento reducido, interacción accesible y tabla textual. El límite A2UI no reenvía callbacks ni estilos. |
+| `charts/area-chart-model.ts` | Modelo de validación/normalización, no componente wire. | Rechaza forma parcial, propiedades extra, valores no finitos/fuera de rango, conteos de valores incorrectos, arrays sin límite y ahora IDs de serie ausentes o duplicados. La única modificación directa existente fue exigir `series[].id` estable; no cambió la apariencia. |
+| `charts/heatmap-chart.tsx` | Componente visual candidato; se reutiliza sin cambios visuales por el adaptador. | iOS/Android/web con primitivas React Native. Admite vacío/carga, navegación año/mes/semana, texto accesible y callbacks locales. El adaptador pasa solo campos enumerados, nunca callbacks o estilos de red. |
+| `charts/heatmap-chart-model.ts` | Modelo de validación/normalización, no componente wire. | Valida fechas reales 1900–2100, unicidad, valores finitos no negativos y hasta 4,000 celdas locales. El límite de red es más conservador: 500. Datos parciales, fechas inválidas, duplicados, `NaN` e infinito fallan. |
+| `generative/generative-renderer.tsx` | Infraestructura de renderer local; nunca componente wire. | Resuelve nodos registrados y acciones locales. Exponerlo permitiría seleccionar implementación/nodos desde datos de red. |
+| `generative/generative-error.tsx` | UI local de fallo seguro; nunca componente wire. | El adaptador `Chart` la usa con texto fijo si la validación falla; no muestra payloads ni errores crudos. |
+| `generative/index.ts` | Superficie de exports; nunca componente wire. | No tiene props visuales ni modelo JSON y no debe convertirse en una entrada de catálogo. |
+
+Todos los props wire son JSON declarativo y acotado. Ningún modelo acepta funciones, elementos React, nombres de implementación, URLs, colores arbitrarios, estilos o formateadores. El resumen accesible está limitado a 500 caracteres y, si se omite, el adaptador genera uno fijo y acotado. Los charts existentes conservan sus propios estados vacío y accesibilidad; un modelo inválido usa `GenerativeError` sin intentar un render parcial.
+
+Para agregar otro componente personalizado: versionar el catálogo, limitarlo a props semánticos estrictos, validar el JSON con el SDK y Zod, crear un adaptador que enumere cada prop al delegar, sincronizar el contrato del agente, y agregar fixtures de paridad y pruebas de empaquetado. `database_overview.json` permanece como plantilla Basic independiente; no es ni debe usarse como registro de componentes.

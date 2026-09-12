@@ -77,7 +77,7 @@ El frontend consume exclusivamente mensajes oficiales A2UI `v0.9.1`; rechaza `a2
 
 Los cuerpos abreviados del ejemplo representan los envelopes completos. El agente debe resolver `_meta.ui.resourceUri`, leer la plantilla estática del MCP y devolver en `messages` la secuencia ordenada `createSurface` → `updateComponents` → `updateDataModel`. Expo no resuelve ni descarga `a2ui://...`, no habla directamente con MCP y no usa la URI como URL ejecutable.
 
-La capa aislada `src/features/a2ui` valida los mensajes con Zod, mantiene estado inmutable por superficie, aplica actualizaciones incrementales y JSON Pointer RFC 6901, resuelve bindings y renderiza `root`. El catálogo permitido es exactamente `https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json`. El subconjunto implementado coincide con la plantilla actual del MCP:
+La capa aislada `src/features/a2ui` valida los mensajes con Zod, mantiene estado inmutable por superficie, aplica actualizaciones incrementales y JSON Pointer RFC 6901, resuelve bindings y renderiza `root`. Permite exactamente el Basic Catalog oficial y `https://fluidbank.app/a2ui/catalogs/finance/v1`:
 
 | A2UI | Adaptador React Native existente |
 | --- | --- |
@@ -85,8 +85,11 @@ La capa aislada `src/features/a2ui` valida los mensajes con Zod, mantiene estado
 | `Button` | `ActionButton` |
 | `Card` | `Card` |
 | `Column` | `Stack` vertical |
+| `Chart` (solo Finance v1) | adaptador explícito a `AreaChart` o `HeatmapChart` |
 
-Componentes Basic no implementados y catálogos personalizados fallan de forma acotada; nunca ejecutan código, estilos, rutas de componentes ni URLs recibidas. Los gráficos continúan como componentes locales y no forman parte del catálogo A2UI de red. Para incorporarlos después se necesita un único catálogo personalizado, explícitamente versionado y compartido por MCP, agente y Expo; no una herramienta por gráfico o primitiva.
+Componentes Basic no implementados, `Chart` bajo Basic, catálogos desconocidos y propiedades adicionales fallan de forma acotada. El componente de red `Chart` usa `{kind: "area" | "heatmap", accessibleSummary?, props}` y vuelve a validar el valor resuelto antes de delegar. Acepta hasta 240 puntos y cuatro series de área o 500 celdas de heatmap; exige identificadores de serie estables, números finitos y fechas reales, y permite arreglos vacíos para reutilizar los estados vacíos existentes. No acepta callbacks, estilos, formateadores, elementos React, nombres de componente ni valores ejecutables. La galería incluye previews locales de ambos mensajes Finance completos.
+
+El MCP publica la plantilla separada `data_chart.json` en `a2ui://finance/data-chart`. `visualize_allowed_data` consulta solo columnas reflejadas y permitidas, omite y cuenta filas con nulos requeridos, y devuelve texto, datos de dominio y un único `updateDataModel`. El agente obtiene y cachea la plantilla, la valida con su copia sincronizada del catálogo y entrega la secuencia completa; Expo nunca descarga recursos MCP.
 
 `MCP_SERVER_URL`, `MCP_AUTH_MODE` y las credenciales de MCP son configuración exclusiva del agente. La app únicamente se conecta al agente y no envía tokens de Supabase ni credenciales de MCP en este transporte. Los perfiles `ana`, `luis` y `sofia` siguen siendo perfiles de demostración, independientes de la sesión autenticada del móvil.
 
@@ -99,7 +102,7 @@ Comprobaciones del despliegue: `/health` y `/openapi.json` respondieron HTTP 200
 - Los botones producen la acción oficial con `name`, `surfaceId`, `sourceComponentId`, `timestamp` y el `context` declarado resuelto contra el modelo de datos. Mientras el endpoint solo acepte `{ query, persona }`, el adaptador de transporte serializa temporalmente esa acción dentro de `query`; el renderer no conoce esta compatibilidad. Las acciones siguen siendo consultas o simulaciones de solo lectura.
 - La biblioteca `src/generative-ui` continúa disponible; su árbol `GenerativeNode` es un registro local, no un contrato que el agente desplegado emita actualmente.
 
-El agente local todavía devuelve `a2ui: null`. Para completar el flujo extremo a extremo debe invocar el MCP, resolver y combinar la plantilla con la actualización dinámica, y enrutar las acciones estructuradas al tool `a2ui_action`; no hacen falta cambios adicionales en el renderer móvil para la plantilla `database-overview` actual.
+El agente local ya puede resolver y combinar superficies Basic y Finance cuando una llamada MCP devuelve `_meta.ui`. Para usar el gráfico con preguntas bancarias reales todavía se debe desplegar esta versión de los tres repositorios, configurar el allowlist de tablas/vistas y enseñar al flujo de selección de herramientas del agente cuándo y con qué columnas invocar `visualize_allowed_data`.
 
 ## Banco de preguntas
 

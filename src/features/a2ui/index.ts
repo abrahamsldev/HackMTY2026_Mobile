@@ -1,6 +1,18 @@
 export { createA2UIAction } from './action';
 export { resolveDynamicString, resolveDynamicValue } from './bindings';
-export { buildRenderPlan, SUPPORTED_BASIC_COMPONENTS } from './catalog';
+export {
+  buildRenderPlan,
+  isComponentAllowed,
+  SUPPORTED_BASIC_COMPONENTS,
+  SUPPORTED_COMPONENTS_BY_CATALOG,
+  SUPPORTED_FINANCE_COMPONENTS,
+} from './catalog';
+export {
+  a2uiChartInputSchema,
+  a2uiChartValueSchema,
+  chartAdapterKind,
+  resolveA2UIChart,
+} from './components/chart-model';
 export { resolveDataPath, updateDataModel } from './data-model';
 export { A2UIMessageProcessor, componentChildren, messageSurfaceId } from './message-processor';
 export {

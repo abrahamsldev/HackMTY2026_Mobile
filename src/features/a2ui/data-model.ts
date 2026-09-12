@@ -1,5 +1,5 @@
 import { A2UI_LIMITS, type JSONValue } from './types.ts';
-import { decodeJsonPointer } from './schemas.ts';
+import { decodeJsonPointer } from './json-pointer.ts';
 
 function cloneJson(value: JSONValue): JSONValue {
   if (Array.isArray(value)) return value.map(cloneJson);

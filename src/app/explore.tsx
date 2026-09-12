@@ -15,7 +15,12 @@ import {
   StatusBadge,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { A2UI_BASIC_CATALOG_ID, A2UIMessageProcessor, type A2UIAction } from '@/features/a2ui';
+import {
+  A2UI_BASIC_CATALOG_ID,
+  A2UI_FINANCE_CATALOG_ID,
+  A2UIMessageProcessor,
+  type A2UIAction,
+} from '@/features/a2ui';
 import { A2UISurface } from '@/features/assistant/components/a2ui-surface';
 import {
   AccountBalanceCard,
@@ -69,6 +74,73 @@ const previewResult = previewProcessor.process([
 if (!previewResult.ok) throw new Error('Invalid local A2UI preview');
 const a2uiPreview = previewResult.surfaces[0];
 
+const financePreviewProcessor = new A2UIMessageProcessor();
+const financePreviewResult = financePreviewProcessor.process([
+  ...[
+    {
+      surfaceId: 'catalog-area-preview',
+      title: 'Chart · area',
+      chart: {
+        kind: 'area',
+        accessibleSummary: 'Tres meses de ingresos y gastos de ejemplo.',
+        props: {
+          currency: 'MXN',
+          series: [
+            { id: 'income', label: 'Ingresos', tone: 'blue' },
+            { id: 'expenses', label: 'Gastos', tone: 'violet' },
+          ],
+          data: [
+            { label: 'Ene', values: [12000, 8500] },
+            { label: 'Feb', values: [15800, 9200] },
+            { label: 'Mar', values: [14200, 8100] },
+          ],
+        },
+      },
+    },
+    {
+      surfaceId: 'catalog-heatmap-preview',
+      title: 'Chart · heatmap',
+      chart: {
+        kind: 'heatmap',
+        accessibleSummary: 'Tres valores diarios de ejemplo.',
+        props: {
+          currency: 'MXN',
+          initialDate: '2026-09-12',
+          initialView: 'week',
+          data: [
+            { date: '2026-09-10', value: 240 },
+            { date: '2026-09-11', value: 0 },
+            { date: '2026-09-12', value: 420 },
+          ],
+        },
+      },
+    },
+  ].flatMap(({ surfaceId, title, chart }) => [
+    {
+      version: 'v0.9.1',
+      createSurface: { surfaceId, catalogId: A2UI_FINANCE_CATALOG_ID },
+    },
+    {
+      version: 'v0.9.1',
+      updateComponents: {
+        surfaceId,
+        components: [
+          { id: 'root', component: 'Card', child: 'preview_column' },
+          { id: 'preview_column', component: 'Column', children: ['preview_title', 'preview_chart'] },
+          { id: 'preview_title', component: 'Text', text: title },
+          { id: 'preview_chart', component: 'Chart', chart: { path: '/chart' } },
+        ],
+      },
+    },
+    {
+      version: 'v0.9.1',
+      updateDataModel: { surfaceId, path: '/', value: { chart } },
+    },
+  ]),
+]);
+if (!financePreviewResult.ok) throw new Error('Invalid local finance A2UI previews');
+const financePreviews = financePreviewResult.surfaces;
+
 export default function ComponentCatalogScreen() {
   const [debugEvent, setDebugEvent] = useState<TestCatalogEvent | A2UIAction | null>(null);
 
@@ -119,7 +191,7 @@ export default function ComponentCatalogScreen() {
             title="Ingresos y gastos"
             subtitle="Evolución mensual · datos de ejemplo"
             currency="MXN"
-            series={[{ label: 'Ingresos', tone: 'blue' }, { label: 'Gastos', tone: 'violet' }]}
+            series={[{ id: 'income', label: 'Ingresos', tone: 'blue' }, { id: 'expenses', label: 'Gastos', tone: 'violet' }]}
             data={[
               { label: 'Ene', values: [12000, 8500] }, { label: 'Feb', values: [15800, 9200] },
               { label: 'Mar', values: [14200, 8100] }, { label: 'Abr', values: [19500, 11800] },
@@ -128,7 +200,7 @@ export default function ComponentCatalogScreen() {
             ]}
             onPointSelect={(point) => setDebugEvent({ event: 'area_point_selected', componentId: 'catalog-area-chart', payload: { source: point.label } })}
           />
-          <AreaChart title="Flujo neto" series={[{ label: 'Saldo neto', tone: 'green' }]} data={[
+          <AreaChart title="Flujo neto" series={[{ id: 'net', label: 'Saldo neto', tone: 'green' }]} data={[
             { label: 'Lun', values: [1200] }, { label: 'Mar', values: [-600] },
             { label: 'Mié', values: [400] }, { label: 'Jue', values: [0] }, { label: 'Vie', values: [2100] },
           ]} />
@@ -426,6 +498,19 @@ export default function ComponentCatalogScreen() {
             Componentes A2UI del agente
           </ThemedText>
           <A2UISurface surface={a2uiPreview} disabled={false} onDispatch={setDebugEvent} />
+        </Section>
+        <Section spacing="md">
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            Catálogo A2UI financiero v1
+          </ThemedText>
+          {financePreviews.map((surface) => (
+            <A2UISurface
+              key={surface.surfaceId}
+              surface={surface}
+              disabled
+              onDispatch={setDebugEvent}
+            />
+          ))}
         </Section>
       </Stack>
     </Page>

@@ -1,4 +1,6 @@
 import { cloneDataModel, updateDataModel } from './data-model.ts';
+import { isComponentAllowed } from './catalog.ts';
+import { resolveA2UIChart } from './components/chart-model.ts';
 import { a2uiMessageSequenceSchema } from './schemas.ts';
 import {
   A2UI_LIMITS,
@@ -72,6 +74,9 @@ export class A2UIMessageProcessor {
         if (!surface) throw new Error('surface has not been created');
 
         if ('components' in body) {
+          if (body.components.some((component) => !isComponentAllowed(surface.catalogId, component.component))) {
+            throw new Error('component is not defined by surface catalog');
+          }
           const components = new Map(surface.components);
           for (const component of body.components) components.set(component.id, component);
           if (components.size > A2UI_LIMITS.componentsPerSurface) throw new Error('too many components');
@@ -79,7 +84,13 @@ export class A2UIMessageProcessor {
         } else {
           const hasValue = Object.prototype.hasOwnProperty.call(body, 'value');
           const dataModel = updateDataModel(surface.dataModel, body.path, hasValue, body.value);
-          draft.set(body.surfaceId, { ...surface, dataModel });
+          const updatedSurface = { ...surface, dataModel };
+          for (const component of updatedSurface.components.values()) {
+            if (component.component === 'Chart' && !resolveA2UIChart(component.chart, dataModel).success) {
+              throw new Error('resolved chart data is invalid');
+            }
+          }
+          draft.set(body.surfaceId, updatedSurface);
         }
       }
     } catch {

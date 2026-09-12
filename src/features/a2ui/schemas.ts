@@ -2,11 +2,14 @@ import { z } from 'zod';
 
 import {
   A2UI_BASIC_CATALOG_ID,
+  A2UI_FINANCE_CATALOG_ID,
   A2UI_LIMITS,
   A2UI_VERSION,
   type A2UIMessage,
   type JSONValue,
 } from './types.ts';
+import { a2uiChartInputSchema } from './components/chart-model.ts';
+import { isSafeJsonPointer } from './json-pointer.ts';
 
 const identifier = z
   .string()
@@ -14,27 +17,7 @@ const identifier = z
   .max(128)
   .regex(/^[A-Za-z][A-Za-z0-9._:-]*$/);
 
-export function decodeJsonPointer(path: string): string[] {
-  if (path === '/') return [];
-  if (!path.startsWith('/') || path.includes('#')) {
-    throw new Error('invalid JSON Pointer');
-  }
-  return path.slice(1).split('/').map((segment) => {
-    if (/~(?![01])/u.test(segment)) throw new Error('invalid JSON Pointer escape');
-    return segment.replace(/~1/gu, '/').replace(/~0/gu, '~');
-  });
-}
-
-export function isSafeJsonPointer(path: string): boolean {
-  try {
-    const segments = decodeJsonPointer(path);
-    return segments.every(
-      (segment) => !['__proto__', 'prototype', 'constructor'].includes(segment),
-    );
-  } catch {
-    return false;
-  }
-}
+export { decodeJsonPointer, isSafeJsonPointer } from './json-pointer.ts';
 
 const jsonPointer = z.string().max(512).refine(isSafeJsonPointer);
 export const jsonValueSchema: z.ZodType<JSONValue> = z.lazy(() =>
@@ -104,6 +87,11 @@ export const a2uiComponentSchema = z.discriminatedUnion('component', [
       .optional(),
     align: z.enum(['start', 'center', 'end', 'stretch']).optional(),
   }).strict(),
+  z.object({
+    ...common,
+    component: z.literal('Chart'),
+    chart: a2uiChartInputSchema,
+  }).strict(),
 ]);
 
 const theme = z
@@ -118,7 +106,10 @@ const createSurface = z.object({
   version: z.literal(A2UI_VERSION),
   createSurface: z.object({
     surfaceId: identifier,
-    catalogId: z.literal(A2UI_BASIC_CATALOG_ID),
+    catalogId: z.union([
+      z.literal(A2UI_BASIC_CATALOG_ID),
+      z.literal(A2UI_FINANCE_CATALOG_ID),
+    ]),
     theme: theme.optional(),
     sendDataModel: z.boolean().optional(),
   }).strict(),
@@ -157,7 +148,27 @@ export const a2uiMessageSchema: z.ZodType<A2UIMessage> = z.union([
 export const a2uiMessageSequenceSchema = z
   .array(a2uiMessageSchema)
   .min(1)
-  .max(A2UI_LIMITS.messagesPerResponse);
+  .max(A2UI_LIMITS.messagesPerResponse)
+  .superRefine((messages, context) => {
+    const catalogs = new Map<string, string>();
+    for (const message of messages) {
+      if ('createSurface' in message) {
+        catalogs.set(message.createSurface.surfaceId, message.createSurface.catalogId);
+        continue;
+      }
+      if (!('updateComponents' in message)) continue;
+      const catalog = catalogs.get(message.updateComponents.surfaceId);
+      if (
+        catalog === A2UI_BASIC_CATALOG_ID
+        && message.updateComponents.components.some((component) => component.component === 'Chart')
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Chart is not defined by the Basic Catalog.',
+        });
+      }
+    }
+  });
 
 export const a2uiActionSchema = z.object({
   name: identifier,
