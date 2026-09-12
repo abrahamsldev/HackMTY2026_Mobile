@@ -9,6 +9,7 @@ import {
   profileFromUser,
   saveUserProfile,
 } from '../src/features/auth/profile.ts';
+import { demoUserIdForEmail } from '../src/features/auth/demo-users.ts';
 
 function makeStorage() {
   const values = new Map();
@@ -93,4 +94,12 @@ test('logout failure propagates so the UI can offer a retry', async () => {
 
 test('invalid metadata cannot become a displayed name', () => {
   assert.deepEqual(profileFromUser({ email: profile.email, user_metadata: { full_name: { invalid: true } } }), { fullName: '', email: profile.email });
+});
+
+test('configured demo emails resolve to canonical ids and unknown emails fail closed', () => {
+  assert.equal(
+    demoUserIdForEmail('  ANA.DEMO@FluidBank.test  '),
+    '68dc4d66-07b8-5893-95f1-07f06989a552',
+  );
+  assert.equal(demoUserIdForEmail('unknown@example.com'), null);
 });

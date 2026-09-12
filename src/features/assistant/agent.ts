@@ -1,11 +1,6 @@
-import { z } from 'zod';
-
 import { extractA2UITransportReply, serializeActionForLegacyChat } from '../a2ui/transport.ts';
 import type { A2UIAction, A2UIMessage } from '../a2ui/types.ts';
-
-// The agent identifies the user by their own login email (Supabase Auth
-// session), matched against public.users.email - never a fixed demo persona.
-export const emailSchema = z.string().trim().toLowerCase().pipe(z.email());
+import { demoUserIdSchema, type DemoUserId } from '../auth/demo-users.ts';
 
 export type AgentReply = {
   message: string;
@@ -37,7 +32,7 @@ export class AgentRequestError extends Error {
 export type AgentRequestOptions = {
   baseUrl: string;
   query: string;
-  email: string;
+  userId: DemoUserId | string;
   signal?: AbortSignal;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
@@ -46,7 +41,7 @@ export type AgentRequestOptions = {
 export async function requestAgent({
   baseUrl,
   query,
-  email,
+  userId,
   signal,
   timeoutMs = 60_000,
   fetchImpl = fetch,
@@ -66,9 +61,9 @@ export async function requestAgent({
   if (!normalizedQuery || normalizedQuery.length > 8_000) {
     throw new AgentRequestError('response', 'Escribe una consulta de hasta 8000 caracteres.');
   }
-  const parsedEmail = emailSchema.safeParse(email);
-  if (!parsedEmail.success) {
-    throw new AgentRequestError('configuration', 'Completa tu correo electrónico en tu perfil para usar el asistente.');
+  const parsedUserId = demoUserIdSchema.safeParse(userId);
+  if (!parsedUserId.success) {
+    throw new AgentRequestError('configuration', 'Selecciona un usuario de demostración configurado para usar el asistente.');
   }
   const controller = new AbortController();
   const cancel = () => controller.abort();
@@ -85,13 +80,15 @@ export async function requestAgent({
     const response = await fetchImpl(endpoint.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ query: normalizedQuery, email: parsedEmail.data }),
+      body: JSON.stringify({ query: normalizedQuery, user_id: parsedUserId.data }),
       signal: controller.signal,
     });
     if (!response.ok) {
       throw new AgentRequestError(
         'response',
-        response.status === 401 || response.status === 403
+        response.status === 422
+          ? 'El usuario de demostración seleccionado no está configurado.'
+          : response.status === 401 || response.status === 403
           ? 'El agente rechazó el acceso. Revisa su configuración de autenticación.'
           : 'El agente no pudo atender la consulta. Inténtalo de nuevo.',
       );

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { A2UIMessageProcessor, type A2UIAction, type A2UISurfaceState } from '../a2ui';
 import { AgentRequestError, requestAgent, requestAgentAction, type AgentReply } from './agent';
+import type { DemoUserId } from '../auth/demo-users';
 import { agentBaseUrl } from './connection';
 
 type AssistantSurface = {
@@ -10,7 +11,7 @@ type AssistantSurface = {
   a2uiSurfaces: readonly A2UISurfaceState[];
 };
 
-export function useAssistant(email: string) {
+export function useAssistant(currentUserId: DemoUserId) {
   const [surface, setSurface] = useState<AssistantSurface | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,8 +36,8 @@ export function useAssistant(email: string) {
     setError(null);
     try {
       const reply = action
-        ? await requestAgentAction({ baseUrl: agentBaseUrl, action, email, signal: controller.signal })
-        : await requestAgent({ baseUrl: agentBaseUrl, query: normalized, email, signal: controller.signal });
+        ? await requestAgentAction({ baseUrl: agentBaseUrl, action, userId: currentUserId, signal: controller.signal })
+        : await requestAgent({ baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, signal: controller.signal });
       if (request.current.id === id) {
         const processed = reply.messages ? processor.current.process(reply.messages) : null;
         const effectiveReply = processed && !processed.ok
