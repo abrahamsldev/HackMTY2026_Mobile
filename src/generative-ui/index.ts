@@ -10,6 +10,8 @@ export {
   sectionPropsSchema,
   stackPropsSchema,
   textBlockPropsSchema,
+  transactionItemPropsSchema,
+  transactionListPropsSchema,
 } from './component-schemas';
 export {
   componentRegistry,

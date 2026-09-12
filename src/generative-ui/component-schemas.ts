@@ -85,6 +85,39 @@ export const financialStatCardPropsSchema = z
   })
   .strict();
 
+export const transactionItemPropsSchema = z
+  .object({
+    transactionId: z.string().min(1),
+    title: z.string().min(1),
+    description: z.string().optional(),
+    amount: z.number().finite(),
+    currency: z.enum(['MXN', 'USD']).optional(),
+    occurredAt: z.string().refine((val) => !isNaN(Date.parse(val)), {
+      message: 'occurredAt debe ser una fecha válida (formato ISO)',
+    }),
+    category: z.enum([
+      'food',
+      'transport',
+      'entertainment',
+      'utilities',
+      'health',
+      'shopping',
+      'income',
+      'transfer',
+      'other',
+    ]),
+    status: z.enum(['pending', 'completed', 'declined']).optional(),
+  })
+  .strict();
+
+export const transactionListPropsSchema = z
+  .object({
+    title: z.string().optional(),
+    emptyMessage: z.string().optional(),
+    spacing: z.enum(['none', 'sm', 'md']).optional(),
+  })
+  .strict();
+
 export const generativeActionSchema: z.ZodType<GenerativeAction> = z
   .object({
     event: z.string().min(1),

@@ -6,6 +6,8 @@ import { Card, TextBlock } from '@/components/ui';
 import {
   AccountBalanceCard,
   FinancialStatCard,
+  TransactionItem,
+  TransactionList,
 } from '@/features/personal-banking';
 
 import {
@@ -17,6 +19,8 @@ import {
   sectionPropsSchema,
   stackPropsSchema,
   textBlockPropsSchema,
+  transactionItemPropsSchema,
+  transactionListPropsSchema,
 } from './component-schemas';
 import type { ComponentRegistryEntry } from './types';
 
@@ -69,6 +73,18 @@ export const componentRegistry = {
     propsSchema: financialStatCardPropsSchema,
     allowsChildren: false,
     allowedActions: [],
+  },
+  TransactionList: {
+    component: TransactionList,
+    propsSchema: transactionListPropsSchema,
+    allowsChildren: true,
+    allowedActions: [],
+  },
+  TransactionItem: {
+    component: TransactionItem,
+    propsSchema: transactionItemPropsSchema,
+    allowsChildren: false,
+    allowedActions: ['onPress'],
   },
 } as const;
 

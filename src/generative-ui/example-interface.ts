@@ -10,7 +10,13 @@ import type { GenerativeNode } from './types';
  *     │   └── Grid
  *     │       ├── AccountBalanceCard (Saldo disponible con onPress a MCP)
  *     │       ├── FinancialStatCard (Ingresos del mes)
- *     │       └── FinancialStatCard (Gastos del mes)
+ *     │       └── FinancialStatCard (Gastos del mes con valor negativo)
+ *     ├── Section
+ *     │   └── TransactionList
+ *     │       ├── TransactionItem (Supermercado: negativo)
+ *     │       ├── TransactionItem (Transporte: negativo)
+ *     │       ├── TransactionItem (Streaming: negativo)
+ *     │       └── TransactionItem (Depósito nómina: positivo)
  *     └── Section
  *         └── Card (Flujo de efectivo / Proyección con TextBlock)
  */
@@ -122,13 +128,13 @@ export const exampleFinancialInterface: GenerativeNode = {
                     },
                   },
                 },
-                // Card 3: FinancialStatCard especializado para gastos
+                // Card 3: FinancialStatCard especializado para gastos con valor negativo
                 {
                   id: 'monthly-expenses',
                   type: 'FinancialStatCard',
                   props: {
                     label: 'Gastos del mes',
-                    value: 18320.5,
+                    value: -18320.5,
                     format: 'currency',
                     currency: 'MXN',
                     tone: 'negative',
@@ -142,7 +148,126 @@ export const exampleFinancialInterface: GenerativeNode = {
             },
           ],
         },
-        // Section 2: Proyección y Flujo de Efectivo
+
+        // Section 2: Movimientos Recientes (TransactionList con 4 TransactionItems)
+        {
+          id: 'transactions-section',
+          type: 'Section',
+          props: {
+            spacing: 'sm',
+            padding: 'none',
+          },
+          children: [
+            {
+              id: 'recent-transactions-list',
+              type: 'TransactionList',
+              props: {
+                title: 'Movimientos Recientes',
+                emptyMessage: 'No hay movimientos recientes registrados.',
+              },
+              children: [
+                // 1. Supermercado (gasto negativo)
+                {
+                  id: 'txn-supermarket',
+                  type: 'TransactionItem',
+                  props: {
+                    transactionId: 'txn-001',
+                    title: 'HEB San Pedro',
+                    description: 'Supermercado y despensa semanal',
+                    amount: -1450.8,
+                    currency: 'MXN',
+                    occurredAt: '2026-09-11T14:30:00.000Z',
+                    category: 'shopping',
+                    status: 'completed',
+                  },
+                  actions: {
+                    onPress: {
+                      event: 'view_transaction_details',
+                      tool: 'banorte_get_transaction_details',
+                      payload: {
+                        transactionId: 'txn-001',
+                      },
+                    },
+                  },
+                },
+                // 2. Transporte o gasolina (gasto negativo)
+                {
+                  id: 'txn-transport',
+                  type: 'TransactionItem',
+                  props: {
+                    transactionId: 'txn-002',
+                    title: 'OXXO GAS Lázaro Cárdenas',
+                    description: 'Combustible Magna 35 litros',
+                    amount: -780.0,
+                    currency: 'MXN',
+                    occurredAt: '2026-09-10T19:15:00.000Z',
+                    category: 'transport',
+                    status: 'completed',
+                  },
+                  actions: {
+                    onPress: {
+                      event: 'view_transaction_details',
+                      tool: 'banorte_get_transaction_details',
+                      payload: {
+                        transactionId: 'txn-002',
+                      },
+                    },
+                  },
+                },
+                // 3. Servicio de streaming (gasto negativo)
+                {
+                  id: 'txn-streaming',
+                  type: 'TransactionItem',
+                  props: {
+                    transactionId: 'txn-003',
+                    title: 'Netflix México',
+                    description: 'Plan mensual estándar HD',
+                    amount: -219.0,
+                    currency: 'MXN',
+                    occurredAt: '2026-09-09T08:00:00.000Z',
+                    category: 'entertainment',
+                    status: 'completed',
+                  },
+                  actions: {
+                    onPress: {
+                      event: 'view_transaction_details',
+                      tool: 'banorte_get_transaction_details',
+                      payload: {
+                        transactionId: 'txn-003',
+                      },
+                    },
+                  },
+                },
+                // 4. Depósito de nómina (ingreso positivo)
+                {
+                  id: 'txn-payroll',
+                  type: 'TransactionItem',
+                  props: {
+                    transactionId: 'txn-004',
+                    title: 'Nómina Quincenal Banorte',
+                    description: 'Transferencia electrónica SPEI',
+                    amount: 21400.0,
+                    currency: 'MXN',
+                    occurredAt: '2026-09-08T09:00:00.000Z',
+                    category: 'income',
+                    status: 'completed',
+                  },
+                  actions: {
+                    onPress: {
+                      event: 'view_transaction_details',
+                      tool: 'banorte_get_transaction_details',
+                      payload: {
+                        transactionId: 'txn-004',
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+
+        // Section 3: Proyección y Flujo de Efectivo
         {
           id: 'cashflow-section',
           type: 'Section',
