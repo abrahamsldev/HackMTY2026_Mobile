@@ -1,4 +1,6 @@
-import { TextInput, Pressable, type TextInputHandle } from '@/components/accessible-primitives';
+import { TextInput, type TextInputHandle } from '@/components/accessible-primitives';
+import { useNavigation } from 'expo-router';
+import type { DrawerNavigationProp } from 'expo-router/drawer';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 
@@ -7,19 +9,16 @@ import { ThemedText } from '@/components/themed-text';
 import { ActionButton } from '@/components/ui/action-button';
 import { InfoBanner } from '@/components/ui/info-banner';
 import { Spacing } from '@/constants/theme';
-import { type Persona } from '@/features/assistant/agent';
 import { A2UISurface } from '@/features/assistant/components/a2ui-surface';
 import { QuestionBank } from '@/features/assistant/components/question-bank';
 import { useAssistant } from '@/features/assistant/use-assistant';
+import { useSession } from '@/features/auth/session-provider';
 import { useTheme } from '@/hooks/use-theme';
 
-const personas: { id: Persona; label: string }[] = [
-  { id: 'ana', label: 'Ana' }, { id: 'luis', label: 'Luis' }, { id: 'sofia', label: 'Sofía' },
-];
-
 export default function HomeScreen() {
-  const [persona, setPersona] = useState<Persona>('ana');
-  const theme = useTheme();
+  const { profile, isLoading } = useSession();
+  const email = profile.email.trim();
+  const navigation = useNavigation<DrawerNavigationProp<{ index: undefined; settings: undefined; explore: undefined }>>();
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={100}>
       <Page>
@@ -28,34 +27,24 @@ export default function HomeScreen() {
             <ThemedText style={styles.title}>¿Qué necesitas hoy?</ThemedText>
             <ThemedText themeColor="textSecondary">Cuéntame qué quieres revisar. La pantalla se adapta a tu consulta.</ThemedText>
           </View>
-          <View style={styles.intro}>
-            <ThemedText type="smallBold">Perfil de demostración</ThemedText>
-            <View style={styles.personas}>
-              {personas.map((item) => (
-                <Pressable
-                  key={item.id}
-                  accessibilityRole="radio"
-                  accessibilityLabel={`Perfil de ${item.label}`}
-                  accessibilityState={{ checked: item.id === persona }}
-                  onPress={() => setPersona(item.id)}
-                  style={[styles.persona, { backgroundColor: item.id === persona ? theme.backgroundSelected : theme.backgroundElement }]}>
-                  <ThemedText>{item.label}</ThemedText>
-                </Pressable>
-              ))}
+          {isLoading ? <ActivityIndicator accessibilityLabel="Cargando tu perfil" /> : email ? (
+            // Remounting also aborts requests and discards the previous user's data.
+            <AssistantWorkspace key={email} email={email} />
+          ) : (
+            <View style={styles.intro}>
+              <InfoBanner message="Agrega tu correo electrónico en tu perfil para usar el asistente." />
+              <ActionButton label="Completar mi perfil" onPress={() => navigation.navigate('settings')} />
             </View>
-            <ThemedText type="small" themeColor="textSecondary">Las consultas usan perfiles de prueba. No se contratan productos ni se modifican suscripciones.</ThemedText>
-          </View>
-          {/* Remounting also aborts requests and discards the previous persona's data. */}
-          <AssistantWorkspace key={persona} persona={persona} />
+          )}
         </View>
       </Page>
     </KeyboardAvoidingView>
   );
 }
 
-function AssistantWorkspace({ persona }: { persona: Persona }) {
+function AssistantWorkspace({ email }: { email: string }) {
   const theme = useTheme();
-  const assistant = useAssistant(persona);
+  const assistant = useAssistant(email);
   const [query, setQuery] = useState('');
   const queryInput = useRef<TextInputHandle>(null);
 
@@ -116,7 +105,5 @@ const styles = StyleSheet.create({
   content: { gap: Spacing.four },
   intro: { gap: Spacing.two },
   title: { fontSize: 28, fontWeight: '600', lineHeight: 36 },
-  personas: { flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' },
-  persona: { paddingHorizontal: Spacing.four, minHeight: 48, borderRadius: 12, justifyContent: 'center' },
   input: { minHeight: 100, maxHeight: 200, borderWidth: 1, borderRadius: 12, padding: Spacing.three, fontSize: 17, lineHeight: 24 },
 });

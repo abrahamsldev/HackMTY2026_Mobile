@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { a2uiSchema, createDispatch, dispatchToQuery, requestAgent, parseAgentReply } from '../src/features/assistant/agent.ts';
 
 const fixtures = JSON.parse(readFileSync(new URL('./fixtures/agent-responses.json', import.meta.url)));
-const options = { baseUrl: 'https://agent.example.com', query: 'Revisar suscripciones', persona: 'luis' };
+const options = { baseUrl: 'https://agent.example.com', query: 'Revisar suscripciones', email: 'luis.demo@fluidbank.test' };
 
 for (const fixture of fixtures) {
   test(`accepts the wire contract of ${fixture.template_id}`, () => {
@@ -56,7 +56,7 @@ test('sends the actual chat contract without MCP credentials or unsupported requ
     called = true;
     assert.equal(url, 'https://agent.example.com/api/v1/agent/chat');
     assert.equal(init.method, 'POST');
-    assert.deepEqual(JSON.parse(init.body), { query: 'Revisar suscripciones', persona: 'luis' });
+    assert.deepEqual(JSON.parse(init.body), { query: 'Revisar suscripciones', email: 'luis.demo@fluidbank.test' });
     assert.deepEqual(init.headers, { 'Content-Type': 'application/json', Accept: 'application/json' });
     return new Response(JSON.stringify(fixtures[1]), { status: 200 });
   } });
@@ -68,6 +68,20 @@ test('missing deployment URL never makes a network request or uses localhost', a
   let called = false;
   await assert.rejects(requestAgent({ ...options, baseUrl: '', fetchImpl: async () => { called = true; } }), { code: 'configuration' });
   assert.equal(called, false);
+});
+
+test('an unusable email never makes a network request', async () => {
+  let called = false;
+  await assert.rejects(requestAgent({ ...options, email: 'not-an-email', fetchImpl: async () => { called = true; } }), { code: 'configuration' });
+  assert.equal(called, false);
+});
+
+test('email is trimmed and lowercased before it reaches the agent', async () => {
+  const result = await requestAgent({ ...options, email: '  Luis.Demo@FluidBank.test  ', fetchImpl: async (url, init) => {
+    assert.deepEqual(JSON.parse(init.body), { query: 'Revisar suscripciones', email: 'luis.demo@fluidbank.test' });
+    return new Response(JSON.stringify(fixtures[1]), { status: 200 });
+  } });
+  assert.equal(result.payload.template_id, 'Template_Subscriptions');
 });
 
 test('malformed and incompatible agent responses fail recoverably', async () => {

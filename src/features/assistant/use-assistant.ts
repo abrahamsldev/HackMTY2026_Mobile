@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { AgentRequestError, dispatchToQuery, requestAgent, type A2UIDispatch, type AgentReply, type Persona } from './agent';
+import { AgentRequestError, dispatchToQuery, requestAgent, type A2UIDispatch, type AgentReply } from './agent';
 import { agentBaseUrl } from './connection';
 
-export function useAssistant(persona: Persona) {
+export function useAssistant(email: string) {
   const [surface, setSurface] = useState<{ reply: AgentReply; revision: number } | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +26,7 @@ export function useAssistant(persona: Persona) {
     setPending(true);
     setError(null);
     try {
-      const reply = await requestAgent({ baseUrl: agentBaseUrl, query: normalized, persona, signal: controller.signal });
+      const reply = await requestAgent({ baseUrl: agentBaseUrl, query: normalized, email, signal: controller.signal });
       if (request.current.id === id) setSurface({ reply, revision: id });
     } catch (cause) {
       if (request.current.id !== id || controller.signal.aborted) return;

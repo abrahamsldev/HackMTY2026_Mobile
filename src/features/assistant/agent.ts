@@ -4,8 +4,9 @@ import { z } from 'zod';
 // constrained to what our registered native components can safely render.
 const text = z.string().min(1).max(4000);
 const tags = z.array(z.string().max(64)).max(32).default([]);
-export const personaSchema = z.enum(['ana', 'luis', 'sofia']);
-export type Persona = z.infer<typeof personaSchema>;
+// The agent identifies the user by their own login email (Supabase Auth
+// session), matched against public.users.email - never a fixed demo persona.
+export const emailSchema = z.string().trim().toLowerCase().pipe(z.email());
 export const actionSchema = z.object({
   type: z.literal('A2UI_DISPATCH'),
   intent: z.enum(['REQUEST_CREDIT', 'MANAGE_SUBSCRIPTIONS', 'CONFIRM_SIMULATION', 'VIEW_DETAILS']),
@@ -126,8 +127,8 @@ export class AgentRequestError extends Error {
   }
 }
 
-export async function requestAgent({ baseUrl, query, persona, signal, timeoutMs = 60000, fetchImpl = fetch }: {
-  baseUrl: string; query: string; persona: Persona; signal?: AbortSignal;
+export async function requestAgent({ baseUrl, query, email, signal, timeoutMs = 60000, fetchImpl = fetch }: {
+  baseUrl: string; query: string; email: string; signal?: AbortSignal;
   timeoutMs?: number; fetchImpl?: typeof fetch;
 }): Promise<AgentReply> {
   let endpoint: URL;
@@ -139,7 +140,8 @@ export async function requestAgent({ baseUrl, query, persona, signal, timeoutMs 
   }
   const normalizedQuery = query.trim();
   if (!normalizedQuery || normalizedQuery.length > 8000) throw new AgentRequestError('response', 'Escribe una consulta de hasta 8000 caracteres.');
-  personaSchema.parse(persona);
+  const parsedEmail = emailSchema.safeParse(email);
+  if (!parsedEmail.success) throw new AgentRequestError('configuration', 'Completa tu correo electrónico en tu perfil para usar el asistente.');
   const controller = new AbortController();
   const cancel = () => controller.abort();
   if (signal?.aborted) cancel();
@@ -151,7 +153,7 @@ export async function requestAgent({ baseUrl, query, persona, signal, timeoutMs 
     const response = await fetchImpl(endpoint.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ query: normalizedQuery, persona }),
+      body: JSON.stringify({ query: normalizedQuery, email: parsedEmail.data }),
       signal: controller.signal,
     });
     if (!response.ok) throw new AgentRequestError('response',
