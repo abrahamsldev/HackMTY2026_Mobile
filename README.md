@@ -1,56 +1,61 @@
-# Welcome to your Expo app 👋
+# HackMTY 2026 · Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación de banca personal con Expo SDK 57, React Native y A2UI. La experiencia financiera vive en una única pantalla: las respuestas del agente deben reemplazar su interfaz generativa según las peticiones del usuario. No hay tabs por funcionalidad.
 
-## Get started
+El drawer contiene únicamente **Configuración** y **Cerrar sesión**. Configuración permite editar nombre y correo; la flecha del encabezado regresa a Inicio sin abandonar la superficie principal.
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Ejecutar
 
 ```bash
-npm run reset-project
+npm install
+cp .env.example .env.local # Solo si todavía no existe tu configuración local.
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Usa Node 22.13+ o 24.3+ compatible con las dependencias instaladas. Después de agregar dependencias nativas, recompila tu development build si no usas Expo Go.
 
-### Other setup steps
+## Sesión de Supabase
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Configura en `.env.local`:
 
-## Learn more
+```dotenv
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+También se admite `EXPO_PUBLIC_SUPABASE_ANON_KEY` para proyectos con la clave pública anterior. Reinicia Metro después de cambiar estas variables. Las variables públicas se incluyen en el cliente: nunca uses `SUPABASE_SERVICE_ROLE_KEY`.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- `src/lib/supabase.ts` crea un cliente único con persistencia y renovación automática. Usa AsyncStorage en iOS/Android y el almacenamiento del navegador en web.
+- `SessionProvider` restaura la sesión, escucha sus cambios y activa la renovación nativa solo mientras la app está en primer plano. `useSession()` expone sesión, perfil, carga, errores, actualización y cierre.
+- El acceso a Inicio y Configuración está abierto, incluso sin sesión o sin variables de Supabase. No se crea una sesión anónima ni se agrega una pantalla de login.
+- Con sesión, Configuración usa `auth.updateUser` para guardar `user_metadata.full_name` y correo. Si el correo necesita confirmación, se informa al usuario; la dirección anterior sigue vigente hasta confirmarse.
+- Sin sesión, los datos se guardan en un perfil local de prueba separado. No se suben ni se fusionan automáticamente al iniciar sesión.
+- Cerrar sesión usa `scope: 'local'`, elimina el perfil de prueba y reinicia las pantallas para descartar datos y borradores anteriores. Otros dispositivos conservan su sesión.
 
-## Join the community
+Para agregar autenticación obligatoria más adelante, conecta el flujo de login al mismo cliente y protege las rutas cuando termine `isLoading`. El backend debe validar la identidad por su cuenta.
 
-Join our community of developers creating universal apps.
+## A2UI, agente y MCP
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+La navegación es solo el contenedor de la experiencia. Las acciones financieras deben volver al agente como eventos y sus respuestas deben actualizar Inicio, sin añadir rutas para cuentas, gastos o simulaciones.
+
+Se revisaron `hackmty2026-agent` y `hackmty2026-mcp` como contexto, sin importar sus archivos ni modificar sus servicios:
+
+- El agente ofrece `POST /api/v1/agent/chat`, con `{ query, persona }`, y devuelve `a2ui/v1` con `meta` y `surface`. Sus componentes son `Banner`, `Button`, `InteractiveSlider` y `MetricCard`.
+- El renderer móvil actual usa un árbol `GenerativeNode` y un registro de componentes validado por Zod. Inicio todavía muestra datos sintéticos y captura `UIActionEvent` localmente; **la conexión HTTP y el adaptador al contrato `a2ui/v1` del agente siguen pendientes**. No se debe enviar ese payload directamente al renderer actual ni confundirlo con su árbol local.
+- MCP es de solo lectura y proporciona contexto financiero al agente. El móvil no llama a MCP ni escribe en sus tablas. La configuración de cuenta usa exclusivamente Supabase Auth.
+- El endpoint actual del agente selecciona personas de demostración; todavía no vincula el JWT de Supabase con el usuario financiero.
+
+La biblioteca y sus reglas de validación están documentadas en [src/components/README.MD](src/components/README.MD).
+
+Configuración basada en la documentación de [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/), [Drawer de Expo Router](https://docs.expo.dev/router/advanced/drawer/) y [Supabase Auth para React Native](https://supabase.com/docs/guides/auth/quickstarts/react-native).
+
+## Verificar
+
+```bash
+npx tsc --noEmit
+npm run lint
+npm run test:auth
+npx expo export --platform web
+```
+
+Prueba manual: abrir/cerrar el drawer, entrar a Configuración y volver; guardar datos de invitado y recargar; cerrar sesión y comprobar que el formulario se limpia. Con una cuenta de prueba autenticada, comprobar restauración al reiniciar, edición de nombre/correo y cierre de sesión. No se necesita una cuenta para navegar.

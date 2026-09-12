@@ -2,7 +2,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type PageProps = {
@@ -45,7 +45,7 @@ export function Page({
         {
           paddingHorizontal: contentPadding,
           paddingTop: contentPadding,
-          paddingBottom: contentPadding + BottomTabInset,
+          paddingBottom: contentPadding,
         },
       ]}>
       {children}
@@ -67,7 +67,8 @@ export function Page({
   if (safeArea) {
     return (
       <SafeAreaView
-        edges={['top', 'left', 'right']}
+        // The drawer header already handles the top safe area.
+        edges={['bottom', 'left', 'right']}
         style={[styles.container, { backgroundColor }]}>
         {body}
       </SafeAreaView>

@@ -41,3 +41,9 @@ example
 # generated native folders
 /ios
 /android
+
+# MCP
+/hackmty2026-mcp
+
+# Agent
+/hackmty2026-agent

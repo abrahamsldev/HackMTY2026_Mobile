@@ -77,7 +77,7 @@ HackMTY2026_Mobile/
 │   ├── app/
 │   │   ├── _layout.tsx
 │   │   ├── index.tsx
-│   │   └── explore.tsx
+│   │   └── settings.tsx
 │   ├── components/
 │   │   ├── generative/
 │   │   │   ├── generative-error.tsx
@@ -138,7 +138,7 @@ HackMTY2026_Mobile/
 - Fallback visual para nodos invalidos.
 - Dispatcher de acciones estaticas y payload dinamico explicito.
 - Interfaz financiera sintetica en `src/app/index.tsx`.
-- Catalogo visual de componentes en `src/app/explore.tsx`.
+- Drawer de cuenta con Configuración y Cerrar sesión; sin tabs ni ruta Explore.
 - Soporte de tema claro y oscuro mediante tokens existentes.
 
 ### Componentes de layout
@@ -355,22 +355,9 @@ Reglas obligatorias:
 - No permitir que un payload dinamico reemplace parametros protegidos declarados en A2UI.
 - Mostrar un error controlado sin derribar toda la pantalla.
 
-## Catalogo visual
+## Navegación y sesión
 
-`src/app/explore.tsx` funciona como catalogo temporal de la biblioteca.
-
-Incluye:
-
-- Variantes y estados de `ActionButton`.
-- Tonos de `StatusBadge`.
-- Diferentes porcentajes de `ProgressBar`.
-- Tonos de `InfoBanner`.
-- Variantes de `Divider`.
-- Ejemplo de `EmptyState`.
-- Componentes actuales de banca personal.
-- Evento local de prueba para validar interacciones.
-
-Antes de modificar estilos globales o agregar variantes, revisar esta pantalla en movil, web, modo claro y modo oscuro.
+La ruta temporal `explore.tsx` y los tabs fueron eliminados. Inicio es la única superficie financiera; Configuración edita datos de cuenta y se abre desde el drawer. Consulta el [README principal](../../README.md) para configurar Supabase, revisar el modo sin sesión y conocer las diferencias pendientes entre el árbol local y el contrato `a2ui/v1` del agente.
 
 ## Ejecucion local
 
