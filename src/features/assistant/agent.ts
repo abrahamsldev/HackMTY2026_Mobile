@@ -160,8 +160,11 @@ export async function transcribeAudioWebhook({
       : typeof data?.transcription === 'string'
       ? data.transcription
       : responseText;
-    if (!text.trim() || text.length > 8_000) {
-      throw new AgentRequestError('contract', 'La transcripción recibida no es válida.');
+    if (!text.trim()) {
+      throw new AgentRequestError('response', 'No se detectó ninguna voz en la grabación. Intenta de nuevo hablando más cerca del micrófono.');
+    }
+    if (text.length > 8_000) {
+      throw new AgentRequestError('contract', 'La transcripción recibida es demasiado larga. Intenta con una consulta más breve.');
     }
     return text.trim();
   } catch (error) {
