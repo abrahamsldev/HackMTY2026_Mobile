@@ -35,6 +35,7 @@ export type AgentRequestOptions = {
   query: string;
   action?: A2UIAction;
   userId: string;
+  accountId: string;
   accessToken: string;
   signal?: AbortSignal;
   timeoutMs?: number;
@@ -190,6 +191,7 @@ export async function requestAgent({
   query,
   action,
   userId,
+  accountId,
   accessToken,
   signal,
   timeoutMs = 60_000,
@@ -214,6 +216,10 @@ export async function requestAgent({
   if (!parsedUserId.success) {
     throw new AgentRequestError('configuration', 'La cuenta no tiene un identificador válido.');
   }
+  const parsedAccountId = z.uuid().safeParse(accountId);
+  if (!parsedAccountId.success) {
+    throw new AgentRequestError('configuration', 'La cuenta bancaria no tiene un identificador válido.');
+  }
   if (!accessToken || /\s/.test(accessToken)) throw new AgentRequestError('authentication', 'Inicia sesión para consultar al asistente.');
   const controller = new AbortController();
   const cancel = () => controller.abort();
@@ -230,7 +236,11 @@ export async function requestAgent({
     const response = await fetchImpl(endpoint.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ ...(action ? { action } : { query: normalizedQuery }), user_id: parsedUserId.data }),
+      body: JSON.stringify({
+        ...(action ? { action } : { query: normalizedQuery }),
+        user_id: parsedUserId.data,
+        account_id: parsedAccountId.data,
+      }),
       signal: controller.signal,
     });
     if (!response.ok) {

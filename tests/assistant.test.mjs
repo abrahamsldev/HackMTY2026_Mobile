@@ -8,14 +8,15 @@ const fixture = JSON.parse(readFileSync(new URL('./fixtures/agent-responses.json
 const messages = fixture.databaseOverview;
 const USER_A = '68dc4d66-07b8-5893-95f1-07f06989a552';
 const USER_B = 'c1a3797d-b335-5a9d-98a1-402311f82c7a';
+const ACCOUNT_A = '04803dbe-97f1-4986-ace7-54c2d6196151';
 const TOKEN = 'test-session-access-token';
-const options = { accessToken: TOKEN, baseUrl: 'https://agent.example.com', query: 'Revisar base', userId: USER_B };
+const options = { accessToken: TOKEN, baseUrl: 'https://agent.example.com', query: 'Revisar base', userId: USER_B, accountId: ACCOUNT_A };
 
 test('extracts ordered official messages from the application transport wrapper', async () => {
   const result = await requestAgent({ ...options, fetchImpl: async (url, init) => {
     assert.equal(url, 'https://agent.example.com/api/v1/agent/chat');
     assert.equal(init.method, 'POST');
-    assert.deepEqual(JSON.parse(init.body), { query: 'Revisar base', user_id: USER_B });
+    assert.deepEqual(JSON.parse(init.body), { query: 'Revisar base', user_id: USER_B, account_id: ACCOUNT_A });
     assert.deepEqual(init.headers, { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${TOKEN}` });
     return new Response(JSON.stringify({
       message: 'Resumen disponible', data: {}, a2ui: { resource_uri: 'a2ui://database/overview', messages },
@@ -45,11 +46,12 @@ test('structured actions send the official five fields directly to the agent', a
     sourceComponentId: 'refresh_button', timestamp: '2026-09-12T12:00:00.000Z', context: { limit: 50 },
   };
   await requestAgentAction({
-    baseUrl: options.baseUrl, userId: USER_A, accessToken: TOKEN, action,
+    baseUrl: options.baseUrl, userId: USER_A, accountId: ACCOUNT_A, accessToken: TOKEN, action,
     fetchImpl: async (_url, init) => {
       const body = JSON.parse(init.body);
-      assert.deepEqual(Object.keys(body).sort(), ['action', 'user_id']);
+      assert.deepEqual(Object.keys(body).sort(), ['account_id', 'action', 'user_id']);
       assert.equal(body.user_id, USER_A);
+      assert.equal(body.account_id, ACCOUNT_A);
       assert.deepEqual(body.action, action);
       return new Response(JSON.stringify({ message: 'Actualizado', data: {}, a2ui: null }));
     },
@@ -65,15 +67,21 @@ test('missing deployment URL never makes a network request or uses localhost', a
   assert.equal(called, false);
 });
 
-test('an invalid account id never makes a network request', async () => {
+test('an invalid user id never makes a network request', async () => {
   let called = false;
   await assert.rejects(requestAgent({ ...options, userId: 'not-a-uuid', fetchImpl: async () => { called = true; } }), { code: 'configuration' });
   assert.equal(called, false);
 });
 
-test('the authenticated account id reaches the agent unchanged', async () => {
+test('an invalid bank account id never makes a network request', async () => {
+  let called = false;
+  await assert.rejects(requestAgent({ ...options, accountId: 'not-a-uuid', fetchImpl: async () => { called = true; } }), { code: 'configuration' });
+  assert.equal(called, false);
+});
+
+test('the authenticated user and bank account ids reach the agent unchanged', async () => {
   const result = await requestAgent({ ...options, userId: USER_B, fetchImpl: async (url, init) => {
-    assert.deepEqual(JSON.parse(init.body), { query: 'Revisar base', user_id: USER_B });
+    assert.deepEqual(JSON.parse(init.body), { query: 'Revisar base', user_id: USER_B, account_id: ACCOUNT_A });
     return new Response(JSON.stringify({
       message: 'Resumen disponible', data: {}, a2ui: { resource_uri: 'a2ui://database/overview', messages },
     }));

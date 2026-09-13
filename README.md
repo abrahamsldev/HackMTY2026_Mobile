@@ -68,10 +68,10 @@ Reinicia Metro y recarga completamente la app, o recompila el bundle, al cambiar
 El cliente realiza `POST /api/v1/agent/chat` con:
 
 ```json
-{ "query": "Revisar mis suscripciones", "user_id": "c1a3797d-b335-5a9d-98a1-402311f82c7a" }
+{ "query": "Revisar mis suscripciones", "user_id": "c1a3797d-b335-5a9d-98a1-402311f82c7a", "account_id": "04803dbe-97f1-4986-ace7-54c2d6196151" }
 ```
 
-La app envía el UUID de la cuenta autenticada como `user_id`, separado de `query`, y su token en Authorization. Al cambiar de usuario, React remonta el espacio del asistente, cancela solicitudes, crea un procesador A2UI nuevo y elimina la superficie anterior antes de mostrar otra respuesta.
+La app envía el UUID del usuario autenticado como `user_id`, la cuenta bancaria primaria como `account_id`, ambos separados de `query`, y su token en Authorization. Expo obtiene la cuenta primaria mediante RLS y el agente vuelve a verificar con MCP que pertenezca al usuario autenticado. Al cambiar de usuario, React remonta el espacio del asistente, cancela solicitudes, crea un procesador A2UI nuevo y elimina la superficie anterior antes de mostrar otra respuesta.
 
 El OpenAPI desplegado define la respuesta actual como `{ "message": "…", "data": {}, "a2ui": null }`. La app muestra `message` como texto accesible en la pantalla principal. Valida `data` pero no muestra ni conserva ese contexto interno. El servidor actualmente declara que `a2ui` permanece nulo hasta disponer de las herramientas A2UI del MCP.
 

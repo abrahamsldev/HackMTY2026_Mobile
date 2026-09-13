@@ -19,6 +19,9 @@ export function useAssistant(currentUserId: string) {
   const [error, setError] = useState<string | null>(null);
   const [actionStatus, setActionStatus] = useState<{ status: 'pending' | 'success' | 'failure'; message: string } | null>(null);
   const [lastQuery, setLastQuery] = useState('');
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [accountLoading, setAccountLoading] = useState(true);
+  const [accountError, setAccountError] = useState<string | null>(null);
   const request = useRef<{ id: number; controller?: AbortController }>({ id: 0 });
   const inFlight = useRef(false);
   const processor = useRef(new AssistantResponseProcessor());
@@ -28,6 +31,51 @@ export function useAssistant(currentUserId: string) {
     request.current.controller?.abort();
     request.current.id += 1;
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      if (!supabase) {
+        if (active) {
+          setAccountError('No se pudo consultar la cuenta bancaria.');
+          setAccountLoading(false);
+        }
+        return;
+      }
+      let lookup;
+      try {
+        lookup = await supabase
+          .from('accounts')
+          .select('id, account_type, created_at')
+          .eq('user_id', currentUserId)
+          .order('created_at', { ascending: true })
+          .limit(50);
+      } catch {
+        if (active) {
+          setAccountError('No se pudo consultar la cuenta bancaria.');
+          setAccountLoading(false);
+        }
+        return;
+      }
+      if (!active) return;
+      const { data, error: lookupError } = lookup;
+      if (lookupError || !data?.length) {
+        setAccountError('No encontramos una cuenta bancaria vinculada a tu usuario.');
+        setAccountLoading(false);
+        return;
+      }
+      const priority = { checking: 0, savings: 1, credit: 2 } as const;
+      const selected = [...data].sort((left, right) =>
+        (priority[left.account_type as keyof typeof priority] ?? 3) -
+        (priority[right.account_type as keyof typeof priority] ?? 3),
+      )[0];
+      setAccountId(selected.id);
+      setAccountLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [currentUserId]);
 
   async function run(query: string, action?: A2UIAction): Promise<boolean> {
     const normalized = query.trim();
@@ -50,9 +98,10 @@ export function useAssistant(currentUserId: string) {
       if (!verified || verified.user.id !== currentUserId) throw new AgentRequestError('authentication', 'Inicia sesión para consultar al asistente.');
       if (controller.signal.aborted || request.current.id !== id) return false;
       const accessToken = verified.access_token;
+      if (!accountId) throw new AgentRequestError('configuration', accountError || 'Espera mientras cargamos tu cuenta bancaria.');
       const reply = action
-        ? await requestAgentAction({ baseUrl: agentBaseUrl, action, userId: currentUserId, accessToken, signal: controller.signal })
-        : await requestAgent({ baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, accessToken, signal: controller.signal });
+        ? await requestAgentAction({ baseUrl: agentBaseUrl, action, userId: currentUserId, accountId, accessToken, signal: controller.signal })
+        : await requestAgent({ baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, accountId, accessToken, signal: controller.signal });
       if (request.current.id === id) {
         if (action) {
           const result = reply.actionResult ?? (reply.a2uiError
@@ -117,5 +166,19 @@ export function useAssistant(currentUserId: string) {
     if (previous) return run(previous.query, previous.action).then(() => undefined);
   }
 
-  return { surface, pending, error, actionStatus, lastQuery, send, transcribe, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry };
+  return {
+    surface,
+    pending,
+    error,
+    actionStatus,
+    lastQuery,
+    send,
+    transcribe,
+    dispatch,
+    cancel,
+    isConfigured: Boolean(agentBaseUrl) && Boolean(accountId) && !accountLoading,
+    configurationError: accountError,
+    accountId,
+    retry,
+  };
 }

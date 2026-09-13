@@ -31,7 +31,7 @@ Se verificó el flujo con la [documentación oficial de acciones](https://a2ui.o
 1. El MCP devuelve `createSurface`, `updateComponents` y `updateDataModel` con un catálogo permitido.
 2. Cada input escribe de forma síncrona en el modelo local de la superficie. Pulsar Guardar inmediatamente después de escribir utiliza el último valor.
 3. `Button.action.event` resuelve los bindings de `context` y produce los cinco campos A2UI: `name`, `surfaceId`, `sourceComponentId`, `timestamp` y `context`.
-4. Expo envía `{ action, user_id }` al agente con la sesión Supabase. El agente obtiene la identidad del token verificado; sobrescribe cualquier identidad suministrada por el cliente.
+4. Expo envía `{ action, user_id, account_id }` al agente con la sesión Supabase. El agente obtiene la identidad del token verificado y comprueba mediante MCP que `account_id` pertenece a ese usuario; ningún identificador del cliente se acepta como identidad confiable.
 5. El agente llama a `a2ui_action`. El MCP comprueba la acción, superficie, botón, tipos, límites, fechas, identidad y firma antes de ejecutar el guardado.
 6. Tras confirmar la transacción, devuelve `data.actionResult` con `status`, `message` y un `code` opcional. Expo muestra el estado y la causa de los fallos. HTTP 200 por sí solo no significa que se guardó.
 

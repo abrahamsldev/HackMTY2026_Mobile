@@ -341,7 +341,7 @@ function AssistantWorkspace({
       {/* Configuration warning banner */}
       {!assistant.isConfigured && (
         <View style={styles.bannerContainer}>
-          <InfoBanner message="El asistente estará disponible cuando se configure su conexión." />
+          <InfoBanner message={assistant.configurationError ?? "Estamos cargando tu cuenta bancaria."} />
         </View>
       )}
 
