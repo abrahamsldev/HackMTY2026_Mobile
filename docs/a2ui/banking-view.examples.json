@@ -39,6 +39,7 @@
                 "subtitle": "Septiembre de 2026",
                 "currency": "MXN",
                 "intent": "financial-summary",
+                "totalOwnedBalance": 20500,
                 "accounts": [
                   {
                     "accountId": "example-checking",
@@ -66,7 +67,29 @@
                   }
                 ],
                 "income": 22000,
-                "expenses": 15000
+                "expenses": 15000,
+                "cards": [
+                  {
+                    "cardId": "example-card-debit",
+                    "cardName": "Débito Enlace",
+                    "cardType": "debit",
+                    "network": "visa",
+                    "lastFour": "1234",
+                    "status": "active",
+                    "expires": "2029-04",
+                    "accountId": "example-checking"
+                  },
+                  {
+                    "cardId": "example-card-credit",
+                    "cardName": "Tarjeta Oro",
+                    "cardType": "credit",
+                    "network": "mastercard",
+                    "lastFour": "9012",
+                    "status": "active",
+                    "expires": "2028-11",
+                    "accountId": "example-credit"
+                  }
+                ]
               }
             }
           }
@@ -191,6 +214,7 @@
                 "subtitle": "Septiembre frente a agosto de 2026",
                 "currency": "MXN",
                 "intent": "spending-analysis",
+                "totalSpent": 15000,
                 "categories": [
                   {
                     "category": "food",
@@ -214,6 +238,7 @@
                   }
                 ],
                 "previousTotal": 14000,
+                "insight": "Alimentos y compras concentran dos tercios de tu gasto del periodo.",
                 "trend": {
                   "title": "Ingresos y gastos",
                   "data": [
@@ -606,7 +631,21 @@
                 "availableCredit": 1500,
                 "minimumPayment": 420,
                 "interestFreePayment": 6200,
-                "dueDate": "2026-09-25"
+                "dueDate": "2026-09-25",
+                "card": {
+                  "cardId": "example-card-credit",
+                  "cardName": "Tarjeta Oro",
+                  "cardType": "credit",
+                  "network": "mastercard",
+                  "lastFour": "9012",
+                  "status": "active",
+                  "expires": "2028-11"
+                },
+                "creditLimit": 10000,
+                "statementBalance": 6200,
+                "cutoffDate": "2026-09-10",
+                "annualInterestRate": 36.9,
+                "catPercentage": 48.2
               }
             }
           }
@@ -780,7 +819,16 @@
                   "category": "health",
                   "status": "completed"
                 },
-                "guidance": "Si no reconoces el movimiento, revisa primero los detalles del comercio y solicita la revisión desde los canales de tu banco."
+                "guidance": "Si no reconoces el movimiento, revisa primero los detalles del comercio y solicita la revisión desde los canales de tu banco.",
+                "card": {
+                  "cardId": "example-card-credit",
+                  "cardName": "Tarjeta Oro",
+                  "cardType": "credit",
+                  "network": "mastercard",
+                  "lastFour": "9012",
+                  "status": "active",
+                  "expires": "2028-11"
+                }
               }
             }
           }

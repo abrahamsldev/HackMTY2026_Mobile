@@ -25,9 +25,13 @@ import { A2UISurface } from '@/features/assistant/components/a2ui-surface';
 import { FinancialViewGallery } from '@/features/financial-ui/gallery';
 import {
   AccountBalanceCard,
+  CreditUtilizationGauge,
+  DueDateCountdown,
   FinancialStatCard,
+  PaymentCard,
   SpendingCategoryChart,
   TransactionItem,
+  TrendIndicator,
 } from '@/features/personal-banking';
 
 interface TestCatalogEvent {
@@ -478,6 +482,37 @@ export default function ComponentCatalogScreen() {
                 onPress={() => {}}
               />
             </Card>
+
+            {/* PaymentCard */}
+            <PaymentCard
+              cardName="Tarjeta Oro"
+              cardType="credit"
+              network="mastercard"
+              lastFour="9012"
+              status="active"
+              expires="2028-11"
+              holder="Titular de ejemplo"
+            />
+            <PaymentCard
+              cardName="Débito Enlace"
+              cardType="debit"
+              network="visa"
+              lastFour="1234"
+              status="blocked"
+              expires="2029-04"
+              caption="Saldo disponible"
+              amount={48350.5}
+              currency="MXN"
+            />
+
+            {/* CreditUtilizationGauge */}
+            <CreditUtilizationGauge used={8500} limit={10000} available={1500} currency="MXN" />
+
+            {/* DueDateCountdown */}
+            <DueDateCountdown dueDate="2026-09-25" cutoffDate="2026-09-10" now={new Date('2026-09-12T12:00:00Z')} />
+
+            {/* TrendIndicator */}
+            <TrendIndicator current={15000} previous={14000} currency="MXN" inverse />
 
             {/* SpendingCategoryChart */}
             <SpendingCategoryChart

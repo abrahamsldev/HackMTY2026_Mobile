@@ -3,14 +3,15 @@ import { StyleSheet, View } from 'react-native';
 import { TextInput } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
 import { ActionButton, AreaChart, Card, Divider, EmptyState, HeatmapChart, InfoBanner, ProgressBar, StatusBadge, TextBlock } from '@/components/ui';
-import { AccountBalanceCard, FinancialStatCard, SpendingCategoryChart, TransactionItem, TransactionList } from '@/features/personal-banking';
+import { AccountBalanceCard, CreditUtilizationGauge, DueDateCountdown, FinancialStatCard, PaymentCard, SpendingCategoryChart, TransactionItem, TransactionList, TrendIndicator } from '@/features/personal-banking';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { budgetProgress, filterTransactions, ownedBalance, type BankingViewData, type ReadyBankingView, type ScenarioData } from './model';
+import { budgetProgress, filterTransactions, type BankingViewData, type PaymentCardData, type ReadyBankingView, type ScenarioData } from './model';
 
 const money = (value: number, currency: string) => new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(value);
 const date = (value: string) => new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T12:00:00Z`));
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
+const percent = (value: number) => `${new Intl.NumberFormat('es-MX', { maximumFractionDigits: 2 }).format(value)}%`;
 const group = (children: ReactNode) => <View style={styles.stack}>{children}</View>;
 function Metric({ label, value, currency, tone = 'default' }: { label: string; value: number; currency: 'MXN' | 'USD'; tone?: 'default' | 'positive' | 'negative' }) {
   return <FinancialStatCard label={label} value={value} currency={currency} tone={tone} />;
@@ -29,6 +30,18 @@ function Hero({ label, value, note }: { label: string; value: string; note?: str
 function Missing({ description = 'Todavía no hay datos para esta consulta.' }: { description?: string }) {
   return <EmptyState title="Sin información disponible" description={description} />;
 }
+// The adapter enumerates every prop it delegates: wire identifiers such as
+// `cardId` and `accountId` are routing data and never reach the component.
+function CardFace({ card, caption, amount, currency }: { card: PaymentCardData; caption?: string; amount?: number; currency?: 'MXN' | 'USD' }) {
+  return <PaymentCard
+    cardName={card.cardName} cardType={card.cardType} network={card.network} lastFour={card.lastFour}
+    status={card.status} expires={card.expires} caption={caption} amount={amount} currency={currency} />;
+}
+function Wallet({ cards }: { cards: PaymentCardData[] }) {
+  return <View style={styles.metrics}>{cards.map(card => (
+    <View key={card.cardId} style={styles.metric}><CardFace card={card} /></View>
+  ))}</View>;
+}
 
 function Summary({ data }: { data: Extract<ReadyBankingView, { intent: 'financial-summary' }> }) {
   const [hidden, setHidden] = useState(false);
@@ -36,7 +49,8 @@ function Summary({ data }: { data: Extract<ReadyBankingView, { intent: 'financia
   return group(<>
     <ActionButton label={hidden ? 'Mostrar saldos' : 'Ocultar saldos'} variant="outline" onPress={() => setHidden(v => !v)} />
     {hidden ? <InfoBanner message="Tus saldos están ocultos." /> : <>
-      <Hero label="Tu dinero disponible" value={money(data.totalOwnedBalance ?? ownedBalance(data.accounts), data.currency)} note="Suma de cheques y ahorro. El crédito disponible se muestra en su propia cuenta." />
+      <Hero label="Tu dinero disponible" value={money(data.totalOwnedBalance, data.currency)} note="Suma de cheques y ahorro. El crédito disponible se muestra en su propia cuenta." />
+      {data.cards?.length ? <Wallet cards={data.cards} /> : null}
       <View style={styles.metrics}>{data.income !== undefined && <View style={styles.metric}><Metric label="Ingresos del periodo" value={data.income} currency={data.currency} tone="positive" /></View>}{data.expenses !== undefined && <View style={styles.metric}><Metric label="Gastos del periodo" value={data.expenses} currency={data.currency} /></View>}</View>
       {data.accounts.map(account => account.accountLastFour ? <AccountBalanceCard key={account.accountId} {...account} accountLastFour={account.accountLastFour} currency={data.currency} /> : <Card key={account.accountId} variant="outlined">{group(<><ThemedText type="smallBold">{account.accountName}</ThemedText><Detail label={account.accountType === 'credit' ? 'Crédito disponible' : 'Saldo disponible'} value={money(account.availableBalance, data.currency)} /></>)}</Card>)}
     </>}
@@ -87,9 +101,11 @@ function Content({ data }: { data: ReadyBankingView }) {
     case 'financial-summary': return <Summary data={data} />;
     case 'transactions': return <Movements data={data} />;
     case 'spending-analysis': {
-      const total = sum(data.categories.map(c => c.amount));
       return group(<>
-        {data.categories.length ? <><Metric label="Gasto del periodo" value={total} currency={currency} />{data.previousTotal !== undefined && <ThemedText themeColor="textSecondary">{total >= data.previousTotal ? 'Aumento' : 'Reducción'} de {money(Math.abs(total - data.previousTotal), currency)} frente al periodo anterior.</ThemedText>}<SpendingCategoryChart categories={data.categories} currency={currency} title="¿Dónde se fue tu dinero?" showPercentages /></> : <Missing />}
+        <Metric label="Gasto del periodo" value={data.totalSpent} currency={currency} />
+        {data.previousTotal !== undefined && <TrendIndicator current={data.totalSpent} previous={data.previousTotal} currency={currency} inverse />}
+        {data.insight && <InfoBanner title="Lo que vemos" message={data.insight} />}
+        {data.categories.length ? <SpendingCategoryChart categories={data.categories} currency={currency} title="¿Dónde se fue tu dinero?" showPercentages /> : <Missing description="No hay gastos categorizados en este periodo." />}
         {data.trend && <AreaChart {...data.trend} currency={currency} />}
         {data.activity && <HeatmapChart {...data.activity} currency={currency} />}
       </>);
@@ -116,10 +132,18 @@ function Content({ data }: { data: ReadyBankingView }) {
       <ScheduleList currency={currency} items={data.payments.map(p => ({ id: p.id, name: p.name, date: p.nextDate, amount: p.amount, detail: `${p.cycle === 'monthly' ? 'Mensual' : p.cycle === 'weekly' ? 'Semanal' : 'Anual'} · ${p.status === 'active' ? 'Activo' : 'Pausado, sin cobro programado'}` }))} />
     </>);
     case 'credit-card': return group(<>
-      <StatusBadge label={`Fecha límite · ${date(data.dueDate)}`} tone="warning" />
+      {data.card && <CardFace card={data.card} />}
+      <DueDateCountdown dueDate={data.dueDate} cutoffDate={data.cutoffDate} />
       <Hero label="Pago para no generar intereses" value={money(data.interestFreePayment, currency)} note={`${data.cardName}${data.lastFour ? ` · •••• ${data.lastFour}` : ''}`} />
       <View style={styles.metrics}><View style={styles.metric}><Metric label="Pago mínimo" value={data.minimumPayment} currency={currency} /></View><View style={styles.metric}><Metric label="Saldo deudor" value={data.debt} currency={currency} /></View></View>
-      <Detail label="Crédito disponible" value={money(data.availableCredit, currency)} />
+      {data.creditLimit === undefined
+        ? <Detail label="Crédito disponible" value={money(data.availableCredit, currency)} />
+        : <CreditUtilizationGauge used={data.debt} limit={data.creditLimit} available={data.availableCredit} currency={currency} />}
+      {(data.statementBalance !== undefined || data.annualInterestRate !== undefined || data.catPercentage !== undefined) && <Card variant="outlined">{group(<>
+        {data.statementBalance !== undefined && <Detail label="Saldo del último corte" value={money(data.statementBalance, currency)} />}
+        {data.annualInterestRate !== undefined && <Detail label="Tasa de interés anual" value={percent(data.annualInterestRate)} />}
+        {data.catPercentage !== undefined && <Detail label="CAT promedio" value={percent(data.catPercentage)} />}
+      </>)}</Card>}
       <InfoBanner message="El crédito disponible es una línea de financiamiento. Consulta los importes y condiciones de tu estado de cuenta antes de pagar." />
     </>);
     case 'debts': return group(<><Metric label="Deuda pendiente" value={data.outstanding} currency={currency} /><InfoBanner title="Supuestos de la simulación" message={data.assumptions} /><ScenarioComparison scenarios={data.scenarios} currency={currency} /></>);
@@ -130,7 +154,9 @@ function Content({ data }: { data: ReadyBankingView }) {
       <InfoBanner message="Revisa el destinatario y el importe. Este resumen no ha enviado dinero." />
     </>);
     case 'card-security': return group(<>
-      <Card variant="outlined">{group(<><ThemedText type="smallBold">{data.cardName}{data.lastFour ? ` · •••• ${data.lastFour}` : ''}</ThemedText><StatusBadge label={data.status === 'blocked' ? 'Tarjeta bloqueada' : data.status === 'active' ? 'Tarjeta activa' : 'Tarjeta inactiva'} tone={data.status === 'active' ? 'info' : 'warning'} /></>)}</Card>
+      {data.card
+        ? <><CardFace card={data.card} /><StatusBadge label={data.status === 'blocked' ? 'Tarjeta bloqueada' : data.status === 'active' ? 'Tarjeta activa' : 'Tarjeta inactiva'} tone={data.status === 'active' ? 'info' : 'warning'} /></>
+        : <Card variant="outlined">{group(<><ThemedText type="smallBold">{data.cardName}{data.lastFour ? ` · •••• ${data.lastFour}` : ''}</ThemedText><StatusBadge label={data.status === 'blocked' ? 'Tarjeta bloqueada' : data.status === 'active' ? 'Tarjeta activa' : 'Tarjeta inactiva'} tone={data.status === 'active' ? 'info' : 'warning'} /></>)}</Card>}
       {data.reportedTransaction && <TransactionList title="Movimiento en revisión"><TransactionItem {...data.reportedTransaction} currency={currency} /></TransactionList>}
       <InfoBanner title="Siguiente paso" message={data.guidance} tone="warning" />
     </>);

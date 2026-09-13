@@ -11,9 +11,9 @@ export type FinancialViewDefinition = {
 
 export const financialViewCatalog = {
   'financial-summary': {
-    name: 'Panorama de cuentas', composition: 'Saldo propio destacado, ingresos y gastos, y tarjetas por cuenta. El crédito se presenta por separado.',
-    components: ['AccountBalanceCard', 'FinancialStatCard', 'Card', 'ActionButton'],
-    requiredData: 'Cuentas, tipo, saldo, moneda; ingresos y gastos del periodo si están disponibles.',
+    name: 'Panorama de cuentas', composition: 'Saldo propio destacado, cartera de tarjetas enmascaradas, ingresos y gastos, y tarjetas por cuenta. El crédito se presenta por separado.',
+    components: ['PaymentCard', 'AccountBalanceCard', 'FinancialStatCard', 'Card', 'ActionButton'],
+    requiredData: 'Cuentas, tipo, saldo, moneda y total propio calculado por el backend; tarjetas enmascaradas e ingresos/gastos del periodo si están disponibles.',
     localActions: 'Ocultar o mostrar saldos.', agentActions: 'Elegir cuenta y cambiar periodo.',
   },
   transactions: {
@@ -23,9 +23,9 @@ export const financialViewCatalog = {
     localActions: 'Buscar, filtrar y expandir un movimiento.', agentActions: 'Consultar otro periodo; categorizar o reportar exige soporte del backend.',
   },
   'spending-analysis': {
-    name: 'Radiografía de gastos', composition: 'Total y comparación, distribución por categoría, evolución de áreas y calendario de intensidad.',
-    components: ['SpendingCategoryChart', 'AreaChart', 'HeatmapChart', 'FinancialStatCard'],
-    requiredData: 'Gastos agrupados; total anterior opcional; series temporales y agregados diarios opcionales.',
+    name: 'Radiografía de gastos', composition: 'Total del periodo, variación contra el anterior, lectura del agente, distribución por categoría, evolución de áreas y calendario de intensidad.',
+    components: ['TrendIndicator', 'SpendingCategoryChart', 'AreaChart', 'HeatmapChart', 'FinancialStatCard'],
+    requiredData: 'Gasto total calculado por el backend y gastos agrupados; total anterior, lectura breve, series temporales y agregados diarios opcionales.',
     localActions: 'Inspeccionar puntos; ampliar el mapa por mes o semana.', agentActions: 'Crear límite o alerta requiere persistencia.',
   },
   'cash-flow': {
@@ -47,9 +47,9 @@ export const financialViewCatalog = {
     localActions: 'Consultar fechas y frecuencias.', agentActions: 'Recordatorios o reconocimiento necesitan persistencia; consultar comercio es lectura.',
   },
   'credit-card': {
-    name: 'Plan de pago de tarjeta', composition: 'Vencimiento destacado, pago para no generar intereses, mínimo, deuda y crédito disponible.',
-    components: ['Card', 'FinancialStatCard', 'StatusBadge', 'InfoBanner'],
-    requiredData: 'Deuda, crédito disponible, fecha límite, pago mínimo y pago para no generar intereses calculados por el backend.',
+    name: 'Plan de pago de tarjeta', composition: 'Tarjeta enmascarada, cuenta regresiva al vencimiento, pago para no generar intereses, mínimo, deuda y uso de la línea con tasas.',
+    components: ['PaymentCard', 'DueDateCountdown', 'CreditUtilizationGauge', 'FinancialStatCard', 'Card', 'InfoBanner'],
+    requiredData: 'Deuda, crédito disponible, fecha límite, pago mínimo y pago para no generar intereses calculados por el backend; tarjeta, límite, saldo del corte, fecha de corte, tasa anual y CAT opcionales.',
     localActions: 'Consultar importes y fecha.', agentActions: 'Simular; pagar o programar requiere confirmación y ejecución en backend.',
   },
   debts: {
@@ -65,9 +65,9 @@ export const financialViewCatalog = {
     localActions: 'Revisar el borrador.', agentActions: 'Confirmar, transferir o guardar destinatario requiere validación y ejecución en backend.',
   },
   'card-security': {
-    name: 'Centro de revisión de tarjeta', composition: 'Estado de tarjeta, terminación, cargo seleccionado e instrucciones contextuales.',
-    components: ['Card', 'StatusBadge', 'TransactionItem', 'InfoBanner'],
-    requiredData: 'Estado actual de la tarjeta y movimiento sospechoso opcional.',
+    name: 'Centro de revisión de tarjeta', composition: 'Tarjeta enmascarada con su estado, cargo seleccionado e instrucciones contextuales.',
+    components: ['PaymentCard', 'StatusBadge', 'TransactionItem', 'Card', 'InfoBanner'],
+    requiredData: 'Estado actual de la tarjeta, tarjeta enmascarada opcional y movimiento sospechoso opcional.',
     localActions: 'Consultar el estado y cargo.', agentActions: 'Bloquear, desbloquear o reportar requiere backend; nunca simular éxito.',
   },
   'savings-goals': {

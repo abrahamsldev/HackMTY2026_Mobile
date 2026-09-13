@@ -6,16 +6,16 @@ Las 13 categorías tienen una composición implementada en `src/features/financi
 
 | Categoría | Pregunta representativa | Vista implementada | Componentes reutilizados |
 | --- | --- | --- | --- |
-| Resumen financiero | ¿Cuánto dinero tengo? | Saldo propio protagonista, métricas del periodo, tarjetas por cuenta y ocultación de importes | AccountBalanceCard, FinancialStatCard, Card, ActionButton |
+| Resumen financiero | ¿Cuánto dinero tengo? | Saldo propio protagonista, cartera de tarjetas enmascaradas, métricas del periodo, tarjetas por cuenta y ocultación de importes | **PaymentCard**, AccountBalanceCard, FinancialStatCard, Card, ActionButton |
 | Movimientos | ¿En qué gasté ayer? | Periodo explícito, gasto total filtrado, buscador, filtros y detalle expandible | TransactionList, TransactionItem, FinancialStatCard, EmptyState |
-| Análisis de gastos | ¿En qué se me fue el dinero? | Comparación de totales, distribución, evolución y actividad diaria con zoom | SpendingCategoryChart, AreaChart, HeatmapChart |
+| Análisis de gastos | ¿En qué se me fue el dinero? | Total del periodo, variación contra el anterior, lectura del agente, distribución, evolución y actividad diaria con zoom | **TrendIndicator**, SpendingCategoryChart, AreaChart, HeatmapChart |
 | Flujo de efectivo | ¿Me alcanzará para la renta? | Proyección de saldo, supuestos y agenda de ingresos/pagos | AreaChart, FinancialStatCard, InfoBanner; nueva ScheduleList |
 | Presupuestos | Ponme un límite semanal | Progreso de gasto, restante/excedente, periodo y estado | Card, ProgressBar, StatusBadge, TextBlock |
 | Pagos recurrentes | ¿Qué pagos vienen? | Agenda ordenada; totales independientes por frecuencia | FinancialStatCard; nueva ScheduleList |
-| Tarjeta de crédito | ¿Cuándo debo pagar? | Fecha límite, pago para no generar intereses, mínimo, deuda y crédito disponible | Card, FinancialStatCard, StatusBadge, InfoBanner |
+| Tarjeta de crédito | ¿Cuándo debo pagar? | Tarjeta enmascarada, cuenta regresiva al vencimiento, pago para no generar intereses, mínimo, deuda y uso de la línea con tasas | **PaymentCard**, **DueDateCountdown**, **CreditUtilizationGauge**, FinancialStatCard, Card, InfoBanner |
 | Deudas | ¿Cómo puedo terminar de pagar más rápido? | Saldo y escenarios con mensualidad, plazo e intereses | FinancialStatCard, Card; nuevo ScenarioComparison |
 | Transferencias | Transfiere $500 a Ana | Borrador con origen, destinatario, monto, comisión y total | Card, TextBlock, Divider, StatusBadge, InfoBanner |
-| Seguridad de tarjeta | No reconozco este cargo | Estado de tarjeta, cargo seleccionado y siguiente paso | Card, StatusBadge, TransactionItem, InfoBanner |
+| Seguridad de tarjeta | No reconozco este cargo | Tarjeta enmascarada con su estado, cargo seleccionado y siguiente paso | **PaymentCard**, StatusBadge, TransactionItem, Card, InfoBanner |
 | Metas de ahorro | Quiero ahorrar para una laptop | Meta, avance, restante, fecha y aportación mensual | Card, ProgressBar, TextBlock, StatusBadge |
 | Información bancaria | Muéstrame mi estado de cuenta | Titular, banco, CLABE enmascarada y documentos por periodo | Card, TextBlock, StatusBadge, EmptyState |
 | Educación financiera | ¿Qué pasa si pago solamente el mínimo? | Concepto, explicación, ideas clave y escenarios opcionales | Card, TextBlock; nuevo ScenarioComparison |
@@ -52,6 +52,18 @@ Para regenerar los artefactos, sin red:
 ```bash
 node --experimental-strip-types scripts/export-banking-contract.mjs
 ```
+
+El MCP es la fuente autoritativa del catálogo Finance v2 y empaqueta este mismo documento en `src/supabase_mcp/a2ui_support/catalogs/banking_view.schema.json`. Al cambiar el contrato hay que exportar, copiar el resultado a ese archivo y reflejar los campos en `schemas/banking_view.py` del agente. `tests/fixtures/finance-v2-banking-view.schema.json` conserva la copia del MCP y la prueba de paridad falla si los repositorios se separan.
+
+## Tarjetas y condiciones de crédito
+
+`PaymentCard` es un objeto del contrato, no un componente A2UI nuevo: viaja como `cards` en `financial-summary` y como `card` en `credit-card` y `card-security`. Sus campos son `cardId`, `cardName`, `cardType` (`debit`/`credit`), `network` (`visa`, `mastercard`, `amex`, `other`), `lastFour`, `status`, y opcionalmente `expires` (`YYYY-MM`) y `accountId`. Es la proyección enmascarada de `public.cards`: **no existe** una propiedad donde quepa un número completo, un CVV, el día de vencimiento o un documento del titular, y `additionalProperties: false` rechaza cualquier intento de agregarla.
+
+Por eso una consulta de saldo responde con los totales *y* con las tarjetas detrás de ellos, sin un componente de catálogo adicional. Cada `accountId` de una tarjeta debe existir en `accounts`; una tarjeta de otra cuenta se rechaza.
+
+`credit-card` acepta además la proyección acotada de `credit_card_terms`: `creditLimit`, `statementBalance`, `cutoffDate`, `annualInterestRate` y `catPercentage`. Las tasas son puntos porcentuales entre 0 y 1000, igual que la restricción de la base; no son fracciones. Todas son opcionales: un despliegue sin esas filas sigue enviando la vista que envía hoy. Las reglas semánticas de Zod exigen que `availableCredit` no supere `creditLimit`, que `cutoffDate` no sea posterior a `dueDate` y que la tarjeta de esta vista sea de crédito y coincida en terminación.
+
+`financial-summary` exige `totalOwnedBalance` y `spending-analysis` exige `totalSpent`. Los calcula quien produce la vista, nunca el renderer: una lista truncada de cuentas o categorías no puede alterar en silencio la cifra protagonista. Las categorías visibles tampoco pueden sumar más que `totalSpent`.
 
 ## Reglas al preparar datos
 
