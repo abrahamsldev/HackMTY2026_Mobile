@@ -79,7 +79,6 @@ export function FinancialStatCard({
 
   return (
     <Card
-      variant="outlined"
       padding="md"
       onPress={onPress}>
       <View

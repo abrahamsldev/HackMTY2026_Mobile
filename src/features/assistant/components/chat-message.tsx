@@ -5,7 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import { Pressable, TextInput } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { type A2UIAction, type A2UISurfaceState } from '@/features/a2ui';
+import { type A2UIAction, type A2UIActionOrigin, type A2UISurfaceState } from '@/features/a2ui';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -29,7 +29,7 @@ export type ChatMessageProps = {
   onSubmitEdit?: () => void;
   onCancelEdit?: () => void;
   onCancel?: () => void;
-  onDispatch?: (action: A2UIAction) => void;
+  onDispatch?: (action: A2UIAction, origin?: A2UIActionOrigin) => void | Promise<void>;
   disabled?: boolean;
   animate?: boolean;
 };
@@ -289,10 +289,7 @@ export function ChatMessage({
           {surfaces.map((surface) => (
             <View
               key={surface.surfaceId}
-              style={[
-                styles.surfaceWrapper,
-                { backgroundColor: theme.background, borderColor: theme.accent },
-              ]}>
+              style={styles.surfaceWrapper}>
               <A2UISurface
                 surface={surface}
                 disabled={disabled || isPending}
@@ -469,13 +466,10 @@ const styles = StyleSheet.create({
   surfacesContainer: {
     width: '100%',
     gap: Spacing.three,
-    marginTop: Spacing.one,
+    marginTop: Spacing.two,
   },
   surfaceWrapper: {
     width: '100%',
-    borderWidth: 2,
-    borderRadius: 18,
-    padding: Spacing.one,
   },
   a2uiError: {
     fontSize: 12,

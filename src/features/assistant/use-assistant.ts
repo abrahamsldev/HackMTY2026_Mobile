@@ -29,9 +29,9 @@ export function useAssistant(currentUserId: string) {
     request.current.id += 1;
   }, []);
 
-  async function run(query: string, action?: A2UIAction) {
+  async function run(query: string, action?: A2UIAction): Promise<boolean> {
     const normalized = query.trim();
-    if (!normalized || inFlight.current) return;
+    if (!normalized || inFlight.current) return false;
     inFlight.current = true;
     request.current.controller?.abort();
     const controller = new AbortController();
@@ -48,17 +48,19 @@ export function useAssistant(currentUserId: string) {
       if (authError) throw new AgentRequestError('authentication', 'No se pudo verificar tu sesión.');
       const verified = await verifySession(supabase, data.session);
       if (!verified || verified.user.id !== currentUserId) throw new AgentRequestError('authentication', 'Inicia sesión para consultar al asistente.');
-      if (controller.signal.aborted || request.current.id !== id) return;
+      if (controller.signal.aborted || request.current.id !== id) return false;
       const accessToken = verified.access_token;
       const reply = action
         ? await requestAgentAction({ baseUrl: agentBaseUrl, action, userId: currentUserId, accessToken, signal: controller.signal })
         : await requestAgent({ baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, accessToken, signal: controller.signal });
       if (request.current.id === id) {
         if (action) {
-          setActionStatus(reply.actionResult ?? (reply.a2uiError
+          const result = reply.actionResult ?? (reply.a2uiError
             ? { status: 'failure', message: reply.a2uiError }
-            : reply.messages?.length ? null : { status: 'failure', message: reply.message || 'El servicio no confirmó el resultado de la acción.' }));
-          if (!reply.messages || reply.actionResult?.status === 'failure') return;
+            : reply.messages?.length ? null : { status: 'failure', message: reply.message || 'El servicio no confirmó el resultado de la acción.' });
+          setActionStatus(result);
+          if (result?.status === 'failure') return false;
+          if (!reply.messages) return result?.status === 'success';
         }
         const processed = processor.current.process(reply.messages, !action);
         const effectiveReply = !processed.ok
@@ -70,10 +72,12 @@ export function useAssistant(currentUserId: string) {
           a2uiSurfaces: processed.surfaces,
         });
       }
+      return true;
     } catch (cause) {
-      if (request.current.id !== id || controller.signal.aborted) return;
+      if (request.current.id !== id || controller.signal.aborted) return false;
       if (action) setActionStatus({ status: 'failure', message: cause instanceof AgentRequestError ? cause.message : 'No se pudo confirmar el resultado. Intenta de nuevo la misma operación.' });
       if (!action) setError(cause instanceof AgentRequestError ? cause.message : 'No se pudo mostrar la respuesta. Inténtalo de nuevo.');
+      return false;
     } finally {
       if (request.current.id === id) {
         request.current.controller = undefined;
@@ -92,7 +96,7 @@ export function useAssistant(currentUserId: string) {
   }
 
   function send(query: string) {
-    return run(query);
+    return run(query).then(() => undefined);
   }
 
   function cancel() {
@@ -110,7 +114,7 @@ export function useAssistant(currentUserId: string) {
 
   function retry() {
     const previous = lastRequest.current;
-    if (previous) return run(previous.query, previous.action);
+    if (previous) return run(previous.query, previous.action).then(() => undefined);
   }
 
   return { surface, pending, error, actionStatus, lastQuery, send, transcribe, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry };

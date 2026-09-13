@@ -6,7 +6,7 @@ import { useAccessibility } from '@/features/accessibility/accessibility-provide
 
 const banorteLogo = require('@/assets/images/banorte-logo/banorte.png');
 
-export type BanorteLoaderStage = 'thinking' | 'checkmark';
+export type BanorteLoaderStage = 'idle' | 'thinking' | 'checkmark' | 'error';
 
 export type BanorteLoaderIconProps = {
   stage: BanorteLoaderStage;
@@ -15,10 +15,9 @@ export type BanorteLoaderIconProps = {
 };
 
 /**
- * The app's one existing "processing" indicator: the Banorte logo spinning in
- * place, morphing into a checkmark once a response arrives. Extracted from
- * FloatingChatBubble so both it and VoiceProcessingOverlay share a single
- * implementation instead of two copies of the same animation.
+ * The app's one existing "processing" indicator: the Banorte logo spins only
+ * while processing and morphs into a checkmark once a response arrives. The
+ * idle stage renders the same logo without starting an animation.
  */
 export function BanorteLoaderIcon({ stage, size = 44, checkmarkColor = '#FFFFFF' }: BanorteLoaderIconProps) {
   const { settings } = useAccessibility();
@@ -27,6 +26,7 @@ export function BanorteLoaderIcon({ stage, size = 44, checkmarkColor = '#FFFFFF'
 
   useEffect(() => {
     if (stage !== 'thinking' || settings.reduceMotion) {
+      rotateAnim.stopAnimation();
       rotateAnim.setValue(0);
       return;
     }
@@ -46,7 +46,7 @@ export function BanorteLoaderIcon({ stage, size = 44, checkmarkColor = '#FFFFFF'
   }, [stage, settings.reduceMotion, rotateAnim]);
 
   useEffect(() => {
-    if (stage !== 'checkmark') return;
+    if (stage !== 'checkmark' && stage !== 'error') return;
     checkmarkScale.setValue(0.6);
     if (!settings.reduceMotion) {
       Animated.spring(checkmarkScale, {
@@ -63,19 +63,29 @@ export function BanorteLoaderIcon({ stage, size = 44, checkmarkColor = '#FFFFFF'
   const spin = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   const checkmarkSize = Math.round(size * (38 / 44));
 
-  if (stage === 'checkmark') {
+  if (stage === 'checkmark' || stage === 'error') {
     return (
       <Animated.View style={{ transform: [{ scale: checkmarkScale }] }}>
         <Svg width={checkmarkSize} height={checkmarkSize} viewBox="0 0 24 24" fill="none">
           <Circle cx="12" cy="12" r="10" fill="none" stroke={checkmarkColor} strokeWidth="2.2" />
-          <Path
-            d="M7.5 12.5l3 3 6.5-7"
-            fill="none"
-            stroke={checkmarkColor}
-            strokeWidth="2.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          {stage === 'checkmark' ? (
+            <Path
+              d="M7.5 12.5l3 3 6.5-7"
+              fill="none"
+              stroke={checkmarkColor}
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ) : (
+            <Path
+              d="M8 8l8 8m0-8-8 8"
+              fill="none"
+              stroke={checkmarkColor}
+              strokeWidth="2.6"
+              strokeLinecap="round"
+            />
+          )}
         </Svg>
       </Animated.View>
     );

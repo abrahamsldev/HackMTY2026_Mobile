@@ -163,3 +163,11 @@ export type A2UIAction = {
   timestamp: string;
   context: Record<string, JSONValue>;
 };
+
+/** Local screen coordinates used only to animate an action in the client. */
+export type A2UIActionOrigin = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};

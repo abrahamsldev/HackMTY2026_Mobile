@@ -19,6 +19,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { BanorteLoaderIcon } from './banorte-loader-icon';
 import { ChatComposer, type VoiceControl } from './chat-composer';
+import { FinancialThinkingMessage } from './financial-thinking-message';
 
 function CloseIcon({ color }: { color: string }) {
   return (
@@ -83,13 +84,25 @@ export function FloatingChatBubble({
       Animated.sequence([
         Animated.timing(floatAnim, {
           toValue: -5,
-          duration: 1400,
+          duration: 900,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 900,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: Platform.OS !== 'web',
         }),
         Animated.timing(floatAnim, {
           toValue: 5,
-          duration: 1400,
+          duration: 900,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 900,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: Platform.OS !== 'web',
         }),
@@ -101,10 +114,13 @@ export function FloatingChatBubble({
 
   const wasLoadingRef = React.useRef(false);
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const transitionRef = React.useRef(0);
 
   // 2. Transición cuando cambia el estado `loading`:
   // Viaja al centro -> rotación cada .8s -> palomita verde -> viaja abajo
   useEffect(() => {
+    const transition = ++transitionRef.current;
+
     if (loading) {
       wasLoadingRef.current = true;
       if (timerRef.current) {
@@ -123,24 +139,30 @@ export function FloatingChatBubble({
           friction: 8,
           tension: 50,
           useNativeDriver: Platform.OS !== 'web',
-        }).start(() => {
-          setStage('thinking');
+        }).start(({ finished }) => {
+          if (finished && transitionRef.current === transition) setStage('thinking');
         });
       } else {
         travelAnim.setValue(1);
-        setTimeout(() => setStage('thinking'), 0);
+        setTimeout(() => {
+          if (transitionRef.current === transition) setStage('thinking');
+        }, 0);
       }
     } else if (wasLoadingRef.current) {
       wasLoadingRef.current = false;
+      travelAnim.stopAnimation();
+      travelAnim.setValue(1);
 
       // Llegó la respuesta: transformar en palomita verde en el centro
       // (BanorteLoaderIcon animates its own checkmark spring from the stage prop)
       setTimeout(() => {
-        setStage('checkmark');
+        if (transitionRef.current === transition) setStage('checkmark');
       }, 0);
 
       // Mostrar la palomita ~650ms, luego transformarse en logo y bajar
       timerRef.current = setTimeout(() => {
+        if (transitionRef.current !== transition) return;
+        timerRef.current = null;
         setStage('traveling_down');
 
         if (!settings.reduceMotion) {
@@ -149,9 +171,11 @@ export function FloatingChatBubble({
             friction: 8,
             tension: 50,
             useNativeDriver: Platform.OS !== 'web',
-          }).start(() => {
-            setStage('idle');
-            onRevealReady?.();
+          }).start(({ finished }) => {
+            if (finished && transitionRef.current === transition) {
+              setStage('idle');
+              onRevealReady?.();
+            }
           });
         } else {
           travelAnim.setValue(0);
@@ -162,8 +186,10 @@ export function FloatingChatBubble({
     }
 
     return () => {
+      travelAnim.stopAnimation();
       if (timerRef.current) {
         clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
     };
   }, [loading, settings.reduceMotion, travelAnim, onRevealReady]);
@@ -224,6 +250,7 @@ export function FloatingChatBubble({
   );
 
   const isAtCenter = stage === 'thinking' || stage === 'checkmark' || stage === 'traveling_up';
+  const loaderStage = stage === 'thinking' || stage === 'checkmark' ? stage : 'idle';
 
   return (
     <>
@@ -247,8 +274,13 @@ export function FloatingChatBubble({
                   transform: [{ scale: pressed && !isAtCenter ? 0.94 : 1 }],
                 },
               ]}>
-              <BanorteLoaderIcon stage={stage === 'checkmark' ? 'checkmark' : 'thinking'} />
+              <BanorteLoaderIcon stage={loaderStage} />
             </Pressable>
+            {stage === 'thinking' && (
+              <View pointerEvents="none" style={styles.thinkingMessage}>
+                <FinancialThinkingMessage />
+              </View>
+            )}
           </Animated.View>
         </View>
       )}
@@ -328,6 +360,11 @@ const styles = StyleSheet.create({
   travelWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  thinkingMessage: {
+    position: 'absolute',
+    top: 78,
+    width: 280,
   },
   floatingButton: {
     width: 64,

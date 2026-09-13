@@ -14,6 +14,7 @@ import { banortePalette } from '@/features/accessibility/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { BanorteLoaderIcon } from './banorte-loader-icon';
+import { FinancialThinkingMessage } from './financial-thinking-message';
 import { VoiceOrb } from './voice-orb';
 import type { VoiceFlowPhase } from '../use-voice-flow';
 
@@ -98,6 +99,11 @@ export function VoiceProcessingOverlay({ phase, level, onStop }: VoiceProcessing
               />
             </View>
           </Animated.View>
+          {phase === 'waiting' && (
+            <View pointerEvents="none" style={styles.waitingMessage}>
+              <FinancialThinkingMessage />
+            </View>
+          )}
         </View>
       </View>
     </View>
@@ -131,6 +137,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  waitingMessage: {
+    position: 'absolute',
+    top: ORB_SIZE * 1.65,
+    width: 280,
   },
   badge: {
     width: 72,
