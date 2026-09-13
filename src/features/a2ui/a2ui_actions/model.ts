@@ -2,6 +2,18 @@ import { resolveDataPath, updateDataModel } from '../data-model.ts';
 import { createA2UIAction } from '../action.ts';
 import type { A2UIInputComponent, A2UISurfaceState, A2UIButtonComponent, JSONValue } from '../types.ts';
 
+export function serverSignature(surface: A2UISurfaceState): string {
+  return JSON.stringify({
+    surfaceId: surface.surfaceId,
+    catalogId: surface.catalogId,
+    theme: surface.theme,
+    sendDataModel: surface.sendDataModel,
+    components: [...surface.components.entries()],
+    dataModel: surface.dataModel,
+    creationOrder: surface.creationOrder,
+  });
+}
+
 export function validDate(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T12:00:00Z`);
@@ -12,10 +24,22 @@ export function validDate(value: unknown): value is string {
 export class InputModel {
   private lastAction?: ReturnType<typeof createA2UIAction>;
   private server: A2UISurfaceState;
+  private serverVersion: string;
   surface: A2UISurfaceState;
-  constructor(surface: A2UISurfaceState) { this.server = surface; this.surface = surface; }
-  receive(surface: A2UISurfaceState) {
-    if (surface !== this.server) { this.server = surface; this.surface = surface; this.lastAction = undefined; }
+  constructor(surface: A2UISurfaceState) {
+    this.server = surface;
+    this.serverVersion = serverSignature(surface);
+    this.surface = surface;
+  }
+  receive(surface: A2UISurfaceState): boolean {
+    if (surface === this.server) return false;
+    const version = serverSignature(surface);
+    this.server = surface;
+    if (version === this.serverVersion) return false;
+    this.serverVersion = version;
+    this.surface = surface;
+    this.lastAction = undefined;
+    return true;
   }
   write(component: A2UIInputComponent, value: JSONValue) {
     if (component.component === 'Slider') {

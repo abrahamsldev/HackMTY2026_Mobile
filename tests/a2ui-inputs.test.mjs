@@ -33,8 +33,16 @@ test('a keystroke immediately followed by submit uses current values and retry r
   const model = new InputModel(original);
   const input = original.components.get('name');
   const button = original.components.get('submit');
-  model.write(input, 'Nombre recién escrito');
-  model.receive(original);
+  // Parent renders may return a newly cloned but equivalent server surface.
+  // It must not replace the local draft after every keystroke.
+  for (const value of ['N', 'No', 'Nom', 'Nomb', 'Nombre recién escrito']) {
+    model.write(input, value);
+    model.receive({
+      ...original,
+      components: new Map(original.components),
+      dataModel: structuredClone(original.dataModel),
+    });
+  }
   const first = model.action(button);
   assert.equal(first.context.name, 'Nombre recién escrito');
   assert.equal(original.dataModel.form.name, 'Vacaciones');
@@ -44,6 +52,34 @@ test('a keystroke immediately followed by submit uses current values and retry r
   assert.throws(() => model.write(original.components.get('limit_amount'), 100001));
   model.write(original.components.get('end_date'), '2026-02-30');
   assert.throws(() => model.action(button), /fecha válida/);
+});
+
+test('an actual server data update replaces the local input draft', () => {
+  const result = new A2UIMessageProcessor().process([
+    ...read(`${templates}budget-create.json`),
+    {
+      version: 'v0.9.1',
+      updateDataModel: {
+        surfaceId: 'budget-create',
+        value: { form: data, help: 'Revisa' },
+      },
+    },
+  ]);
+  const original = result.surfaces[0];
+  const model = new InputModel(original);
+  const input = original.components.get('name');
+
+  model.write(input, 'Borrador local');
+  model.receive({
+    ...original,
+    components: new Map(original.components),
+    dataModel: {
+      ...structuredClone(original.dataModel),
+      form: { ...structuredClone(original.dataModel.form), name: 'Valor del agente' },
+    },
+  });
+
+  assert.equal(model.action(original.components.get('submit')).context.name, 'Valor del agente');
 });
 
 test('dates reject impossible days and action outcomes never infer success from HTTP 200', () => {

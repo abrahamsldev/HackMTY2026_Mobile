@@ -42,7 +42,7 @@ Ante un error se conserva el formulario. Reintentar sin cambiar valores reutiliz
 Este cambio no aplica SQL ni despliega servicios. Para activarlo:
 
 1. Aplicar el esquema del banco de preguntas y después `supabase/migrations/202609130001_a2ui_actions.sql` en Supabase.
-2. Asignar una contraseña al login PostgreSQL `fluidbank_actions`. Configurar su conexión TLS directa como `MCP_ACTIONS_DATABASE_URL` en el MCP. La validación requiere ese nombre de usuario exacto; no acepta `postgres`, `service_role` ni el usuario compuesto del pooler.
+2. Asignar una contraseña al login PostgreSQL `fluidbank_actions`. Configurar `MCP_ACTIONS_DATABASE_URL` en el MCP con TLS. Para conexión directa, el usuario es `fluidbank_actions`; para el pooler compartido de sesión es `fluidbank_actions.PROJECT_REF`. Copiar el host exacto desde **Connect → Session pooler** en Supabase. La validación no acepta `postgres` ni `service_role`.
 3. Mantener `public.budgets` y `public.savings_goals` en `MCP_ALLOWED_TABLES`. Conservar la conexión original de lectura.
 4. Configurar el mismo secreto aleatorio de al menos 32 caracteres como `MCP_ACTIONS_SECRET` en agente y MCP. Nunca usar una variable `EXPO_PUBLIC_*` para este secreto. La firma HMAC incluye el evento completo y el usuario autenticado; funciona con el transporte remoto Horizon existente.
 5. Desplegar el código actualizado de agente y MCP y reconstruir Expo con DateTimePicker.

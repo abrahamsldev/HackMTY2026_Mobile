@@ -1,7 +1,7 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 
-import { InputModel } from './a2ui_actions/model';
+import { InputModel, serverSignature } from './a2ui_actions/model';
 import { A2UIInput } from './a2ui_actions/input';
 import { InfoBanner } from '@/components/ui/info-banner';
 import { resolveDynamicString } from './bindings';
@@ -138,24 +138,31 @@ function renderComponent(
   return <View style={{ flexGrow: component.weight, flexBasis: 0 }}>{rendered}</View>;
 }
 
-export function A2UIRenderer({ surface, disabled = false, onAction, onError }: A2UIRendererProps) {
+function A2UIRendererDraft({ surface, disabled = false, onAction, onError }: A2UIRendererProps) {
   const [inputs] = useState(() => new InputModel(surface));
-  inputs.receive(surface);
-  const [, refresh] = useState(0);
+  const [renderSurface, setRenderSurface] = useState(surface);
   const [error, setError] = useState<string | null>(null);
+
   return (
     <View style={{ gap: 16 }}>
       {renderComponent(
-        inputs.surface, 'root', disabled || !onAction, onAction,
+        renderSurface, 'root', disabled || !onAction, onAction,
         (message) => {
           setError(message ?? 'No se pudo enviar la acción. Inténtalo de nuevo.');
           onError?.();
         },
         inputs,
-        () => { setError(null); refresh(n => n + 1); },
+        () => {
+          setError(null);
+          setRenderSurface(inputs.surface);
+        },
         0, new Set(),
       )}
       {error && <InfoBanner tone="danger" message={error} />}
     </View>
   );
+}
+
+export function A2UIRenderer(props: A2UIRendererProps) {
+  return <A2UIRendererDraft key={serverSignature(props.surface)} {...props} />;
 }
