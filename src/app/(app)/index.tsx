@@ -23,6 +23,8 @@ import {
   AssistantWelcome,
   ChatComposer,
   ChatMessage,
+  FloatingChatBubble,
+  MorphingStage,
   QuestionBank,
   extractFirstName,
 } from "@/features/assistant/components";
@@ -52,9 +54,7 @@ export default function HomeScreen() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       {session && (
-        <AssistantWorkspace
-          key={session.user.id}
-          currentUserId={session.user.id}
+        <AssistantWorkspace key={session.user.id} currentUserId={session.user.id}
           userMetadata={session.user.user_metadata}
           profileFullName={profile.fullName}
         />
@@ -300,28 +300,7 @@ function AssistantWorkspace({
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.messagesInner}>
-              {/* Past archived turns */}
-              {pastTurns.map((turn) => (
-                <View key={turn.id} style={styles.turnContainer}>
-                  <ChatMessage
-                    role="user"
-                    content={turn.query}
-                    animate={false}
-                  />
-                  <ChatMessage
-                    role="assistant"
-                    content={turn.reply?.message}
-                    surfaces={turn.surfaces}
-                    error={turn.error}
-                    a2uiError={turn.reply?.a2uiError}
-                    disabled={assistant.pending}
-                    onDispatch={handleDispatch}
-                    animate={false}
-                  />
-                </View>
-              ))}
-
-              {/* Active current turn */}
+              {/* Active current turn with bubble collapse & morphing stage */}
               {activeQuery && (
                 <View style={styles.turnContainer}>
                   <ChatMessage
@@ -335,62 +314,46 @@ function AssistantWorkspace({
                     onSubmitEdit={handleSubmitEdit}
                     onCancelEdit={handleCancelEdit}
                   />
-                  <ChatMessage
-                    role="assistant"
-                    content={activeResponse?.reply.message}
-                    surfaces={activeSurfaces}
+                  <MorphingStage
                     isPending={assistant.pending}
+                    hasContent={Boolean(activeResponse?.reply.message || activeSurfaces.length > 0 || pastTurns.length > 0)}
                     error={assistant.error}
-                    a2uiError={activeResponse?.reply.a2uiError}
-                    onRetry={handleRetry}
                     onCancel={handleCancel}
-                    onDispatch={handleDispatch}
-                    disabled={assistant.pending}
-                  />
-                  {activeResponse && (
-                    <A2UIResponseViewer
-                      reply={activeResponse.reply}
+                  >
+                    <ChatMessage
+                      role="assistant"
+                      content={activeResponse?.reply.message}
                       surfaces={activeSurfaces}
+                      isPending={assistant.pending}
+                      error={assistant.error}
+                      a2uiError={activeResponse?.reply.a2uiError}
+                      onRetry={handleRetry}
+                      onCancel={handleCancel}
+                      onDispatch={handleDispatch}
+                      disabled={assistant.pending}
                     />
-                  )}
-                </View>
-              )}
-
-              {/* Collapsible Question Bank in Conversation mode if opened */}
-              {showQuestionBank && (
-                <View style={styles.questionBankConversationWrapper}>
-                  <QuestionBank
-                    disabled={assistant.pending}
-                    onSelect={handleSelectSuggestion}
-                  />
+                    {activeResponse && (
+                      <A2UIResponseViewer
+                        reply={activeResponse.reply}
+                        surfaces={activeSurfaces}
+                      />
+                    )}
+                  </MorphingStage>
                 </View>
               )}
             </View>
           </ScrollView>
 
-          {/* Bottom Pinned Composer */}
-          <View
-            style={[
-              styles.bottomComposerContainer,
-              {
-                backgroundColor: theme.background,
-                paddingBottom: Math.max(insets.bottom, Spacing.two),
-              },
-            ]}
-          >
-            <View style={styles.bottomComposerInner}>
-              <ChatComposer
-                inputRef={queryInput}
-                value={query}
-                onChangeText={setQuery}
-                onSubmit={handleSubmit}
-                onOpenQuestionBank={() => setShowQuestionBank((prev) => !prev)}
-                loading={assistant.pending}
-                disabled={!assistant.isConfigured || Boolean(editingTurnId)}
-                mode="conversation"
-              />
-            </View>
-          </View>
+          {/* Floating Chat Bubble Button with gentle motion and bubble popup */}
+          <FloatingChatBubble
+            inputRef={queryInput}
+            value={query}
+            onChangeText={setQuery}
+            onSubmit={handleSubmit}
+            loading={assistant.pending}
+            disabled={!assistant.isConfigured || Boolean(editingTurnId)}
+            bottomInset={Math.max(insets.bottom, Spacing.three)}
+          />
         </View>
       )}
     </View>
