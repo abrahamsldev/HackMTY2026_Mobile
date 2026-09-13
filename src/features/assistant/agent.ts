@@ -74,36 +74,42 @@ export async function transcribeAudioWebhook({
   }, timeoutMs);
 
   try {
-    // Read the local recording into a real Blob instead of relying on React
-    // Native's `{ uri, name, type }` FormData shape: that trick depends on a
-    // native bridge that doesn't exist on web (Expo also targets web), where
-    // it silently gets stringified instead of attached as file content.
-    let recordingBlob: Blob;
-    try {
-      const source = await fetch(uri);
-      if (!source.ok) throw new Error();
-      recordingBlob = await source.blob();
-    } catch {
-      throw new AgentRequestError('response', 'No se pudo leer la grabación de audio.');
-    }
-    if (recordingBlob.size === 0) {
-      throw new AgentRequestError('response', 'La grabación de audio está vacía.');
-    }
-
-    const mimeType = recordingBlob.type || 'audio/m4a';
-    const extension = mimeType.includes('webm')
-      ? 'webm'
-      : mimeType.includes('wav')
-      ? 'wav'
-      : mimeType.includes('mpeg') || mimeType.includes('mp3')
-      ? 'mp3'
-      : mimeType.includes('ogg')
-      ? 'ogg'
-      : 'm4a';
-
     const body = new FormData();
     // n8n's Webhook node reads the upload from the binary property named "data".
-    body.append('data', recordingBlob, `recording.${extension}`);
+    // expo-audio's web recorder yields a `blob:` object URL: it only holds a
+    // MediaRecorder Blob in page memory, so it must be fetched into a real
+    // Blob before it can be attached. Native recordings are plain `file://`
+    // paths; RN's networking bridge streams those directly from disk when
+    // given the classic `{ uri, name, type }` shape, which is both the
+    // documented approach and avoids relying on fetch()+.blob() reading
+    // local files, which is unreliable across RN/Hermes versions.
+    if (uri.startsWith('blob:') || uri.startsWith('data:')) {
+      let recordingBlob: Blob;
+      try {
+        const source = await fetch(uri);
+        if (!source.ok) throw new Error(`local read responded ${source.status}`);
+        recordingBlob = await source.blob();
+      } catch (readError) {
+        console.error('[assistant] failed to read recording uri', uri, readError);
+        throw new AgentRequestError('response', 'No se pudo leer la grabación de audio.');
+      }
+      if (recordingBlob.size === 0) {
+        throw new AgentRequestError('response', 'La grabación de audio está vacía.');
+      }
+      const mimeType = recordingBlob.type || 'audio/webm';
+      const extension = mimeType.includes('wav')
+        ? 'wav'
+        : mimeType.includes('mpeg') || mimeType.includes('mp3')
+        ? 'mp3'
+        : mimeType.includes('ogg')
+        ? 'ogg'
+        : mimeType.includes('mp4') || mimeType.includes('m4a')
+        ? 'm4a'
+        : 'webm';
+      body.append('data', recordingBlob, `recording.${extension}`);
+    } else {
+      body.append('data', { uri, name: 'recording.m4a', type: 'audio/m4a' } as unknown as Blob);
+    }
     const response = await fetchImpl(endpoint.toString(), {
       method: 'POST',
       headers: { Accept: 'application/json' },
@@ -111,6 +117,7 @@ export async function transcribeAudioWebhook({
       signal: controller.signal,
     });
     if (!response.ok) {
+      console.error('[assistant] n8n webhook responded', response.status, await response.text().catch(() => ''));
       throw new AgentRequestError(
         'response',
         response.status === 404
@@ -142,6 +149,7 @@ export async function transcribeAudioWebhook({
     }
     if (timedOut) throw new AgentRequestError('timeout', 'La transcripción tardó demasiado. Inténtalo de nuevo.');
     if (error instanceof AgentRequestError) throw error;
+    console.error('[assistant] transcribeAudioWebhook network failure', error);
     throw new AgentRequestError('network', 'No se pudo conectar con el webhook de transcripción de n8n.');
   } finally {
     clearTimeout(timeout);
