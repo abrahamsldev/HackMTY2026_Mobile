@@ -89,7 +89,14 @@ export type A2UIBankingViewComponent = A2UIComponentCommon & {
   view: import('../financial-ui/model').BankingViewData | A2UIBinding;
 };
 
+export type A2UIInputComponent = A2UIComponentCommon & (
+  | { component: 'TextField'; label: A2UIDynamicString; value: A2UIBinding; variant?: 'shortText' | 'longText' | 'number' | 'obscured' }
+  | { component: 'DateTimeInput'; label?: A2UIDynamicString; value: A2UIBinding; enableDate: true; enableTime?: false }
+  | { component: 'Slider'; label?: A2UIDynamicString; value: A2UIBinding; min?: number; max: number }
+);
+
 export type A2UIComponent =
+  | A2UIInputComponent
   | A2UITextComponent
   | A2UIButtonComponent
   | A2UICardComponent

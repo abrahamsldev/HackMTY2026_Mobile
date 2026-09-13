@@ -1,9 +1,11 @@
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 
-import { createA2UIAction } from './action';
+import { InputModel } from './a2ui_actions/model';
+import { A2UIInput } from './a2ui_actions/input';
+import { InfoBanner } from '@/components/ui/info-banner';
 import { resolveDynamicString } from './bindings';
-import { A2UIButton } from './components/button';
+import { A2UIButton } from './a2ui_actions/button';
 import { A2UICard } from './components/card';
 import { A2UIChart } from './components/chart';
 import { A2UIBankingView } from './components/banking-view';
@@ -39,7 +41,9 @@ function renderComponent(
   componentId: string,
   disabled: boolean,
   onAction: A2UIRendererProps['onAction'],
-  onError: A2UIRendererProps['onError'],
+  onError: (message?: string) => void,
+  inputs: InputModel,
+  onInput: () => void,
   depth: number,
   ancestors: ReadonlySet<string>,
 ): ReactNode {
@@ -62,7 +66,7 @@ function renderComponent(
     case 'Card':
       rendered = (
         <A2UICard>
-          {renderComponent(surface, component.child, disabled, onAction, onError, depth + 1, nextAncestors)}
+          {renderComponent(surface, component.child, disabled, onAction, onError, inputs, onInput, depth + 1, nextAncestors)}
         </A2UICard>
       );
       break;
@@ -71,7 +75,7 @@ function renderComponent(
         <A2UIColumn justify={component.justify} align={component.align}>
           {component.children.map((childId) => (
             <Fragment key={childId}>
-              {renderComponent(surface, childId, disabled, onAction, onError, depth + 1, nextAncestors)}
+              {renderComponent(surface, childId, disabled, onAction, onError, inputs, onInput, depth + 1, nextAncestors)}
             </Fragment>
           ))}
         </A2UIColumn>
@@ -93,16 +97,35 @@ function renderComponent(
           disabled={disabled}
           onPress={() => {
             try {
-              const result = onAction?.(createA2UIAction(surface, component));
+              const result = onAction?.(inputs.action(component));
               if (result instanceof Promise) result.catch(() => onError?.());
-            } catch {
-              onError?.();
+            } catch (error) {
+              onError(error instanceof Error ? error.message : undefined);
             }
           }}
         />
       );
       break;
     }
+    case 'TextField':
+    case 'DateTimeInput':
+    case 'Slider':
+      rendered = (
+        <A2UIInput
+          component={component}
+          model={surface.dataModel}
+          disabled={disabled}
+          onChange={(input, value) => {
+            try {
+              inputs.write(input, value);
+              onInput();
+            } catch (error) {
+              onError(error instanceof Error ? error.message : undefined);
+            }
+          }}
+        />
+      );
+      break;
     case 'Chart':
       rendered = <A2UIChart chart={component.chart} dataModel={surface.dataModel} />;
       break;
@@ -116,5 +139,23 @@ function renderComponent(
 }
 
 export function A2UIRenderer({ surface, disabled = false, onAction, onError }: A2UIRendererProps) {
-  return <>{renderComponent(surface, 'root', disabled, onAction, onError, 0, new Set())}</>;
+  const [inputs] = useState(() => new InputModel(surface));
+  inputs.receive(surface);
+  const [, refresh] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <View style={{ gap: 16 }}>
+      {renderComponent(
+        inputs.surface, 'root', disabled || !onAction, onAction,
+        (message) => {
+          setError(message ?? 'No se pudo enviar la acción. Inténtalo de nuevo.');
+          onError?.();
+        },
+        inputs,
+        () => { setError(null); refresh(n => n + 1); },
+        0, new Set(),
+      )}
+      {error && <InfoBanner tone="danger" message={error} />}
+    </View>
+  );
 }

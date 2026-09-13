@@ -66,6 +66,9 @@ const serverAction = z
   .strict();
 
 export const a2uiComponentSchema = z.discriminatedUnion('component', [
+  z.object({ ...common, component: z.literal('TextField'), label: dynamicString, value: binding, variant: z.enum(['shortText', 'longText', 'number', 'obscured']).optional() }).strict(),
+  z.object({ ...common, component: z.literal('DateTimeInput'), label: dynamicString.optional(), value: binding, enableDate: z.literal(true), enableTime: z.literal(false).optional() }).strict(),
+  z.object({ ...common, component: z.literal('Slider'), label: dynamicString.optional(), value: binding, min: z.number().finite().optional(), max: z.number().finite() }).strict().refine(v => v.max > (v.min ?? 0)),
   z.object({
     ...common,
     component: z.literal('Text'),

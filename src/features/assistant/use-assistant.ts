@@ -17,6 +17,7 @@ export function useAssistant(currentUserId: string) {
   const [surface, setSurface] = useState<AssistantSurface | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionStatus, setActionStatus] = useState<{ status: 'pending' | 'success' | 'failure'; message: string } | null>(null);
   const [lastQuery, setLastQuery] = useState('');
   const request = useRef<{ id: number; controller?: AbortController }>({ id: 0 });
   const inFlight = useRef(false);
@@ -40,6 +41,7 @@ export function useAssistant(currentUserId: string) {
     setLastQuery(normalized);
     setPending(true);
     setError(null);
+    setActionStatus(action ? { status: 'pending', message: 'Enviando acción…' } : null);
     try {
       if (!supabase) throw new AgentRequestError('authentication', 'Inicia sesión para consultar al asistente.');
       const { data, error: authError } = await supabase.auth.getSession();
@@ -52,6 +54,12 @@ export function useAssistant(currentUserId: string) {
         ? await requestAgentAction({ baseUrl: agentBaseUrl, action, userId: currentUserId, accessToken, signal: controller.signal })
         : await requestAgent({ baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, accessToken, signal: controller.signal });
       if (request.current.id === id) {
+        if (action) {
+          setActionStatus(reply.actionResult ?? (reply.a2uiError
+            ? { status: 'failure', message: reply.a2uiError }
+            : reply.messages?.length ? null : { status: 'failure', message: reply.message || 'El servicio no confirmó el resultado de la acción.' }));
+          if (!reply.messages || reply.actionResult?.status === 'failure') return;
+        }
         const processed = processor.current.process(reply.messages, !action);
         const effectiveReply = !processed.ok
           ? { ...reply, a2uiError: processed.error }
@@ -64,7 +72,8 @@ export function useAssistant(currentUserId: string) {
       }
     } catch (cause) {
       if (request.current.id !== id || controller.signal.aborted) return;
-      setError(cause instanceof AgentRequestError ? cause.message : 'No se pudo mostrar la respuesta. Inténtalo de nuevo.');
+      if (action) setActionStatus({ status: 'failure', message: cause instanceof AgentRequestError ? cause.message : 'No se pudo confirmar el resultado. Intenta de nuevo la misma operación.' });
+      if (!action) setError(cause instanceof AgentRequestError ? cause.message : 'No se pudo mostrar la respuesta. Inténtalo de nuevo.');
     } finally {
       if (request.current.id === id) {
         request.current.controller = undefined;
@@ -84,6 +93,7 @@ export function useAssistant(currentUserId: string) {
     request.current.controller = undefined;
     inFlight.current = false;
     setPending(false);
+    setActionStatus(previous => previous?.status === 'pending' ? { status: 'failure', message: 'Consulta cancelada; no se pudo confirmar el resultado de la acción.' } : previous);
   }
 
   function dispatch(action: A2UIAction) {
@@ -95,5 +105,5 @@ export function useAssistant(currentUserId: string) {
     if (previous) return run(previous.query, previous.action);
   }
 
-  return { surface, pending, error, lastQuery, send, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry };
+  return { surface, pending, error, actionStatus, lastQuery, send, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry };
 }

@@ -9,7 +9,7 @@ import {
   type A2UISurfaceState,
 } from './types.ts';
 
-export const SUPPORTED_BASIC_COMPONENTS = ['Text', 'Button', 'Card', 'Column'] as const;
+export const SUPPORTED_BASIC_COMPONENTS = ['Text', 'Button', 'Card', 'Column', 'TextField', 'DateTimeInput', 'Slider'] as const;
 export const SUPPORTED_FINANCE_COMPONENTS = [
   'Text',
   'Button',
