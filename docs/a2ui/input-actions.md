@@ -6,7 +6,7 @@ Expo renderiza los controles; el agente autentica al usuario y solicita los form
 
 La fuente del contrato está en `hackmty2026-mcp/src/supabase_mcp/a2ui_actions/`:
 
-- `inputs.json`: TextField, DateTimeInput, Slider y Button, implementados en Expo bajo `src/features/a2ui/a2ui_actions/`.
+- `inputs.json`: TextField, DateTimeInput, Slider, ChoicePicker y Button, implementados en Expo bajo `src/features/a2ui/a2ui_actions/`.
 - `actions.json`: nombres permitidos, tipos y cantidad de inputs, etiquetas, límites y campos del contexto.
 
 `node scripts/sync-a2ui-actions.mjs` sincroniza las copias de Expo y del agente y genera las ocho plantillas MCP. `node scripts/sync-a2ui-actions.mjs --check` comprueba que no difieran.
@@ -19,7 +19,7 @@ La fuente del contrato está en `hackmty2026-mcp/src/supabase_mcp/a2ui_actions/`
 | `savings_goal.create` | Nombre, importe objetivo, fecha y aportación mensual sugerida | Crear meta |
 | `savings_goal.load` | Nombre exacto | Cargar una meta propia para editar |
 | `savings_goal.update` | Los cuatro campos de la meta | Actualizar el registro cargado |
-| `transfer.execute` | Cuenta origen, destinatario o cuenta propia, importe y concepto | Transferir y registrar el movimiento |
+| `transfer.execute` | Selector de cuenta origen, contacto o cuenta propia, importe y concepto | Transferir y registrar el movimiento |
 | `credit_card.pay` | Cuenta origen, tarjeta e importe | Aplicar un pago y actualizar deuda y crédito disponible |
 
 Las actualizaciones incluyen el ID cargado como binding del contexto, sin pedir al usuario que escriba UUIDs. Las cuentas, tarjetas y destinatarios se eligen por nombre visible o terminación enmascarada y exigen una coincidencia única. Esta primera versión admite MXN. La aportación mensual de una meta sigue siendo un plan; las dos acciones de pago sí actualizan el ledger del MVP. El pago de tarjeta usa Finance v2 para mostrar el componente visual `PaymentCard` y las condiciones vigentes antes del botón de confirmación.

@@ -110,6 +110,7 @@ function renderComponent(
     case 'TextField':
     case 'DateTimeInput':
     case 'Slider':
+    case 'ChoicePicker':
       rendered = (
         <A2UIInput
           component={component}

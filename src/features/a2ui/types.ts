@@ -93,6 +93,15 @@ export type A2UIInputComponent = A2UIComponentCommon & (
   | { component: 'TextField'; label: A2UIDynamicString; value: A2UIBinding; variant?: 'shortText' | 'longText' | 'number' | 'obscured' }
   | { component: 'DateTimeInput'; label?: A2UIDynamicString; value: A2UIBinding; enableDate: true; enableTime?: false }
   | { component: 'Slider'; label?: A2UIDynamicString; value: A2UIBinding; min?: number; max: number }
+  | {
+      component: 'ChoicePicker';
+      label?: A2UIDynamicString;
+      value: A2UIBinding;
+      options: { label: A2UIDynamicString; value: string }[];
+      variant?: 'multipleSelection' | 'mutuallyExclusive';
+      displayStyle?: 'checkbox' | 'chips';
+      filterable?: boolean;
+    }
 );
 
 export type A2UIComponent =

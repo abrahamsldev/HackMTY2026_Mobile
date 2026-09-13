@@ -35,6 +35,7 @@ for (const action of registry.actions) {
     const component = { id: field.key, component: input.component, label: field.label, value: { path: `/form/${field.key}` } };
     if (field.input === 'date') Object.assign(component, { enableDate: true, enableTime: false });
     if (field.input === 'slider') Object.assign(component, { min: field.min, max: field.max });
+    if (field.input === 'choice') Object.assign(component, { options: [], variant: input.variant, displayStyle: input.displayStyle });
     components.push(component);
   }
   components.push(

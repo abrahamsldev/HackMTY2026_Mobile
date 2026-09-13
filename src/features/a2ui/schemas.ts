@@ -65,10 +65,28 @@ const serverAction = z
   })
   .strict();
 
+const choiceOption = z.object({
+  label: dynamicString,
+  value: z.string().min(1).max(128),
+}).strict();
+
 export const a2uiComponentSchema = z.discriminatedUnion('component', [
   z.object({ ...common, component: z.literal('TextField'), label: dynamicString, value: binding, variant: z.enum(['shortText', 'longText', 'number', 'obscured']).optional() }).strict(),
   z.object({ ...common, component: z.literal('DateTimeInput'), label: dynamicString.optional(), value: binding, enableDate: z.literal(true), enableTime: z.literal(false).optional() }).strict(),
   z.object({ ...common, component: z.literal('Slider'), label: dynamicString.optional(), value: binding, min: z.number().finite().optional(), max: z.number().finite() }).strict().refine(v => v.max > (v.min ?? 0)),
+  z.object({
+    ...common,
+    component: z.literal('ChoicePicker'),
+    label: dynamicString.optional(),
+    value: binding,
+    options: z.array(choiceOption).max(50).refine(
+      (options) => new Set(options.map((option) => option.value)).size === options.length,
+      'ChoicePicker option values must be unique.',
+    ),
+    variant: z.enum(['multipleSelection', 'mutuallyExclusive']).optional(),
+    displayStyle: z.enum(['checkbox', 'chips']).optional(),
+    filterable: z.boolean().optional(),
+  }).strict(),
   z.object({
     ...common,
     component: z.literal('Text'),

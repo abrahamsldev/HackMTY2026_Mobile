@@ -41,6 +41,7 @@ export function extractFirstName(
 
 const DEFAULT_SUGGESTIONS = [
   'Quiero crear un presupuesto',
+  'Quiero pagar mi tarjeta de crédito',
   'Muéstrame mi resumen financiero',
   'Muéstrame mis movimientos recientes',
 ];
@@ -188,7 +189,7 @@ function QuickSuggestion({
           transform: [{ scale: pressed && !settings.reduceMotion ? 0.985 : 1 }],
         },
       ]}>
-      <ThemedText type="small" style={styles.chipText}>
+      <ThemedText type="smallBold" style={styles.chipText}>
         {suggestion}
       </ThemedText>
     </Pressable>
@@ -244,8 +245,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.two,
     maxWidth: 640,
+    width: '100%',
   },
   chip: {
+    flexBasis: '46%',
+    flexGrow: 1,
+    maxWidth: 312,
     borderRadius: 16,
     borderWidth: 2,
     paddingHorizontal: Spacing.three,
@@ -257,6 +262,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 14,
     lineHeight: 20,
+    textAlign: 'center',
   },
   moreQuestionsButton: {
     marginTop: Spacing.one,
