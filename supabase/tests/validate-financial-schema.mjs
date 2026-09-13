@@ -10,6 +10,7 @@ const credit = '20000000-0000-4000-8000-000000000002';
 const foreignAccount = '20000000-0000-4000-8000-000000000003';
 const read = name => readFileSync(new URL(name, import.meta.url), 'utf8');
 const migration = read('../migrations/202609120001_financial_question_bank.sql');
+const primaryAccountMigration = read('../migrations/202609130003_primary_account_context.sql');
 const seed = read('../seeds/financial_demo_f52827d7.sql');
 const tables = [...migration.matchAll(/create table public\.(\w+)/g)].map(match => match[1]);
 
@@ -84,6 +85,17 @@ await db.exec('reset role; set role anon');
 await assert.rejects(db.query('select * from public.account_details'), error => error.code === '42501');
 await db.exec('reset role');
 console.log('PASS: own-user SELECT, no cross-user reads, no anonymous reads and no client writes to credit terms.');
+await db.exec(primaryAccountMigration);
+await db.exec(primaryAccountMigration);
+await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user]);
+await db.exec('set role authenticated');
+assert.equal((await db.query('select public.get_primary_account_id() as id')).rows[0].id, checking);
+await db.query("select set_config('request.jwt.claim.sub',$1,false)",[other]);
+assert.equal((await db.query('select public.get_primary_account_id() as id')).rows[0].id, foreignAccount);
+await db.exec('reset role; set role anon');
+await assert.rejects(db.query('select public.get_primary_account_id()'), error => error.code === '42501');
+await db.exec('reset role');
+console.log('PASS: Expo receives only its primary account UUID through the authenticated RPC.');
 console.log(JSON.stringify({seedRows:firstCounts},null,2));
 await db.close();
 

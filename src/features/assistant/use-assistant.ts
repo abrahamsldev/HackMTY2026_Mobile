@@ -44,12 +44,7 @@ export function useAssistant(currentUserId: string) {
       }
       let lookup;
       try {
-        lookup = await supabase
-          .from('accounts')
-          .select('id, account_type, created_at')
-          .eq('user_id', currentUserId)
-          .order('created_at', { ascending: true })
-          .limit(50);
+        lookup = await supabase.rpc('get_primary_account_id');
       } catch {
         if (active) {
           setAccountError('No se pudo consultar la cuenta bancaria.');
@@ -59,17 +54,17 @@ export function useAssistant(currentUserId: string) {
       }
       if (!active) return;
       const { data, error: lookupError } = lookup;
-      if (lookupError || !data?.length) {
+      if (lookupError) {
+        setAccountError('No se pudo verificar la cuenta bancaria vinculada a tu usuario.');
+        setAccountLoading(false);
+        return;
+      }
+      if (typeof data !== 'string') {
         setAccountError('No encontramos una cuenta bancaria vinculada a tu usuario.');
         setAccountLoading(false);
         return;
       }
-      const priority = { checking: 0, savings: 1, credit: 2 } as const;
-      const selected = [...data].sort((left, right) =>
-        (priority[left.account_type as keyof typeof priority] ?? 3) -
-        (priority[right.account_type as keyof typeof priority] ?? 3),
-      )[0];
-      setAccountId(selected.id);
+      setAccountId(data);
       setAccountLoading(false);
     })();
     return () => {
