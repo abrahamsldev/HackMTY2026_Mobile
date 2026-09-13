@@ -254,7 +254,7 @@ export function FloatingChatBubble({
       )}
 
       {/* Modal / Burbuja de chat emergente desde el centro */}
-      {isOpen && (
+      {isOpen && !voice?.isRecording && !voice?.isBusy && !loading && (
         <View style={styles.modalOverlay} pointerEvents="box-none">
           {/* Fondo para cerrar al tocar fuera */}
           <Pressable

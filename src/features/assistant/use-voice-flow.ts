@@ -28,10 +28,6 @@ const VOICE_METER_SMOOTHING = 0.35;
 const VOICE_METER_POLL_MS = 60;
 // How long the level takes to settle back to 0 once recording stops.
 const VOICE_LEVEL_RELEASE_MS = 220;
-// Safety net only: if `submit()` turns out to be a silent no-op (should not
-// happen in the normal flow, guarded upstream), don't leave the loader stuck
-// forever waiting for a pending state that will never arrive.
-const VOICE_SUBMIT_WATCHDOG_MS = 4000;
 // How long the "done" phase lingers so the exit animation can play before the
 // overlay actually unmounts.
 const VOICE_DONE_LINGER_MS = 260;
@@ -49,10 +45,8 @@ export type VoiceFlowPhase =
 export type VoiceFlowOptions = {
   /** Uploads the recording and resolves with the transcribed text (existing n8n STT path). */
   transcribe: (uri: string) => Promise<string>;
-  /** The app's single canonical chat submission path (e.g. handleSubmit). Fire-and-forget. */
-  submit: (text: string) => void;
-  /** assistant.pending — used to know when the agent request triggered by this voice turn has settled. */
-  isAgentPending: boolean;
+  /** The app's canonical chat submission path. Its promise settles with the agent request. */
+  submit: (text: string) => Promise<void> | undefined;
 };
 
 export type VoiceFlow = {
@@ -67,14 +61,13 @@ export type VoiceFlow = {
   cancel: () => void;
 };
 
-export function useVoiceFlow({ transcribe, submit, isAgentPending }: VoiceFlowOptions): VoiceFlow {
+export function useVoiceFlow({ transcribe, submit }: VoiceFlowOptions): VoiceFlow {
   const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
   const [phase, setPhase] = useState<VoiceFlowPhase>('idle');
   const level = useSharedValue(0);
   const smoothedLevelRef = useRef(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
-  const awaitingAgentRef = useRef(false);
 
   const stopMetering = useCallback(() => {
     if (pollRef.current) {
@@ -169,9 +162,15 @@ export function useVoiceFlow({ transcribe, submit, isAgentPending }: VoiceFlowOp
         return;
       }
       if (!mountedRef.current) return;
-      awaitingAgentRef.current = true;
       setPhase('submitting');
-      submit(text);
+      const request = submit(text);
+      if (!request) {
+        setPhase('idle');
+        return;
+      }
+      setPhase('waiting');
+      await request;
+      if (mountedRef.current) setPhase('done');
     } catch (error) {
       if (mountedRef.current) setPhase('idle');
       Alert.alert('No se pudo usar el micrófono', error instanceof Error ? error.message : 'Inténtalo de nuevo.');
@@ -188,37 +187,6 @@ export function useVoiceFlow({ transcribe, submit, isAgentPending }: VoiceFlowOp
     }
     setPhase('idle');
   }, [level, phase, recorder, stopMetering]);
-
-  // The loader must stay up through "submitting" and "waiting" and leave only
-  // once the agent has actually responded — derived from real assistant
-  // state, not a timer. `awaitingAgentRef` gates this so an unrelated,
-  // pre-existing `isAgentPending` value can't be misread as "this turn is done".
-  useEffect(() => {
-    if (!awaitingAgentRef.current) return;
-    if (phase === 'submitting' && isAgentPending) {
-      const timer = setTimeout(() => setPhase('waiting'), 0);
-      return () => clearTimeout(timer);
-    }
-    if (phase === 'waiting' && !isAgentPending) {
-      awaitingAgentRef.current = false;
-      const timer = setTimeout(() => setPhase('done'), 0);
-      return () => clearTimeout(timer);
-    }
-  }, [isAgentPending, phase]);
-
-  // Safety net: `submit` is expected to always lead to `isAgentPending`
-  // becoming true almost immediately. If it doesn't (e.g. a guard upstream
-  // silently rejected the submission), don't leave the loader stuck forever.
-  useEffect(() => {
-    if (phase !== 'submitting') return;
-    const timer = setTimeout(() => {
-      if (awaitingAgentRef.current && mountedRef.current) {
-        awaitingAgentRef.current = false;
-        setPhase('idle');
-      }
-    }, VOICE_SUBMIT_WATCHDOG_MS);
-    return () => clearTimeout(timer);
-  }, [phase]);
 
   useEffect(() => {
     if (phase !== 'done') return;

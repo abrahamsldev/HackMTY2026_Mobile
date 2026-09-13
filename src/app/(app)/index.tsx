@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -140,7 +140,7 @@ function AssistantWorkspace({
     ]);
   }
 
-  function handleSubmit(submittedText: string) {
+  function handleSubmit(submittedText: string): Promise<void> | undefined {
     const text = submittedText.trim();
     if (
       !text ||
@@ -163,7 +163,7 @@ function AssistantWorkspace({
     setEditingQuery("");
     Keyboard.dismiss();
 
-    void assistant.send(text).finally(() => {
+    return assistant.send(text).finally(() => {
       submissionLocked.current = false;
     });
   }
@@ -171,7 +171,6 @@ function AssistantWorkspace({
   const voice = useVoiceFlow({
     transcribe: assistant.transcribe,
     submit: handleSubmit,
-    isAgentPending: assistant.pending,
   });
   // Extends the existing Banorte loader's trigger to also cover the gap
   // between "recording stopped" and "the agent request is actually in
@@ -181,9 +180,15 @@ function AssistantWorkspace({
     voice.phase === "transcribing" ||
     voice.phase === "submitting" ||
     voice.phase === "waiting";
+  const voiceOverlayActive = voice.phase !== "idle";
+  const voiceOnPress = voice.onPress;
+  const handleVoicePress = useCallback(() => {
+    Keyboard.dismiss();
+    voiceOnPress();
+  }, [voiceOnPress]);
   const voiceControl = useMemo(
-    () => ({ isRecording: voice.isRecording, isBusy: voice.isBusy, onPress: voice.onPress }),
-    [voice.isRecording, voice.isBusy, voice.onPress],
+    () => ({ isRecording: voice.isRecording, isBusy: voice.isBusy, onPress: handleVoicePress }),
+    [voice.isRecording, voice.isBusy, handleVoicePress],
   );
 
   function handleSelectSuggestion(suggestion: string) {
@@ -252,7 +257,12 @@ function AssistantWorkspace({
 
   return (
     <View style={[styles.workspace, { backgroundColor: theme.background }]}>
-      <VoiceProcessingOverlay phase={voice.phase} level={voice.level} onCancel={voice.cancel} />
+      <VoiceProcessingOverlay phase={voice.phase} level={voice.level} onStop={handleVoicePress} />
+      <View
+        accessibilityElementsHidden={voiceOverlayActive}
+        importantForAccessibility={voiceOverlayActive ? "no-hide-descendants" : "auto"}
+        pointerEvents={voiceOverlayActive ? "none" : "auto"}
+        style={[styles.workspaceContent, voiceOverlayActive && styles.workspaceContentHidden]}>
       {assistant.actionStatus && <View accessibilityLiveRegion="polite" style={styles.bannerContainer}>
         <InfoBanner tone={assistant.actionStatus.status === 'failure' ? 'danger' : assistant.actionStatus.status === 'success' ? 'success' : 'info'} title={assistant.actionStatus.status === 'pending' ? 'Procesando' : assistant.actionStatus.status === 'success' ? 'Completado' : 'No se pudo completar'} message={assistant.actionStatus.message} />
       </View>}
@@ -374,6 +384,7 @@ function AssistantWorkspace({
           />
         </View>
       )}
+      </View>
     </View>
   );
 }
@@ -384,6 +395,12 @@ const styles = StyleSheet.create({
   },
   workspace: {
     flex: 1,
+  },
+  workspaceContent: {
+    flex: 1,
+  },
+  workspaceContentHidden: {
+    opacity: 0,
   },
   bannerContainer: {
     paddingHorizontal: Spacing.three,

@@ -10,6 +10,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
 
 import { banortePalette } from '@/features/accessibility/theme';
 
@@ -77,6 +78,19 @@ export function VoiceOrb({ level, reduceMotion, size = 96 }: VoiceOrbProps) {
         ]}
       />
       <Animated.View style={[styles.core, { width: size, height: size, borderRadius: size / 2 }, coreStyle]}>
+        <Svg width={size * 0.38} height={size * 0.38} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"
+            stroke={banortePalette.strongRed}
+            strokeWidth={2}
+          />
+          <Path
+            d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"
+            stroke={banortePalette.strongRed}
+            strokeLinecap="round"
+            strokeWidth={2}
+          />
+        </Svg>
         <View
           style={[
             styles.highlight,
