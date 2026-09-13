@@ -1,4 +1,4 @@
-import { extractA2UITransportReply, serializeActionForLegacyChat } from '../a2ui/transport.ts';
+import { extractA2UITransportReply } from '../a2ui/transport.ts';
 import type { A2UIAction, A2UIMessage } from '../a2ui/types.ts';
 import { z } from 'zod';
 
@@ -6,6 +6,7 @@ export type AgentReply = {
   message: string;
   messages: A2UIMessage[] | null;
   a2uiError: string | null;
+  actionResult?: { status: 'success' | 'failure'; message: string; code?: string };
 };
 
 export function parseAgentReply(input: unknown): AgentReply {
@@ -32,6 +33,7 @@ export class AgentRequestError extends Error {
 export type AgentRequestOptions = {
   baseUrl: string;
   query: string;
+  action?: A2UIAction;
   userId: string;
   accessToken: string;
   signal?: AbortSignal;
@@ -186,6 +188,7 @@ export async function transcribeAudioWebhook({
 export async function requestAgent({
   baseUrl,
   query,
+  action,
   userId,
   accessToken,
   signal,
@@ -227,7 +230,7 @@ export async function requestAgent({
     const response = await fetchImpl(endpoint.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ query: normalizedQuery, user_id: parsedUserId.data }),
+      body: JSON.stringify({ ...(action ? { action } : { query: normalizedQuery }), user_id: parsedUserId.data }),
       signal: controller.signal,
     });
     if (!response.ok) {
@@ -281,7 +284,7 @@ export function requestAgentAction(
   options: Omit<AgentRequestOptions, 'query'> & { action: A2UIAction },
 ): Promise<AgentReply> {
   const { action, ...requestOptions } = options;
-  return requestAgent({ ...requestOptions, query: serializeActionForLegacyChat(action) });
+  return requestAgent({ ...requestOptions, query: `Acción: ${action.name}`, action });
 }
 
 export type { A2UIAction, A2UIMessage };

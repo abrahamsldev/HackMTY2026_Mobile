@@ -39,7 +39,7 @@ test('plain text and invalid A2UI remain recoverable transport results', () => {
   assert.throws(() => parseAgentReply(messages[0]), { code: 'contract' });
 });
 
-test('structured actions keep the official five fields behind legacy query serialization', async () => {
+test('structured actions send the official five fields directly to the agent', async () => {
   const action = {
     name: 'refresh_database_overview', surfaceId: 'database-overview',
     sourceComponentId: 'refresh_button', timestamp: '2026-09-12T12:00:00.000Z', context: { limit: 50 },
@@ -48,10 +48,9 @@ test('structured actions keep the official five fields behind legacy query seria
     baseUrl: options.baseUrl, userId: USER_A, accessToken: TOKEN, action,
     fetchImpl: async (_url, init) => {
       const body = JSON.parse(init.body);
-      assert.deepEqual(Object.keys(body).sort(), ['query', 'user_id']);
+      assert.deepEqual(Object.keys(body).sort(), ['action', 'user_id']);
       assert.equal(body.user_id, USER_A);
-      assert.match(body.query, /Acción A2UI:/);
-      assert.match(body.query, /refresh_database_overview/);
+      assert.deepEqual(body.action, action);
       return new Response(JSON.stringify({ message: 'Actualizado', data: {}, a2ui: null }));
     },
   });

@@ -239,24 +239,18 @@ function AssistantWorkspace({
     submissionLocked.current = false;
   }
 
-  function handleDispatch(action: A2UIAction) {
+  async function handleDispatch(action: A2UIAction) {
     if (assistant.pending || submissionLocked.current) return;
     submissionLocked.current = true;
-    archiveActiveTurn();
-
-    const nextId = `action-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    setActiveResponseFloor(assistant.surface?.revision ?? 0);
-    setActiveQuery(null);
-    setActiveTurnId(nextId);
-    setEditingTurnId(null);
-    setEditingQuery("");
-    void assistant.dispatch(action).finally(() => {
-      submissionLocked.current = false;
-    });
+    try { await assistant.dispatch(action); }
+    finally { submissionLocked.current = false; }
   }
 
   return (
     <View style={[styles.workspace, { backgroundColor: theme.background }]}>
+      {assistant.actionStatus && <View accessibilityLiveRegion="polite" style={styles.bannerContainer}>
+        <InfoBanner tone={assistant.actionStatus.status === 'failure' ? 'danger' : assistant.actionStatus.status === 'success' ? 'success' : 'info'} title={assistant.actionStatus.status === 'pending' ? 'Procesando' : assistant.actionStatus.status === 'success' ? 'Completado' : 'No se pudo completar'} message={assistant.actionStatus.message} />
+      </View>}
       {/* Configuration warning banner */}
       {!assistant.isConfigured && (
         <View style={styles.bannerContainer}>
@@ -288,7 +282,7 @@ function AssistantWorkspace({
                 onChangeText={setQuery}
                 onSubmit={handleSubmit}
                 onSubmitAudio={handleAudioSubmit}
-                loading={assistant.pending}
+                loading={assistant.pending && !assistant.actionStatus}
                 disabled={!assistant.isConfigured}
                 mode="welcome"
               />
@@ -333,7 +327,7 @@ function AssistantWorkspace({
                     />
                   )}
                   <MorphingStage
-                    isPending={assistant.pending}
+                    isPending={assistant.pending && !assistant.actionStatus}
                     hasContent={Boolean(activeResponse?.reply.message || activeSurfaces.length > 0 || pastTurns.length > 0)}
                     error={assistant.error}
                     onCancel={handleCancel}
@@ -342,7 +336,7 @@ function AssistantWorkspace({
                       role="assistant"
                       content={activeResponse?.reply.message}
                       surfaces={activeSurfaces}
-                      isPending={assistant.pending}
+                      isPending={assistant.pending && !assistant.actionStatus}
                       error={assistant.error}
                       a2uiError={activeResponse?.reply.a2uiError}
                       onRetry={handleRetry}
@@ -369,7 +363,7 @@ function AssistantWorkspace({
             onChangeText={setQuery}
             onSubmit={handleSubmit}
             onSubmitAudio={handleAudioSubmit}
-            loading={assistant.pending}
+            loading={assistant.pending && !assistant.actionStatus}
             disabled={!assistant.isConfigured || Boolean(editingTurnId)}
             bottomInset={Math.max(insets.bottom, Spacing.three)}
           />

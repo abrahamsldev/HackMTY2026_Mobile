@@ -39,7 +39,8 @@
         {
           "microphonePermission": "Permite que $(PRODUCT_NAME) acceda al micrófono para transcribir tus consultas de voz."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
