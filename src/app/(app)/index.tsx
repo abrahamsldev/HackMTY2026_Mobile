@@ -26,10 +26,12 @@ import {
   FloatingChatBubble,
   MorphingStage,
   QuestionBank,
+  VoiceProcessingOverlay,
   extractFirstName,
 } from "@/features/assistant/components";
 import { A2UIResponseViewer } from "@/features/assistant/components/a2ui-response-viewer";
 import { useAssistant } from "@/features/assistant/use-assistant";
+import { useVoiceFlow } from "@/features/assistant/use-voice-flow";
 import { useSession } from "@/features/auth/session-provider";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -166,21 +168,23 @@ function AssistantWorkspace({
     });
   }
 
-  async function handleAudioSubmit(uri: string) {
-    if (assistant.pending || submissionLocked.current || !assistant.isConfigured) return;
-    submissionLocked.current = true;
-    let text: string;
-    try {
-      text = await assistant.transcribe(uri);
-    } catch (error) {
-      submissionLocked.current = false;
-      throw error;
-    }
-    // handleSubmit re-locks and owns unlocking (via assistant.send's .finally)
-    // once the transcribed query is actually sent to the agent.
-    submissionLocked.current = false;
-    handleSubmit(text);
-  }
+  const voice = useVoiceFlow({
+    transcribe: assistant.transcribe,
+    submit: handleSubmit,
+    isAgentPending: assistant.pending,
+  });
+  // Extends the existing Banorte loader's trigger to also cover the gap
+  // between "recording stopped" and "the agent request is actually in
+  // flight" (audio upload + n8n STT + the moment handleSubmit hands off to
+  // assistant.send) — otherwise there'd be a silent gap with no loader.
+  const voiceProcessing =
+    voice.phase === "transcribing" ||
+    voice.phase === "submitting" ||
+    voice.phase === "waiting";
+  const voiceControl = useMemo(
+    () => ({ isRecording: voice.isRecording, isBusy: voice.isBusy, onPress: voice.onPress }),
+    [voice.isRecording, voice.isBusy, voice.onPress],
+  );
 
   function handleSelectSuggestion(suggestion: string) {
     setQuery(suggestion);
@@ -248,6 +252,7 @@ function AssistantWorkspace({
 
   return (
     <View style={[styles.workspace, { backgroundColor: theme.background }]}>
+      <VoiceProcessingOverlay phase={voice.phase} level={voice.level} onCancel={voice.cancel} />
       {assistant.actionStatus && <View accessibilityLiveRegion="polite" style={styles.bannerContainer}>
         <InfoBanner tone={assistant.actionStatus.status === 'failure' ? 'danger' : assistant.actionStatus.status === 'success' ? 'success' : 'info'} title={assistant.actionStatus.status === 'pending' ? 'Procesando' : assistant.actionStatus.status === 'success' ? 'Completado' : 'No se pudo completar'} message={assistant.actionStatus.message} />
       </View>}
@@ -281,8 +286,8 @@ function AssistantWorkspace({
                 value={query}
                 onChangeText={setQuery}
                 onSubmit={handleSubmit}
-                onSubmitAudio={handleAudioSubmit}
-                loading={assistant.pending && !assistant.actionStatus}
+                voice={voiceControl}
+                loading={(assistant.pending && !assistant.actionStatus) || voiceProcessing}
                 disabled={!assistant.isConfigured}
                 mode="welcome"
               />
@@ -362,8 +367,8 @@ function AssistantWorkspace({
             value={query}
             onChangeText={setQuery}
             onSubmit={handleSubmit}
-            onSubmitAudio={handleAudioSubmit}
-            loading={assistant.pending && !assistant.actionStatus}
+            voice={voiceControl}
+            loading={(assistant.pending && !assistant.actionStatus) || voiceProcessing}
             disabled={!assistant.isConfigured || Boolean(editingTurnId)}
             bottomInset={Math.max(insets.bottom, Spacing.three)}
           />

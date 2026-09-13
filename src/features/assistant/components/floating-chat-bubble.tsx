@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   Animated,
   Easing,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -10,7 +9,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 import { type TextInputHandle } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
@@ -18,9 +17,8 @@ import { Spacing } from '@/constants/theme';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { useTheme } from '@/hooks/use-theme';
 
-import { ChatComposer } from './chat-composer';
-
-const banorteLogo = require('@/assets/images/banorte-logo/banorte.png');
+import { BanorteLoaderIcon } from './banorte-loader-icon';
+import { ChatComposer, type VoiceControl } from './chat-composer';
 
 function CloseIcon({ color }: { color: string }) {
   return (
@@ -40,7 +38,7 @@ export type FloatingChatBubbleProps = {
   value: string;
   onChangeText: (text: string) => void;
   onSubmit: (text: string) => void;
-  onSubmitAudio?: (uri: string) => Promise<void>;
+  voice?: VoiceControl;
   disabled?: boolean;
   loading?: boolean;
   inputRef?: React.RefObject<TextInputHandle | null>;
@@ -54,7 +52,7 @@ export function FloatingChatBubble({
   value,
   onChangeText,
   onSubmit,
-  onSubmitAudio,
+  voice,
   disabled = false,
   loading = false,
   inputRef,
@@ -71,8 +69,6 @@ export function FloatingChatBubble({
   // Valores animados usando useState conforme a React 19
   const [floatAnim] = useState(() => new Animated.Value(0));
   const [travelAnim] = useState(() => new Animated.Value(loading ? 1 : 0));
-  const [rotateAnim] = useState(() => new Animated.Value(0));
-  const [checkmarkScale] = useState(() => new Animated.Value(0.6));
   const [bubbleScale] = useState(() => new Animated.Value(0.1));
   const [bubbleOpacity] = useState(() => new Animated.Value(0));
 
@@ -138,21 +134,10 @@ export function FloatingChatBubble({
       wasLoadingRef.current = false;
 
       // Llegó la respuesta: transformar en palomita verde en el centro
+      // (BanorteLoaderIcon animates its own checkmark spring from the stage prop)
       setTimeout(() => {
         setStage('checkmark');
       }, 0);
-      checkmarkScale.setValue(0.6);
-
-      if (!settings.reduceMotion) {
-        Animated.spring(checkmarkScale, {
-          toValue: 1,
-          friction: 5,
-          tension: 80,
-          useNativeDriver: Platform.OS !== 'web',
-        }).start();
-      } else {
-        checkmarkScale.setValue(1);
-      }
 
       // Mostrar la palomita ~650ms, luego transformarse en logo y bajar
       timerRef.current = setTimeout(() => {
@@ -181,30 +166,7 @@ export function FloatingChatBubble({
         clearTimeout(timerRef.current);
       }
     };
-  }, [loading, settings.reduceMotion, travelAnim, checkmarkScale, onRevealReady]);
-
-  // 3. Animación de rotación del logo:
-  // Rotación medio rápida (480ms), queda en posición original, y cada ~.8s repite
-  useEffect(() => {
-    if (stage !== 'thinking' || settings.reduceMotion) {
-      rotateAnim.setValue(0);
-      return;
-    }
-
-    const spinSequence = Animated.loop(
-      Animated.sequence([
-        Animated.timing(rotateAnim, {
-          toValue: 1,
-          duration: 480,
-          easing: Easing.bezier(0.4, 0, 0.2, 1),
-          useNativeDriver: Platform.OS !== 'web',
-        }),
-        Animated.delay(800),
-      ]),
-    );
-    spinSequence.start();
-    return () => spinSequence.stop();
-  }, [stage, settings.reduceMotion, rotateAnim]);
+  }, [loading, settings.reduceMotion, travelAnim, onRevealReady]);
 
   function openBubble() {
     if (stage !== 'idle') return;
@@ -261,11 +223,6 @@ export function FloatingChatBubble({
     }),
   );
 
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   const isAtCenter = stage === 'thinking' || stage === 'checkmark' || stage === 'traveling_up';
 
   return (
@@ -290,31 +247,7 @@ export function FloatingChatBubble({
                   transform: [{ scale: pressed && !isAtCenter ? 0.94 : 1 }],
                 },
               ]}>
-              {/* Si está en confirmación: mostrar palomita verde */}
-              {stage === 'checkmark' ? (
-                <Animated.View style={{ transform: [{ scale: checkmarkScale }] }}>
-                  <Svg width={38} height={38} viewBox="0 0 24 24" fill="none">
-                    <Circle cx="12" cy="12" r="10" fill="none" stroke="#FFFFFF" strokeWidth="2.2" />
-                    <Path
-                      d="M7.5 12.5l3 3 6.5-7"
-                      fill="none"
-                      stroke="#FFFFFF"
-                      strokeWidth="2.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </Svg>
-                </Animated.View>
-              ) : (
-                /* Logo Banorte: estático o rotando 360° cada .8s */
-                <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                  <Image
-                    source={banorteLogo}
-                    style={styles.logoImage}
-                    resizeMode="contain"
-                  />
-                </Animated.View>
-              )}
+              <BanorteLoaderIcon stage={stage === 'checkmark' ? 'checkmark' : 'thinking'} />
             </Pressable>
           </Animated.View>
         </View>
@@ -369,7 +302,7 @@ export function FloatingChatBubble({
                 value={value}
                 onChangeText={onChangeText}
                 onSubmit={handleSubmit}
-                onSubmitAudio={onSubmitAudio}
+                voice={voice}
                 loading={loading}
                 disabled={disabled}
                 mode="conversation"
@@ -417,10 +350,6 @@ const styles = StyleSheet.create({
         boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
       },
     }),
-  },
-  logoImage: {
-    width: 44,
-    height: 44,
   },
   modalOverlay: {
     ...StyleSheet.absoluteFill,

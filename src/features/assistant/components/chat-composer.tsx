@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Animated,
   Easing,
@@ -8,16 +8,8 @@ import {
   TextInputContentSizeChangeEventData,
   TextInputKeyPressEventData,
   View,
-  Alert,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
-  useAudioRecorderState,
-} from 'expo-audio';
 
 import { Pressable, TextInput, type TextInputHandle } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
@@ -29,11 +21,18 @@ import { useTheme } from '@/hooks/use-theme';
 const MIN_INPUT_HEIGHT = 48;
 const MAX_INPUT_HEIGHT = 132;
 
+/** Mic button contract — recording itself lives in useVoiceFlow, owned once by AssistantWorkspace. */
+export type VoiceControl = {
+  isRecording: boolean;
+  isBusy: boolean;
+  onPress: () => void;
+};
+
 export type ChatComposerProps = {
   value: string;
   onChangeText: (text: string) => void;
   onSubmit: (text: string) => void;
-  onSubmitAudio?: (uri: string) => Promise<void>;
+  voice?: VoiceControl;
   onOpenQuestionBank?: () => void;
   disabled?: boolean;
   loading?: boolean;
@@ -70,7 +69,7 @@ export function ChatComposer({
   value,
   onChangeText,
   onSubmit,
-  onSubmitAudio,
+  voice,
   onOpenQuestionBank,
   disabled = false,
   loading = false,
@@ -81,60 +80,9 @@ export function ChatComposer({
   const theme = useTheme();
   const { settings } = useAccessibility();
   const [inputHeight] = useState(() => new Animated.Value(MIN_INPUT_HEIGHT));
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recorderState = useAudioRecorderState(recorder);
-  const [audioBusy, setAudioBusy] = useState(false);
-  const [recordingPulse] = useState(() => new Animated.Value(1));
 
   const canSubmit = Boolean(value.trim()) && !disabled && !loading;
-  const canRecord = Boolean(onSubmitAudio) && !disabled && !loading && !audioBusy;
-
-  useEffect(() => {
-    if (!recorderState.isRecording || settings.reduceMotion) {
-      recordingPulse.stopAnimation();
-      recordingPulse.setValue(1);
-      return;
-    }
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(recordingPulse, { toValue: 0.72, duration: 700, useNativeDriver: true }),
-        Animated.timing(recordingPulse, { toValue: 1, duration: 700, useNativeDriver: true }),
-      ]),
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [recordingPulse, recorderState.isRecording, settings.reduceMotion]);
-
-  async function handleAudioPress() {
-    if (!onSubmitAudio || disabled || loading) return;
-    try {
-      if (recorderState.isRecording) {
-        await recorder.stop();
-        if (!recorder.uri) {
-          Alert.alert('No se pudo grabar', 'No se encontró el archivo de audio.');
-          return;
-        }
-        setAudioBusy(true);
-        await onSubmitAudio(recorder.uri);
-        return;
-      }
-      const permission = await AudioModule.requestRecordingPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Micrófono no disponible', 'Concede permiso al micrófono para enviar una consulta de voz.');
-        return;
-      }
-      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-      await recorder.prepareToRecordAsync();
-      recorder.record();
-    } catch (error) {
-      Alert.alert(
-        'No se pudo usar el micrófono',
-        error instanceof Error ? error.message : 'Inténtalo de nuevo.',
-      );
-    } finally {
-      setAudioBusy(false);
-    }
-  }
+  const canRecord = Boolean(voice) && !disabled && !loading && !voice?.isBusy;
 
   function handleSubmit() {
     if (!canSubmit) return;
@@ -251,30 +199,21 @@ export function ChatComposer({
           />
         </Animated.View>
 
-        {onSubmitAudio && (
-          <>
-            {recorderState.isRecording && (
-              <ThemedText type="smallBold" style={styles.recordingLabel}>
-                Grabando...
-              </ThemedText>
-            )}
-            <Animated.View style={{ opacity: recordingPulse }}>
-              <Pressable
-                disabled={!canRecord && !recorderState.isRecording}
-                accessibilityRole="button"
-                accessibilityLabel={recorderState.isRecording ? 'Detener grabación' : 'Grabar consulta de voz'}
-                accessibilityHint={recorderState.isRecording ? 'Toca para detener y transcribir' : 'Toca para comenzar a grabar'}
-                accessibilityState={{ disabled: !canRecord && !recorderState.isRecording, busy: audioBusy }}
-                onPress={handleAudioPress}
-                style={({ pressed }) => [
-                  styles.audioButton,
-                  recorderState.isRecording && styles.audioButtonRecording,
-                  { opacity: pressed ? 0.82 : 1 },
-                ]}>
-                <MicrophoneIcon color={recorderState.isRecording ? banortePalette.white : banortePalette.strongRed} />
-              </Pressable>
-            </Animated.View>
-          </>
+        {voice && (
+          <Pressable
+            disabled={!canRecord && !voice.isRecording}
+            accessibilityRole="button"
+            accessibilityLabel={voice.isRecording ? 'Detener grabación' : 'Grabar consulta de voz'}
+            accessibilityHint={voice.isRecording ? 'Toca para detener y transcribir' : 'Toca para comenzar a grabar'}
+            accessibilityState={{ disabled: !canRecord && !voice.isRecording, busy: voice.isBusy }}
+            onPress={voice.onPress}
+            style={({ pressed }) => [
+              styles.audioButton,
+              voice.isRecording && styles.audioButtonRecording,
+              { opacity: pressed ? 0.82 : 1 },
+            ]}>
+            <MicrophoneIcon color={voice.isRecording ? banortePalette.white : banortePalette.strongRed} />
+          </Pressable>
         )}
         <Pressable
           disabled={!canSubmit}
@@ -399,9 +338,5 @@ const styles = StyleSheet.create({
     backgroundColor: banortePalette.strongRed,
     borderWidth: 2,
     borderColor: banortePalette.white,
-  },
-  recordingLabel: {
-    color: banortePalette.white,
-    fontSize: 12,
   },
 });

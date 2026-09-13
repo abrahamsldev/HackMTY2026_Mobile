@@ -7,3 +7,4 @@ export { ChatMessage, type ChatMessageProps } from './chat-message';
 export { FloatingChatBubble, type FloatingChatBubbleProps } from './floating-chat-bubble';
 export { MorphingStage, type MorphingStageProps } from './morphing-stage';
 export { QuestionBank } from './question-bank';
+export { VoiceProcessingOverlay, type VoiceProcessingOverlayProps } from './voice-processing-overlay';
