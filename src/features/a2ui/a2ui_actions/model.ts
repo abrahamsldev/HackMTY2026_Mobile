@@ -44,17 +44,24 @@ export class InputModel {
   write(component: A2UIInputComponent, value: JSONValue) {
     if (component.component === 'Slider') {
       if (typeof value !== 'number' || !Number.isFinite(value) || value < (component.min ?? 0) || value > component.max) throw new Error('Valor fuera del rango permitido.');
+    } else if (component.component === 'ChoicePicker') {
+      const allowed = new Set(component.options.map((option) => option.value));
+      if (!Array.isArray(value) || value.some((item) => typeof item !== 'string' || !allowed.has(item)) || (component.variant !== 'multipleSelection' && value.length > 1)) throw new Error('Selecciona una opción válida.');
     } else if (typeof value !== 'string' || value.length > 4000) throw new Error('El texto supera el tamaño permitido.');
-    if (resolveDataPath(this.surface.dataModel, component.value.path) !== value) this.lastAction = undefined;
+    if (JSON.stringify(resolveDataPath(this.surface.dataModel, component.value.path)) !== JSON.stringify(value)) this.lastAction = undefined;
     this.surface = { ...this.surface, dataModel: updateDataModel(this.surface.dataModel, component.value.path, true, value) };
   }
   action(button: A2UIButtonComponent) {
     for (const component of this.surface.components.values()) {
-      if (component.component !== 'TextField' && component.component !== 'DateTimeInput' && component.component !== 'Slider') continue;
+      if (component.component !== 'TextField' && component.component !== 'DateTimeInput' && component.component !== 'Slider' && component.component !== 'ChoicePicker') continue;
       const value = resolveDataPath(this.surface.dataModel, component.value.path);
       if (component.component === 'DateTimeInput' && !validDate(value)) throw new Error('Selecciona una fecha válida.');
       if (component.component === 'TextField' && (typeof value !== 'string' || !value.trim())) throw new Error('Completa los campos de texto.');
       if (component.component === 'Slider' && (typeof value !== 'number' || !Number.isFinite(value) || value < (component.min ?? 0) || value > component.max)) throw new Error('Revisa el importe seleccionado.');
+      if (component.component === 'ChoicePicker') {
+        const allowed = new Set(component.options.map((option) => option.value));
+        if (!Array.isArray(value) || value.length === 0 || value.some((item) => typeof item !== 'string' || !allowed.has(item)) || (component.variant !== 'multipleSelection' && value.length !== 1)) throw new Error('Selecciona una opción.');
+      }
     }
     if (this.lastAction?.sourceComponentId === button.id) return this.lastAction;
     this.lastAction = createA2UIAction(this.surface, button);

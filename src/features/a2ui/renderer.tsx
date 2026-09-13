@@ -12,12 +12,12 @@ import { A2UIBankingView } from './components/banking-view';
 import { A2UIColumn } from './components/column';
 import { A2UIText } from './components/text';
 import { A2UIUnsupported } from './components/unsupported';
-import { A2UI_LIMITS, type A2UIAction, type A2UIComponent, type A2UISurfaceState } from './types';
+import { A2UI_LIMITS, type A2UIAction, type A2UIActionOrigin, type A2UIComponent, type A2UISurfaceState } from './types';
 
 export type A2UIRendererProps = {
   surface: A2UISurfaceState;
   disabled?: boolean;
-  onAction?: (action: A2UIAction) => void | Promise<void>;
+  onAction?: (action: A2UIAction, origin?: A2UIActionOrigin) => void | Promise<void>;
   onError?: () => void;
 };
 
@@ -95,9 +95,9 @@ function renderComponent(
           label={label}
           variant={component.variant}
           disabled={disabled}
-          onPress={() => {
+          onPress={(origin) => {
             try {
-              const result = onAction?.(inputs.action(component));
+              const result = onAction?.(inputs.action(component), origin);
               if (result instanceof Promise) result.catch(() => onError?.());
             } catch (error) {
               onError(error instanceof Error ? error.message : undefined);
@@ -110,6 +110,7 @@ function renderComponent(
     case 'TextField':
     case 'DateTimeInput':
     case 'Slider':
+    case 'ChoicePicker':
       rendered = (
         <A2UIInput
           component={component}

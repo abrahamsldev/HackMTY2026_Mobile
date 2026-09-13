@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 import {
   agentStatusCopy,
@@ -20,8 +20,9 @@ const source = path => readFileSync(new URL(path, import.meta.url), 'utf8');
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/agent-responses.json', import.meta.url)));
 const messages = fixture.databaseOverview;
 const USER = 'c1a3797d-b335-5a9d-98a1-402311f82c7a';
+const ACCOUNT = '04803dbe-97f1-4986-ace7-54c2d6196151';
 const TOKEN = 'test-session-access-token';
-const options = { baseUrl: 'https://agent.example.com', query: 'Revisar base', userId: USER, accessToken: TOKEN };
+const options = { baseUrl: 'https://agent.example.com', query: 'Revisar base', userId: USER, accountId: ACCOUNT, accessToken: TOKEN };
 const reply = { message: 'Resumen disponible', data: {}, a2ui: { resource_uri: 'a2ui://database/overview', messages } };
 const resultLine = JSON.stringify({ type: 'result', result: reply });
 const statusLine = status => JSON.stringify({ type: 'agent_status', status });
@@ -113,6 +114,8 @@ test('the status module can never advance a phase by itself', () => {
     for (const clock of ['setTimeout', 'setInterval', 'requestAnimationFrame', 'Date.now', 'performance.now']) {
       assert.equal(text.includes(clock), false, clock);
     }
+    // A phase is reported, never drawn: no randomness picks the visible copy.
+    assert.equal(text.includes('Math.random'), false);
   }
   // No imports at all in the copy module: nothing to drive it but its caller.
   assert.doesNotMatch(copy, /^import\s/mu);
@@ -364,4 +367,39 @@ test('the orb is decorative and the label under it carries the meaning', () => {
   assert.match(label, /accessibilityLiveRegion="polite"/u);
   assert.match(label, /accessibilityRole="progressbar"/u);
   assert.match(label, /settings\.reduceMotion/u);
+});
+
+test('no component builds its own rotating progress copy beside the orb', () => {
+  const directory = new URL('../src/features/assistant/components/', import.meta.url);
+  // The timer-driven "financial thinking" label is gone, bank and all: its copy
+  // moved into the one status map and it now reads a backend phase.
+  assert.equal(existsSync(new URL('financial-thinking-message.tsx', directory)), false);
+
+  // Every slot that shows progress under the orb renders the one label, and the
+  // only progress copy in the whole feature lives in `agent-status.ts`.
+  const phrases = new Set(Object.values(agentStatusCopy));
+  phrases.add(agentStatusFallbackCopy);
+  for (const name of readdirSync(directory).filter(file => file.endsWith('.tsx'))) {
+    const text = readFileSync(new URL(name, directory), 'utf8');
+    for (const phrase of phrases) assert.equal(text.includes(phrase), false, `${name} hardcodes progress copy`);
+    if (!text.includes('AgentStatusLabel')) continue;
+    assert.doesNotMatch(text, /MESSAGE_HOLD_MS|randomMessage|stageIndex|Math\.random/u, name);
+  }
+
+  for (const host of ['quick-suggestion-processing-overlay', 'voice-processing-overlay', 'floating-chat-bubble']) {
+    const text = source(`../src/features/assistant/components/${host}.tsx`);
+    assert.match(text, /AgentStatusLabel/u, host);
+  }
+});
+
+test('every overlay that can show a phase is handed the backend one', () => {
+  const screen = source('../src/app/(app)/index.tsx');
+  // The two turns the backend streams — voice and quick suggestions — pass the
+  // hook's status through. A2UI actions never stream one, so they show the
+  // steady fallback instead of a phase that would be invented.
+  assert.match(screen, /<VoiceProcessingOverlay[^>]*status=\{assistant\.status\}/su);
+  assert.match(screen, /<FloatingChatBubble[\s\S]*?status=\{assistant\.status\}[\s\S]*?\/>/u);
+  const overlays = screen.match(/<RequestProcessingOverlay[\s\S]*?\/>/gu) ?? [];
+  assert.equal(overlays.length, 2);
+  assert.equal(overlays.filter(overlay => overlay.includes('status={assistant.status}')).length, 1);
 });

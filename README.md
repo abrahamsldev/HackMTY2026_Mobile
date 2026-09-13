@@ -68,10 +68,10 @@ Reinicia Metro y recarga completamente la app, o recompila el bundle, al cambiar
 El cliente realiza `POST /api/v1/agent/chat` con:
 
 ```json
-{ "query": "Revisar mis suscripciones", "user_id": "c1a3797d-b335-5a9d-98a1-402311f82c7a" }
+{ "query": "Revisar mis suscripciones", "user_id": "c1a3797d-b335-5a9d-98a1-402311f82c7a", "account_id": "04803dbe-97f1-4986-ace7-54c2d6196151" }
 ```
 
-La app envía el UUID de la cuenta autenticada como `user_id`, separado de `query`, y su token en Authorization. Al cambiar de usuario, React remonta el espacio del asistente, cancela solicitudes, crea un procesador A2UI nuevo y elimina la superficie anterior antes de mostrar otra respuesta.
+La app envía el UUID del usuario autenticado como `user_id`, la cuenta bancaria primaria como `account_id`, ambos separados de `query`, y su token en Authorization. Expo obtiene únicamente ese UUID mediante `get_primary_account_id()`; la función usa `auth.uid()` y no expone las filas financieras al cliente. El agente vuelve a verificar con MCP que la cuenta pertenezca al usuario autenticado. Al cambiar de usuario, React remonta el espacio del asistente, cancela solicitudes, crea un procesador A2UI nuevo y elimina la superficie anterior antes de mostrar otra respuesta.
 
 ### Progreso del turno (`/chat/stream`)
 
@@ -131,7 +131,7 @@ Comprobaciones del despliegue: `/health` y `/openapi.json` respondieron HTTP 200
 
 - Cada respuesta válida actualiza el texto y procesa sus mensajes en orden. Una respuesta solo textual o con A2UI inválido conserva las últimas superficies válidas. Si falla la red o el contrato HTTP, conserva la última respuesta y ofrece reintentar. Las consultas tienen un límite de 60 segundos y pueden cancelarse.
 - Cambiar de persona o cerrar sesión descarta la respuesta y cancela peticiones pendientes. Una respuesta anterior no puede reemplazar la de una consulta más reciente.
-- Los botones producen la acción oficial con `name`, `surfaceId`, `sourceComponentId`, `timestamp` y el `context` declarado resuelto contra el modelo de datos. El cuerpo enviado es `{ action, user_id }`: cuando hay acción **no** se envía `query` (el texto `Acción: <name>` solo se usa localmente para el historial y las validaciones). El agente conserva un parser heredado para la forma serializada, pero este cliente ya no la produce. Además de las acciones de solo lectura (`request_financial_view`), los botones de formulario disparan las escrituras acotadas de presupuestos y metas descritas en [formularios y acciones](docs/a2ui/input-actions.md).
+- Los botones producen la acción oficial con `name`, `surfaceId`, `sourceComponentId`, `timestamp` y el `context` declarado resuelto contra el modelo de datos. El cuerpo enviado es `{ action, user_id }`: cuando hay acción **no** se envía `query` (el texto `Acción: <name>` solo se usa localmente para el historial y las validaciones). El agente conserva un parser heredado para la forma serializada, pero este cliente ya no la produce. El agente toma la identidad de la sesión y el MCP limita la ejecución al contrato registrado. Además de las acciones de solo lectura (`request_financial_view`), los formularios confirmados pueden guardar presupuestos y metas, transferir entre cuentas o a un beneficiario y pagar una tarjeta cuando están desplegadas las migraciones y credenciales de acciones, como se describe en [formularios y acciones](docs/a2ui/input-actions.md).
 - La biblioteca `src/generative-ui` continúa disponible; su árbol `GenerativeNode` es un registro local, no un contrato que el agente desplegado emita actualmente.
 
 El agente local ya puede resolver y combinar superficies Basic y Finance cuando una llamada MCP devuelve `_meta.ui`. Para usar el gráfico con preguntas bancarias reales todavía se debe desplegar esta versión de los tres repositorios, configurar el allowlist de tablas/vistas y enseñar al flujo de selección de herramientas del agente cuándo y con qué columnas invocar `visualize_allowed_data`.

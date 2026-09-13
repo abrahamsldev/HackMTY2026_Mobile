@@ -62,6 +62,7 @@ for (const [index, kind] of ['area', 'heatmap'].entries()) {
         ? 'Show account activity by day as a heatmap.'
         : 'Show account activity over time as a chart.',
       userId: USER_A,
+      accountId: '04803dbe-97f1-4986-ace7-54c2d6196151',
       accessToken: 'test-authenticated-token',
       fetchImpl: async () => new Response(JSON.stringify({
         message: `${kind} chart ready.`,

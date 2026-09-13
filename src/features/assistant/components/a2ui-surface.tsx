@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { A2UIRenderer, type A2UIAction, type A2UISurfaceState } from '@/features/a2ui';
+import { A2UIRenderer, type A2UIAction, type A2UIActionOrigin, type A2UISurfaceState } from '@/features/a2ui';
 
 export function A2UISurface({
   surface,
@@ -11,7 +11,7 @@ export function A2UISurface({
 }: {
   surface: A2UISurfaceState;
   disabled: boolean;
-  onDispatch: (event: A2UIAction) => void | Promise<void>;
+  onDispatch: (event: A2UIAction, origin?: A2UIActionOrigin) => void | Promise<void>;
 }) {
   const [error, setError] = useState(false);
   return (
@@ -19,9 +19,9 @@ export function A2UISurface({
       <A2UIRenderer
         surface={surface}
         disabled={disabled}
-        onAction={(action) => {
+        onAction={(action, origin) => {
           setError(false);
-          return onDispatch(action);
+          return onDispatch(action, origin);
         }}
         onError={() => setError(true)}
       />

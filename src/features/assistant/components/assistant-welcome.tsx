@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import type { A2UIActionOrigin } from '@/features/a2ui';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -39,15 +40,15 @@ export function extractFirstName(
 }
 
 const DEFAULT_SUGGESTIONS = [
-  '¿En qué gasté más este mes?',
-  '¿Cuánto dinero tengo disponible?',
+  'Quiero crear un presupuesto',
+  'Quiero pagar mi tarjeta de crédito',
+  'Muéstrame mi resumen financiero',
   'Muéstrame mis movimientos recientes',
-  '¿Puedo llegar a fin de mes?',
 ];
 
 export type AssistantWelcomeProps = {
   firstName: string | null;
-  onSelectSuggestion: (question: string) => void;
+  onSelectSuggestion: (question: string, origin?: A2UIActionOrigin) => void;
   onOpenQuestionBank?: () => void;
   disabled?: boolean;
 };
@@ -110,26 +111,12 @@ export function AssistantWelcome({
         </ThemedText>
         <View style={styles.chipsRow}>
           {DEFAULT_SUGGESTIONS.map((suggestion) => (
-            <Pressable
+            <QuickSuggestion
               key={suggestion}
+              suggestion={suggestion}
               disabled={disabled}
-              accessibilityRole="button"
-              accessibilityLabel={`Sugerencia: ${suggestion}`}
-              accessibilityState={{ disabled }}
-              onPress={() => onSelectSuggestion(suggestion)}
-              style={({ pressed }) => [
-                styles.chip,
-                {
-                  backgroundColor: pressed ? theme.backgroundElement : theme.background,
-                  borderColor: theme.accent,
-                  opacity: disabled ? 0.6 : 1,
-                  transform: [{ scale: pressed && !settings.reduceMotion ? 0.985 : 1 }],
-                },
-              ]}>
-              <ThemedText type="small" style={styles.chipText}>
-                {suggestion}
-              </ThemedText>
-            </Pressable>
+              onSelect={onSelectSuggestion}
+            />
           ))}
         </View>
 
@@ -154,6 +141,58 @@ export function AssistantWelcome({
         )}
       </View>
     </Animated.View>
+  );
+}
+
+function QuickSuggestion({
+  suggestion,
+  disabled,
+  onSelect,
+}: {
+  suggestion: string;
+  disabled: boolean;
+  onSelect: (question: string, origin?: A2UIActionOrigin) => void;
+}) {
+  const theme = useTheme();
+  const { settings } = useAccessibility();
+  const buttonRef = useRef<View>(null);
+
+  function handlePress() {
+    let selected = false;
+    const select = (origin?: A2UIActionOrigin) => {
+      if (selected) return;
+      selected = true;
+      onSelect(suggestion, origin);
+    };
+    const fallback = setTimeout(() => select(), 80);
+
+    buttonRef.current?.measureInWindow((x, y, width, height) => {
+      clearTimeout(fallback);
+      select(width > 0 && height > 0 ? { x, y, width, height } : undefined);
+    });
+  }
+
+  return (
+    <Pressable
+      ref={buttonRef}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={`Sugerencia: ${suggestion}`}
+      accessibilityState={{ disabled }}
+      onPress={handlePress}
+      style={({ pressed }) => [
+        styles.chip,
+        {
+          backgroundColor: pressed ? theme.backgroundElement : theme.background,
+          borderColor: theme.accent,
+          opacity: disabled ? 0.6 : 1,
+          transform: [{ scale: pressed && !settings.reduceMotion ? 0.985 : 1 }],
+        },
+      ]}>
+      <ThemedText type="smallBold" style={styles.chipText}>
+        {suggestion}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -206,8 +245,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.two,
     maxWidth: 640,
+    width: '100%',
   },
   chip: {
+    flexBasis: '46%',
+    flexGrow: 1,
+    maxWidth: 312,
     borderRadius: 16,
     borderWidth: 2,
     paddingHorizontal: Spacing.three,
@@ -219,6 +262,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 14,
     lineHeight: 20,
+    textAlign: 'center',
   },
   moreQuestionsButton: {
     marginTop: Spacing.one,

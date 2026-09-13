@@ -15,7 +15,6 @@ import { Pressable, TextInput, type TextInputHandle } from '@/components/accessi
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
-import { banortePalette } from '@/features/accessibility/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const MIN_INPUT_HEIGHT = 48;
@@ -158,23 +157,24 @@ export function ChatComposer({
         style={[
           styles.container,
           {
-            backgroundColor: banortePalette.strongRed,
-            borderColor: banortePalette.white,
-            boxShadow: '0 10px 28px rgba(90, 10, 24, 0.18)',
+            backgroundColor: theme.background,
+            borderColor: theme.border,
           },
           isWelcome && styles.containerWelcome,
         ]}>
         <Animated.View style={[styles.inputShell, { height: inputHeight }]}>
           {!value && (
             <View pointerEvents="none" style={styles.placeholderContainer}>
-              <ThemedText style={styles.placeholderText}>{placeholder}</ThemedText>
+              <ThemedText style={[styles.placeholderText, { color: theme.textSecondary }]}>
+                {placeholder}
+              </ThemedText>
             </View>
           )}
           <TextInput
             ref={inputRef}
             nativeID="assistant-query-input"
             accessibilityLabel="Escribe tu consulta financiera"
-            selectionColor={banortePalette.white}
+            selectionColor={theme.accent}
             value={value}
             onChangeText={onChangeText}
             onContentSizeChange={handleContentSizeChange}
@@ -193,7 +193,7 @@ export function ChatComposer({
             style={[
               styles.input,
               {
-                color: banortePalette.white,
+                color: theme.text,
               },
             ]}
           />
@@ -209,10 +209,13 @@ export function ChatComposer({
             onPress={voice.onPress}
             style={({ pressed }) => [
               styles.audioButton,
-              voice.isRecording && styles.audioButtonRecording,
-              { opacity: pressed ? 0.82 : 1 },
+              {
+                backgroundColor: voice.isRecording ? theme.accent : theme.backgroundSelected,
+                borderColor: voice.isRecording ? theme.accent : 'transparent',
+                opacity: pressed ? 0.82 : 1,
+              },
             ]}>
-            <MicrophoneIcon color={voice.isRecording ? banortePalette.white : banortePalette.strongRed} />
+            <MicrophoneIcon color={voice.isRecording ? theme.onAccent : theme.accent} />
           </Pressable>
         )}
         <Pressable
@@ -224,12 +227,12 @@ export function ChatComposer({
           style={({ pressed }) => [
             styles.sendButton,
             {
-              backgroundColor: banortePalette.white,
+              backgroundColor: theme.accent,
               opacity: canSubmit ? (pressed ? 0.82 : 1) : 0.52,
               transform: [{ scale: pressed && canSubmit && !settings.reduceMotion ? 0.94 : 1 }],
             },
           ]}>
-          <SendIcon color={banortePalette.strongRed} />
+          <SendIcon color={theme.onAccent} />
         </Pressable>
       </View>
     </View>
@@ -266,11 +269,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 24,
-    borderWidth: 2,
+    borderWidth: 1.5,
     paddingHorizontal: Spacing.three,
     paddingVertical: 6,
     gap: Spacing.two,
     minHeight: 56,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#5A0A18',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 18,
+      },
+      android: { elevation: 4 },
+      web: { boxShadow: '0 10px 28px rgba(90, 10, 24, 0.12)' },
+    }),
   },
   containerWelcome: {
     minHeight: 68,
@@ -293,7 +306,6 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   placeholderText: {
-    color: '#F2C7CF',
     fontSize: 16,
     lineHeight: 22,
   },
@@ -332,11 +344,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: banortePalette.white,
-  },
-  audioButtonRecording: {
-    backgroundColor: banortePalette.strongRed,
-    borderWidth: 2,
-    borderColor: banortePalette.white,
+    borderWidth: 1,
   },
 });

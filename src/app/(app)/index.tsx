@@ -15,6 +15,7 @@ import { MaxContentWidth, Spacing } from "@/constants/theme";
 import {
   messageSurfaceId,
   type A2UIAction,
+  type A2UIActionOrigin,
   type A2UISurfaceState,
 } from "@/features/a2ui";
 import { useAccessibility } from "@/features/accessibility/accessibility-provider";
@@ -25,17 +26,18 @@ import {
   ChatMessage,
   FloatingChatBubble,
   MorphingStage,
-  QuestionBank,
+  RequestProcessingOverlay,
   VoiceProcessingOverlay,
+  WelcomeComposerReveal,
   extractFirstName,
 } from "@/features/assistant/components";
-import { A2UIResponseViewer } from "@/features/assistant/components/a2ui-response-viewer";
 import { useAssistant } from "@/features/assistant/use-assistant";
 import { useVoiceFlow } from "@/features/assistant/use-voice-flow";
 import { useSession } from "@/features/auth/session-provider";
 import { useTheme } from "@/hooks/use-theme";
 
 export type AssistantLayoutMode = "welcome" | "conversation";
+type ActionTransitionState = "idle" | "thinking" | "success" | "failure";
 
 type ArchivedTurn = {
   id: string;
@@ -84,7 +86,12 @@ function AssistantWorkspace({
   const [activeTurnId, setActiveTurnId] = useState<string | null>(null);
   const [activeResponseFloor, setActiveResponseFloor] = useState(0);
   const [query, setQuery] = useState("");
-  const [showQuestionBank, setShowQuestionBank] = useState(false);
+  const [quickSuggestion, setQuickSuggestion] = useState<string | null>(null);
+  const [quickSuggestionComplete, setQuickSuggestionComplete] = useState(false);
+  const [quickSuggestionOrigin, setQuickSuggestionOrigin] = useState<A2UIActionOrigin>();
+  const [actionTransition, setActionTransition] = useState<ActionTransitionState>("idle");
+  const [actionOrigin, setActionOrigin] = useState<A2UIActionOrigin>();
+  const [responseRevealed, setResponseRevealed] = useState(true);
   const [editingTurnId, setEditingTurnId] = useState<string | null>(null);
   const [editingQuery, setEditingQuery] = useState("");
 
@@ -110,9 +117,12 @@ function AssistantWorkspace({
   }, [activeResponse]);
 
   useEffect(() => {
-    if (!activeQuery && !showQuestionBank) return;
+    if (!activeQuery) return;
     const timer = setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: !settings.reduceMotion });
+      scrollViewRef.current?.scrollTo({
+        y: 0,
+        animated: !settings.reduceMotion,
+      });
     }, 80);
     return () => clearTimeout(timer);
   }, [
@@ -122,7 +132,6 @@ function AssistantWorkspace({
     assistant.pending,
     pastTurns.length,
     settings.reduceMotion,
-    showQuestionBank,
   ]);
 
   function archiveActiveTurn() {
@@ -150,6 +159,7 @@ function AssistantWorkspace({
     )
       return;
     submissionLocked.current = true;
+    setResponseRevealed(false);
 
     archiveActiveTurn();
 
@@ -158,7 +168,6 @@ function AssistantWorkspace({
     setActiveQuery(text);
     setActiveTurnId(nextId);
     setQuery("");
-    setShowQuestionBank(false);
     setEditingTurnId(null);
     setEditingQuery("");
     Keyboard.dismiss();
@@ -191,18 +200,52 @@ function AssistantWorkspace({
     [voice.isRecording, voice.isBusy, handleVoicePress],
   );
 
-  function handleSelectSuggestion(suggestion: string) {
-    setQuery(suggestion);
-    setShowQuestionBank(false);
-    queryInput.current?.focus();
+  function handleQuickSuggestion(suggestion: string, origin?: A2UIActionOrigin) {
+    if (quickSuggestion || assistant.pending) return;
+    setQuickSuggestionOrigin(origin);
+    setQuickSuggestion(suggestion);
+    setQuickSuggestionComplete(false);
+    const request = handleSubmit(suggestion);
+    if (!request) {
+      setQuickSuggestion(null);
+      setQuickSuggestionOrigin(undefined);
+      return;
+    }
+    void request.finally(() => setQuickSuggestionComplete(true));
   }
+
+  const handleQuickSuggestionFinished = useCallback(() => {
+    setQuickSuggestion(null);
+    setQuickSuggestionComplete(false);
+    setQuickSuggestionOrigin(undefined);
+    setResponseRevealed(true);
+  }, []);
+  const handleActionTransitionFinished = useCallback(() => {
+    setActionTransition("idle");
+    setActionOrigin(undefined);
+    setResponseRevealed(true);
+  }, []);
+  const handleResponseRevealReady = useCallback(() => {
+    setResponseRevealed(true);
+  }, []);
+  const quickSuggestionActive = Boolean(quickSuggestion);
+  const quickSuggestionWaiting = quickSuggestionActive && !quickSuggestionComplete;
+  const actionTransitionActive = actionTransition !== "idle";
+  const actionTransitionComplete = actionTransition === "success" || actionTransition === "failure";
+  const actionTransitionWaiting = actionTransition === "thinking";
+  const workspaceHidden = voiceOverlayActive || quickSuggestionWaiting || actionTransitionWaiting;
+  const workspaceBlocked = voiceOverlayActive || quickSuggestionActive || actionTransitionActive;
+  const assistantBottomInset = Math.max(insets.bottom, Spacing.three);
+  const messagesBottomSpacing = Math.max(assistantBottomInset, 24) + 64 + Spacing.four;
 
   function handleRetry() {
     if (assistant.pending || submissionLocked.current) return;
     submissionLocked.current = true;
+    setResponseRevealed(false);
     const retry = assistant.retry();
     if (!retry) {
       submissionLocked.current = false;
+      setResponseRevealed(true);
       return;
     }
     void retry.finally(() => {
@@ -232,11 +275,11 @@ function AssistantWorkspace({
     }
 
     submissionLocked.current = true;
+    setResponseRevealed(false);
     setActiveResponseFloor(assistant.surface?.revision ?? 0);
     setActiveQuery(text);
     setEditingTurnId(null);
     setEditingQuery("");
-    setShowQuestionBank(false);
 
     void assistant.send(text).finally(() => {
       submissionLocked.current = false;
@@ -248,28 +291,58 @@ function AssistantWorkspace({
     submissionLocked.current = false;
   }
 
-  async function handleDispatch(action: A2UIAction) {
-    if (assistant.pending || submissionLocked.current) return;
+  async function handleDispatch(action: A2UIAction, origin?: A2UIActionOrigin) {
+    if (assistant.pending || submissionLocked.current || actionTransitionActive) return;
     submissionLocked.current = true;
-    try { await assistant.dispatch(action); }
-    finally { submissionLocked.current = false; }
+    setResponseRevealed(false);
+    setActionOrigin(origin);
+    setActionTransition("thinking");
+    try {
+      const succeeded = await assistant.dispatch(action);
+      setActionTransition(succeeded ? "success" : "failure");
+    } catch {
+      setActionTransition("failure");
+    } finally {
+      submissionLocked.current = false;
+    }
   }
 
   return (
     <View style={[styles.workspace, { backgroundColor: theme.background }]}>
       <VoiceProcessingOverlay phase={voice.phase} level={voice.level} status={assistant.status} onStop={handleVoicePress} />
+      <RequestProcessingOverlay
+        active={quickSuggestionActive}
+        complete={quickSuggestionComplete}
+        pendingLabel="Procesando sugerencia"
+        status={assistant.status}
+        bottomInset={assistantBottomInset}
+        origin={quickSuggestionOrigin}
+        onFinished={handleQuickSuggestionFinished}
+      />
+      <RequestProcessingOverlay
+        active={actionTransitionActive}
+        complete={actionTransitionComplete}
+        outcome={actionTransition === "failure" ? "failure" : "success"}
+        pendingLabel="Procesando acción"
+        bottomInset={assistantBottomInset}
+        origin={actionOrigin}
+        onFinished={handleActionTransitionFinished}
+      />
       <View
-        accessibilityElementsHidden={voiceOverlayActive}
-        importantForAccessibility={voiceOverlayActive ? "no-hide-descendants" : "auto"}
-        pointerEvents={voiceOverlayActive ? "none" : "auto"}
-        style={[styles.workspaceContent, voiceOverlayActive && styles.workspaceContentHidden]}>
+        accessibilityElementsHidden={workspaceHidden}
+        importantForAccessibility={workspaceHidden ? "no-hide-descendants" : "auto"}
+        pointerEvents={workspaceBlocked ? "none" : "auto"}
+        style={[
+          styles.workspaceContent,
+          workspaceHidden && styles.workspaceContentHidden,
+        ]}>
       {assistant.actionStatus && <View accessibilityLiveRegion="polite" style={styles.bannerContainer}>
         <InfoBanner tone={assistant.actionStatus.status === 'failure' ? 'danger' : assistant.actionStatus.status === 'success' ? 'success' : 'info'} title={assistant.actionStatus.status === 'pending' ? 'Procesando' : assistant.actionStatus.status === 'success' ? 'Completado' : 'No se pudo completar'} message={assistant.actionStatus.message} />
       </View>}
       {/* Configuration warning banner */}
       {!assistant.isConfigured && (
         <View style={styles.bannerContainer}>
-          <InfoBanner message="El asistente estará disponible cuando se configure su conexión." />
+          <InfoBanner message={assistant.configurationError ?? "Estamos cargando tu cuenta bancaria."} />
         </View>
       )}
 
@@ -284,34 +357,26 @@ function AssistantWorkspace({
           <View style={styles.welcomeInner}>
             <AssistantWelcome
               firstName={firstName}
-              onSelectSuggestion={handleSelectSuggestion}
-              onOpenQuestionBank={() => setShowQuestionBank((prev) => !prev)}
+              onSelectSuggestion={handleQuickSuggestion}
               disabled={assistant.pending || !assistant.isConfigured}
             />
 
             {/* Centered Composer in Welcome Mode */}
             <View style={styles.welcomeComposerWrapper}>
-              <ChatComposer
-                inputRef={queryInput}
-                value={query}
-                onChangeText={setQuery}
-                onSubmit={handleSubmit}
-                voice={voiceControl}
-                loading={(assistant.pending && !assistant.actionStatus) || voiceProcessing}
-                disabled={!assistant.isConfigured}
-                mode="welcome"
-              />
+              <WelcomeComposerReveal>
+                <ChatComposer
+                  inputRef={queryInput}
+                  value={query}
+                  onChangeText={setQuery}
+                  onSubmit={handleSubmit}
+                  voice={voiceControl}
+                  loading={(assistant.pending && !assistant.actionStatus) || voiceProcessing}
+                  disabled={!assistant.isConfigured}
+                  mode="welcome"
+                />
+              </WelcomeComposerReveal>
             </View>
 
-            {/* Optional Full Question Bank if opened */}
-            {showQuestionBank && (
-              <View style={styles.questionBankWrapper}>
-                <QuestionBank
-                  disabled={assistant.pending}
-                  onSelect={handleSelectSuggestion}
-                />
-              </View>
-            )}
           </View>
         </ScrollView>
       ) : (
@@ -320,7 +385,10 @@ function AssistantWorkspace({
           <ScrollView
             ref={scrollViewRef}
             style={styles.messagesScroll}
-            contentContainerStyle={styles.messagesContent}
+            contentContainerStyle={[
+              styles.messagesContent,
+              { paddingBottom: messagesBottomSpacing },
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
@@ -344,11 +412,13 @@ function AssistantWorkspace({
                   <MorphingStage
                     isPending={assistant.pending && !assistant.actionStatus}
                     hasContent={Boolean(activeResponse?.reply.message || activeSurfaces.length > 0 || pastTurns.length > 0)}
+                    revealed={responseRevealed}
                     error={assistant.error}
                     onCancel={handleCancel}
                   >
                     <ChatMessage
                       role="assistant"
+                      animate={false}
                       content={activeResponse?.reply.message}
                       surfaces={activeSurfaces}
                       isPending={assistant.pending && !assistant.actionStatus}
@@ -360,12 +430,6 @@ function AssistantWorkspace({
                       onDispatch={handleDispatch}
                       disabled={assistant.pending}
                     />
-                    {activeResponse && (
-                      <A2UIResponseViewer
-                        reply={activeResponse.reply}
-                        surfaces={activeSurfaces}
-                      />
-                    )}
                   </MorphingStage>
                 </View>
               )}
@@ -373,17 +437,20 @@ function AssistantWorkspace({
           </ScrollView>
 
           {/* Floating Chat Bubble Button with gentle motion and bubble popup */}
-          <FloatingChatBubble
-            inputRef={queryInput}
-            value={query}
-            onChangeText={setQuery}
-            onSubmit={handleSubmit}
-            voice={voiceControl}
-            loading={(assistant.pending && !assistant.actionStatus) || voiceProcessing}
-            status={assistant.status}
-            disabled={!assistant.isConfigured || Boolean(editingTurnId)}
-            bottomInset={Math.max(insets.bottom, Spacing.three)}
-          />
+          {!quickSuggestionActive && !actionTransitionActive && (
+            <FloatingChatBubble
+              inputRef={queryInput}
+              value={query}
+              onChangeText={setQuery}
+              onSubmit={handleSubmit}
+              voice={voiceControl}
+              loading={(assistant.pending && !assistant.actionStatus) || voiceProcessing}
+              status={assistant.status}
+              disabled={!assistant.isConfigured || Boolean(editingTurnId)}
+              bottomInset={assistantBottomInset}
+              onRevealReady={handleResponseRevealReady}
+            />
+          )}
         </View>
       )}
       </View>
@@ -426,11 +493,6 @@ const styles = StyleSheet.create({
   },
   welcomeComposerWrapper: {
     width: "100%",
-    marginTop: Spacing.two,
-  },
-  questionBankWrapper: {
-    width: "100%",
-    maxWidth: 720,
     marginTop: Spacing.two,
   },
   conversationContainer: {

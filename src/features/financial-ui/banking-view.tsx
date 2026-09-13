@@ -52,7 +52,7 @@ function Summary({ data }: { data: Extract<ReadyBankingView, { intent: 'financia
       <Hero label="Tu dinero disponible" value={money(data.totalOwnedBalance, data.currency)} note="Suma de cheques y ahorro. El crédito disponible se muestra en su propia cuenta." />
       {data.cards?.length ? <Wallet cards={data.cards} /> : null}
       <View style={styles.metrics}>{data.income !== undefined && <View style={styles.metric}><Metric label="Ingresos del periodo" value={data.income} currency={data.currency} tone="positive" /></View>}{data.expenses !== undefined && <View style={styles.metric}><Metric label="Gastos del periodo" value={data.expenses} currency={data.currency} /></View>}</View>
-      {data.accounts.map(account => account.accountLastFour ? <AccountBalanceCard key={account.accountId} {...account} accountLastFour={account.accountLastFour} currency={data.currency} /> : <Card key={account.accountId} variant="outlined">{group(<><ThemedText type="smallBold">{account.accountName}</ThemedText><Detail label={account.accountType === 'credit' ? 'Crédito disponible' : 'Saldo disponible'} value={money(account.availableBalance, data.currency)} /></>)}</Card>)}
+      {data.accounts.map(account => account.accountLastFour ? <AccountBalanceCard key={account.accountId} {...account} accountLastFour={account.accountLastFour} currency={data.currency} /> : <Card key={account.accountId}>{group(<><ThemedText type="smallBold">{account.accountName}</ThemedText><Detail label={account.accountType === 'credit' ? 'Crédito disponible' : 'Saldo disponible'} value={money(account.availableBalance, data.currency)} /></>)}</Card>)}
     </>}
   </>);
 }
@@ -76,7 +76,7 @@ function Movements({ data }: { data: Extract<ReadyBankingView, { intent: 'transa
 
 export function ScenarioComparison({ scenarios, currency }: { scenarios: ScenarioData[]; currency: 'MXN' | 'USD' }) {
   const [selected, setSelected] = useState<string | null>(null);
-  return <View style={styles.metrics}>{scenarios.map(item => <View key={item.id} style={styles.metric}><Card variant={selected === item.id ? 'highlighted' : 'outlined'}>{group(<>
+  return <View style={styles.metrics}>{scenarios.map(item => <View key={item.id} style={styles.metric}><Card variant={selected === item.id ? 'highlighted' : 'default'}>{group(<>
     <ThemedText accessibilityRole="header" type="smallBold">{item.name}</ThemedText>
     <TextBlock variant="amount" value={money(item.monthlyPayment, currency)} />
     <ThemedText type="small" themeColor="textSecondary">por mes</ThemedText>
@@ -89,7 +89,7 @@ export function ScenarioComparison({ scenarios, currency }: { scenarios: Scenari
 export function ScheduleList({ items, currency }: { items: { id: string; name: string; date: string; amount: number; detail: string; income?: boolean }[]; currency: string }) {
   const theme = useTheme();
   if (!items.length) return <Missing description="No hay pagos ni ingresos próximos registrados." />;
-  return <View style={styles.stack}>{[...items].sort((a, b) => a.date.localeCompare(b.date)).map(item => <Card key={item.id} variant="outlined"><View style={styles.schedule}>
+  return <View style={styles.stack}>{[...items].sort((a, b) => a.date.localeCompare(b.date)).map(item => <Card key={item.id}><View style={styles.schedule}>
     <View style={[styles.dateTile, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="smallBold">{date(item.date)}</ThemedText></View>
     <View style={styles.scheduleBody}><ThemedText type="smallBold">{item.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{item.detail}</ThemedText><ThemedText style={{ color: item.income ? theme.success : theme.text }} type="smallBold">{item.income ? '+' : ''}{money(item.amount, currency)}</ThemedText></View>
   </View></Card>)}</View>;
@@ -119,7 +119,7 @@ function Content({ data }: { data: ReadyBankingView }) {
     </>);
     case 'budgets': return data.budgets.length ? group(<>{data.budgets.map(item => {
       const { percentage, remaining } = budgetProgress(item.spent, item.limit);
-      return <Card key={item.id} variant="outlined">{group(<>
+      return <Card key={item.id}>{group(<>
         <StatusBadge label={item.status === 'paused' ? 'Pausado' : remaining < 0 ? 'Límite superado' : 'En seguimiento'} tone={item.status === 'paused' ? 'neutral' : remaining < 0 ? 'danger' : 'info'} />
         <ThemedText type="smallBold">{item.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{item.period}</ThemedText>
         <TextBlock variant="amount" value={`${money(item.spent, currency)} / ${money(item.limit, currency)}`} />
@@ -139,7 +139,7 @@ function Content({ data }: { data: ReadyBankingView }) {
       {data.creditLimit === undefined
         ? <Detail label="Crédito disponible" value={money(data.availableCredit, currency)} />
         : <CreditUtilizationGauge used={data.debt} limit={data.creditLimit} available={data.availableCredit} currency={currency} />}
-      {(data.statementBalance !== undefined || data.annualInterestRate !== undefined || data.catPercentage !== undefined) && <Card variant="outlined">{group(<>
+      {(data.statementBalance !== undefined || data.annualInterestRate !== undefined || data.catPercentage !== undefined) && <Card>{group(<>
         {data.statementBalance !== undefined && <Detail label="Saldo del último corte" value={money(data.statementBalance, currency)} />}
         {data.annualInterestRate !== undefined && <Detail label="Tasa de interés anual" value={percent(data.annualInterestRate)} />}
         {data.catPercentage !== undefined && <Detail label="CAT promedio" value={percent(data.catPercentage)} />}
@@ -150,17 +150,17 @@ function Content({ data }: { data: ReadyBankingView }) {
     case 'transfers': return group(<>
       <StatusBadge label="Borrador · por confirmar" tone="warning" />
       <Hero label="Importe a transferir" value={money(data.amount, currency)} />
-      <Card variant="outlined">{group(<><Detail label="Desde" value={data.source} /><ThemedText accessibilityLabel="Hacia">↓</ThemedText><Detail label="Destinatario" value={data.recipient} /><Divider /><Detail label="Comisión" value={money(data.fee, currency)} /><Detail label="Total a descontar" value={money(data.amount + data.fee, currency)} />{data.scheduledDate && <Detail label="Fecha solicitada" value={date(data.scheduledDate)} />}</>)}</Card>
+      <Card>{group(<><Detail label="Desde" value={data.source} /><ThemedText accessibilityLabel="Hacia">↓</ThemedText><Detail label="Destinatario" value={data.recipient} /><Divider /><Detail label="Comisión" value={money(data.fee, currency)} /><Detail label="Total a descontar" value={money(data.amount + data.fee, currency)} />{data.scheduledDate && <Detail label="Fecha solicitada" value={date(data.scheduledDate)} />}</>)}</Card>
       <InfoBanner message="Revisa el destinatario y el importe. Este resumen no ha enviado dinero." />
     </>);
     case 'card-security': return group(<>
       {data.card
         ? <><CardFace card={data.card} /><StatusBadge label={data.status === 'blocked' ? 'Tarjeta bloqueada' : data.status === 'active' ? 'Tarjeta activa' : 'Tarjeta inactiva'} tone={data.status === 'active' ? 'info' : 'warning'} /></>
-        : <Card variant="outlined">{group(<><ThemedText type="smallBold">{data.cardName}{data.lastFour ? ` · •••• ${data.lastFour}` : ''}</ThemedText><StatusBadge label={data.status === 'blocked' ? 'Tarjeta bloqueada' : data.status === 'active' ? 'Tarjeta activa' : 'Tarjeta inactiva'} tone={data.status === 'active' ? 'info' : 'warning'} /></>)}</Card>}
+        : <Card>{group(<><ThemedText type="smallBold">{data.cardName}{data.lastFour ? ` · •••• ${data.lastFour}` : ''}</ThemedText><StatusBadge label={data.status === 'blocked' ? 'Tarjeta bloqueada' : data.status === 'active' ? 'Tarjeta activa' : 'Tarjeta inactiva'} tone={data.status === 'active' ? 'info' : 'warning'} /></>)}</Card>}
       {data.reportedTransaction && <TransactionList title="Movimiento en revisión"><TransactionItem {...data.reportedTransaction} currency={currency} /></TransactionList>}
       <InfoBanner title="Siguiente paso" message={data.guidance} tone="warning" />
     </>);
-    case 'savings-goals': return data.goals.length ? group(<>{data.goals.map(item => <Card key={item.id} variant="outlined">{group(<>
+    case 'savings-goals': return data.goals.length ? group(<>{data.goals.map(item => <Card key={item.id}>{group(<>
       <ThemedText accessibilityRole="header" type="smallBold">{item.name}</ThemedText><TextBlock variant="amount" value={money(item.saved, currency)} />
       <ThemedText themeColor="textSecondary">de {money(item.target, currency)} · meta al {date(item.targetDate)}</ThemedText>
       <ProgressBar value={Math.min(100, item.saved / item.target * 100)} showValue label="Avance de tu meta" size="lg" tone="success" />
@@ -168,21 +168,21 @@ function Content({ data }: { data: ReadyBankingView }) {
       {item.saved >= item.target && <StatusBadge label="Meta alcanzada" tone="success" />}
     </>)}</Card>)}</>) : <Missing description="Todavía no hay metas de ahorro registradas." />;
     case 'banking-information': return group(<>
-      <Card variant="outlined">{group(<><ThemedText type="smallBold">{data.bankName}</ThemedText><Detail label="Titular" value={data.holder} />{data.maskedClabe && <Detail label="CLABE enmascarada" value={data.maskedClabe} />}</>)}</Card>
+      <Card>{group(<><ThemedText type="smallBold">{data.bankName}</ThemedText><Detail label="Titular" value={data.holder} />{data.maskedClabe && <Detail label="CLABE enmascarada" value={data.maskedClabe} />}</>)}</Card>
       <ThemedText type="smallBold">Estados de cuenta</ThemedText>
-      {data.documents.length ? data.documents.map(item => <Card key={item.id} variant="outlined">{group(<><ThemedText type="smallBold">{item.name}</ThemedText><ThemedText themeColor="textSecondary">{item.period}</ThemedText><StatusBadge label={item.status === 'available' ? 'Disponible' : 'En preparación'} tone={item.status === 'available' ? 'success' : 'neutral'} /></>)}</Card>) : <Missing description="No hay documentos disponibles para este periodo." />}
+      {data.documents.length ? data.documents.map(item => <Card key={item.id}>{group(<><ThemedText type="smallBold">{item.name}</ThemedText><ThemedText themeColor="textSecondary">{item.period}</ThemedText><StatusBadge label={item.status === 'available' ? 'Disponible' : 'En preparación'} tone={item.status === 'available' ? 'success' : 'neutral'} /></>)}</Card>) : <Missing description="No hay documentos disponibles para este periodo." />}
     </>);
     case 'financial-education': return group(<>
       <Hero label="Aprende sobre tus finanzas" value={data.concept} />
       <ThemedText>{data.explanation}</ThemedText>
-      {data.takeaways.map((text, index) => <Card key={index} variant="outlined">{group(<><StatusBadge label={`Idea ${index + 1}`} tone="info" /><ThemedText>{text}</ThemedText></>)}</Card>)}
+      {data.takeaways.map((text, index) => <Card key={index}>{group(<><StatusBadge label={`Idea ${index + 1}`} tone="info" /><ThemedText>{text}</ThemedText></>)}</Card>)}
       {data.scenarios && <><ThemedText type="smallBold">Compara los ejemplos</ThemedText><ScenarioComparison scenarios={data.scenarios} currency={currency} /></>}
     </>);
   }
 }
 
 export function BankingView({ data }: { data: BankingViewData }) {
-  return <View style={styles.stack}>
+  return <View style={[styles.stack, styles.viewPadding]}>
     <View style={styles.heading}><ThemedText accessibilityRole="header" type="subtitle">{data.title}</ThemedText>{data.subtitle && <ThemedText themeColor="textSecondary">{data.subtitle}</ThemedText>}</View>
     {'state' in data ? <Missing description={data.description} /> : <Content key={data.intent} data={data} />}
   </View>;
@@ -190,6 +190,7 @@ export function BankingView({ data }: { data: BankingViewData }) {
 
 const styles = StyleSheet.create({
   stack: { gap: Spacing.four, width: '100%' },
+  viewPadding: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   heading: { gap: Spacing.one },
   hero: { borderLeftWidth: 4, borderRadius: 16, padding: Spacing.five, gap: Spacing.two },
   heroAmount: { fontSize: 32, fontWeight: '700', lineHeight: 40 },

@@ -26,16 +26,23 @@ export const agentStatusIds = [
 
 export type AgentStatusId = (typeof agentStatusIds)[number];
 
-/** The one configurable map of user-facing progress copy, keyed by status id. */
+/**
+ * The one configurable map of user-facing progress copy, keyed by status id.
+ *
+ * The voice is warm and concrete, but every phrase must stay true of the phase
+ * that reports it: the client cannot know whether a turn actually computed a
+ * scenario or compared a budget, so it never claims to. Nothing here is a tool
+ * name, a prompt or a fragment of the model's reasoning.
+ */
 export const agentStatusCopy: Readonly<Record<AgentStatusId, string>> = {
-  interpreting: 'Entendiendo tu solicitud…',
-  discovering_tools: 'Buscando la información correcta…',
-  selecting_tools: 'Eligiendo la información necesaria…',
-  executing_tools: 'Obteniendo tus datos financieros…',
-  interpreting_results: 'Revisando tu información…',
-  preparing_action: 'Preparando tu acción…',
-  building_ui: 'Construyendo tu respuesta…',
-  validating_ui: 'Finalizando…',
+  interpreting: 'Entendiendo lo que necesitas…',
+  discovering_tools: 'Buscando dónde está tu información…',
+  selecting_tools: 'Eligiendo los datos necesarios…',
+  executing_tools: 'Consultando la información de tus cuentas…',
+  interpreting_results: 'Organizando tus datos por relevancia…',
+  preparing_action: 'Preparando tu operación…',
+  building_ui: 'Convirtiendo los números en una respuesta útil…',
+  validating_ui: 'Dando los últimos detalles a tu respuesta…',
 };
 
 /**
@@ -43,6 +50,10 @@ export const agentStatusCopy: Readonly<Record<AgentStatusId, string>> = {
  * POST deployment that never streams, the audio upload and transcription that
  * happen before the agent is even called, or simply the moment before the
  * first line arrives.
+ *
+ * One steady string, deliberately: with no phase to report there is nothing to
+ * advance through, and rotating through invented wording would only simulate
+ * progress the client cannot observe.
  */
 export const agentStatusFallbackCopy = 'Analizando tus finanzas…';
 

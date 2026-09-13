@@ -23,6 +23,9 @@ export function useAssistant(currentUserId: string) {
   const [error, setError] = useState<string | null>(null);
   const [actionStatus, setActionStatus] = useState<{ status: 'pending' | 'success' | 'failure'; message: string } | null>(null);
   const [lastQuery, setLastQuery] = useState('');
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [accountLoading, setAccountLoading] = useState(true);
+  const [accountError, setAccountError] = useState<string | null>(null);
   const request = useRef<{ id: number; controller?: AbortController }>({ id: 0 });
   const inFlight = useRef(false);
   const processor = useRef(new AssistantResponseProcessor());
@@ -33,9 +36,49 @@ export function useAssistant(currentUserId: string) {
     request.current.id += 1;
   }, []);
 
-  async function run(query: string, action?: A2UIAction) {
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      if (!supabase) {
+        if (active) {
+          setAccountError('No se pudo consultar la cuenta bancaria.');
+          setAccountLoading(false);
+        }
+        return;
+      }
+      let lookup;
+      try {
+        lookup = await supabase.rpc('get_primary_account_id');
+      } catch {
+        if (active) {
+          setAccountError('No se pudo consultar la cuenta bancaria.');
+          setAccountLoading(false);
+        }
+        return;
+      }
+      if (!active) return;
+      const { data, error: lookupError } = lookup;
+      if (lookupError) {
+        setAccountError('No se pudo verificar la cuenta bancaria vinculada a tu usuario.');
+        setAccountLoading(false);
+        return;
+      }
+      if (typeof data !== 'string') {
+        setAccountError('No encontramos una cuenta bancaria vinculada a tu usuario.');
+        setAccountLoading(false);
+        return;
+      }
+      setAccountId(data);
+      setAccountLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [currentUserId]);
+
+  async function run(query: string, action?: A2UIAction): Promise<boolean> {
     const normalized = query.trim();
-    if (!normalized || inFlight.current) return;
+    if (!normalized || inFlight.current) return false;
     inFlight.current = true;
     request.current.controller?.abort();
     const controller = new AbortController();
@@ -53,22 +96,25 @@ export function useAssistant(currentUserId: string) {
       if (authError) throw new AgentRequestError('authentication', 'No se pudo verificar tu sesión.');
       const verified = await verifySession(supabase, data.session);
       if (!verified || verified.user.id !== currentUserId) throw new AgentRequestError('authentication', 'Inicia sesión para consultar al asistente.');
-      if (controller.signal.aborted || request.current.id !== id) return;
+      if (controller.signal.aborted || request.current.id !== id) return false;
       const accessToken = verified.access_token;
+      if (!accountId) throw new AgentRequestError('configuration', accountError || 'Espera mientras cargamos tu cuenta bancaria.');
       const reply = action
-        ? await requestAgentAction({ baseUrl: agentBaseUrl, action, userId: currentUserId, accessToken, signal: controller.signal })
+        ? await requestAgentAction({ baseUrl: agentBaseUrl, action, userId: currentUserId, accountId, accessToken, signal: controller.signal })
         : await requestAgentStream({
-          baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, accessToken, signal: controller.signal,
+          baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, accountId, accessToken, signal: controller.signal,
           // A phase the backend repeats keeps the same state, so the label
           // neither re-renders nor re-announces.
           onStatus: next => { if (request.current.id === id) setStatus(current => current === next ? current : next); },
         });
       if (request.current.id === id) {
         if (action) {
-          setActionStatus(reply.actionResult ?? (reply.a2uiError
+          const result = reply.actionResult ?? (reply.a2uiError
             ? { status: 'failure', message: reply.a2uiError }
-            : reply.messages?.length ? null : { status: 'failure', message: reply.message || 'El servicio no confirmó el resultado de la acción.' }));
-          if (!reply.messages || reply.actionResult?.status === 'failure') return;
+            : reply.messages?.length ? null : { status: 'failure', message: reply.message || 'El servicio no confirmó el resultado de la acción.' });
+          setActionStatus(result);
+          if (result?.status === 'failure') return false;
+          if (!reply.messages) return result?.status === 'success';
         }
         const processed = processor.current.process(reply.messages, !action);
         const effectiveReply = !processed.ok
@@ -80,10 +126,12 @@ export function useAssistant(currentUserId: string) {
           a2uiSurfaces: processed.surfaces,
         });
       }
+      return true;
     } catch (cause) {
-      if (request.current.id !== id || controller.signal.aborted) return;
+      if (request.current.id !== id || controller.signal.aborted) return false;
       if (action) setActionStatus({ status: 'failure', message: cause instanceof AgentRequestError ? cause.message : 'No se pudo confirmar el resultado. Intenta de nuevo la misma operación.' });
       if (!action) setError(cause instanceof AgentRequestError ? cause.message : 'No se pudo mostrar la respuesta. Inténtalo de nuevo.');
+      return false;
     } finally {
       if (request.current.id === id) {
         request.current.controller = undefined;
@@ -103,7 +151,7 @@ export function useAssistant(currentUserId: string) {
   }
 
   function send(query: string) {
-    return run(query);
+    return run(query).then(() => undefined);
   }
 
   function cancel() {
@@ -122,8 +170,23 @@ export function useAssistant(currentUserId: string) {
 
   function retry() {
     const previous = lastRequest.current;
-    if (previous) return run(previous.query, previous.action);
+    if (previous) return run(previous.query, previous.action).then(() => undefined);
   }
 
-  return { surface, pending, status, error, actionStatus, lastQuery, send, transcribe, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry };
+  return {
+    surface,
+    pending,
+    status,
+    error,
+    actionStatus,
+    lastQuery,
+    send,
+    transcribe,
+    dispatch,
+    cancel,
+    isConfigured: Boolean(agentBaseUrl) && Boolean(accountId) && !accountLoading,
+    configurationError: accountError,
+    accountId,
+    retry,
+  };
 }

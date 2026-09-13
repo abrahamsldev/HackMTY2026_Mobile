@@ -39,6 +39,7 @@ export type AgentRequestOptions = {
   query: string;
   action?: A2UIAction;
   userId: string;
+  accountId: string;
   accessToken: string;
   signal?: AbortSignal;
   timeoutMs?: number;
@@ -48,8 +49,9 @@ export type AgentRequestOptions = {
 /**
  * Validates every guarantee of this transport before a byte leaves the device:
  * an https origin with no credentials, query or fragment; a query within the
- * 8000-character cap; a real account uuid; a whitespace-free bearer token. Both
- * the plain and the streaming route share it so neither can drift.
+ * 8000-character cap; a real user uuid and a real bank-account uuid; a
+ * whitespace-free bearer token. Both the plain and the streaming route share it
+ * so neither can drift.
  */
 function prepareAgentRequest(
   {
@@ -57,8 +59,9 @@ function prepareAgentRequest(
     query,
     action,
     userId,
+    accountId,
     accessToken,
-  }: Pick<AgentRequestOptions, 'baseUrl' | 'query' | 'action' | 'userId' | 'accessToken'>,
+  }: Pick<AgentRequestOptions, 'baseUrl' | 'query' | 'action' | 'userId' | 'accountId' | 'accessToken'>,
   path: '' | '/stream',
 ): { url: string; body: string; headers: Record<string, string> } {
   let endpoint: URL;
@@ -80,11 +83,19 @@ function prepareAgentRequest(
   if (!parsedUserId.success) {
     throw new AgentRequestError('configuration', 'La cuenta no tiene un identificador válido.');
   }
+  const parsedAccountId = z.uuid().safeParse(accountId);
+  if (!parsedAccountId.success) {
+    throw new AgentRequestError('configuration', 'La cuenta bancaria no tiene un identificador válido.');
+  }
   if (!accessToken || /\s/.test(accessToken)) throw new AgentRequestError('authentication', 'Inicia sesión para consultar al asistente.');
 
   return {
     url: endpoint.toString(),
-    body: JSON.stringify({ ...(action ? { action } : { query: normalizedQuery }), user_id: parsedUserId.data }),
+    body: JSON.stringify({
+      ...(action ? { action } : { query: normalizedQuery }),
+      user_id: parsedUserId.data,
+      account_id: parsedAccountId.data,
+    }),
     headers: {
       'Content-Type': 'application/json',
       Accept: path ? NDJSON_MEDIA_TYPE : 'application/json',
@@ -206,10 +217,10 @@ export async function requestAgentStream(options: AgentStreamOptions): Promise<A
 }
 
 function streamAgentTurn(
-  { baseUrl, query, userId, accessToken, signal, timeoutMs = 60_000 }: AgentRequestOptions,
+  { baseUrl, query, userId, accountId, accessToken, signal, timeoutMs = 60_000 }: AgentRequestOptions,
   onStatus: (status: AgentStatusId) => void,
 ): Promise<AgentReply> {
-  const prepared = prepareAgentRequest({ baseUrl, query, userId, accessToken }, '/stream');
+  const prepared = prepareAgentRequest({ baseUrl, query, userId, accountId, accessToken }, '/stream');
   if (signal?.aborted) throw abortedError();
   // React Native's `fetch` does not expose `response.body` as a readable
   // stream, so incremental reads go through XMLHttpRequest, which grows
@@ -464,12 +475,13 @@ export async function requestAgent({
   query,
   action,
   userId,
+  accountId,
   accessToken,
   signal,
   timeoutMs = 60_000,
   fetchImpl = fetch,
 }: AgentRequestOptions): Promise<AgentReply> {
-  const prepared = prepareAgentRequest({ baseUrl, query, action, userId, accessToken }, '');
+  const prepared = prepareAgentRequest({ baseUrl, query, action, userId, accountId, accessToken }, '');
   const controller = new AbortController();
   const cancel = () => controller.abort();
   if (signal?.aborted) cancel();

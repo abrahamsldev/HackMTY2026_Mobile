@@ -22,17 +22,22 @@ for (const target of [path.join(root, 'src/features/a2ui/a2ui_actions'), path.jo
 }
 for (const action of registry.actions) {
   if (action.inputCount !== action.inputs.length) throw new Error(`Cantidad incorrecta: ${action.name}`);
+  const previewId = action.preview ? 'preview' : null;
   const components = [
-    { id: 'root', component: 'Column', children: ['title', 'help', ...action.inputs.map(field => field.key), 'submit'] },
+    { id: 'root', component: 'Column', children: ['title', ...(previewId ? [previewId] : []), 'help', ...action.inputs.map(field => field.key), 'submit'] },
     { id: 'title', component: 'Text', text: action.title, variant: 'h2' },
     { id: 'help', component: 'Text', text: { path: '/help' } },
   ];
+  if (action.preview) {
+    components.push({ id: previewId, component: action.preview.component, view: { path: action.preview.path } });
+  }
   for (const field of action.inputs) {
     const input = inputs.inputs.find(item => item.type === field.input);
     if (!input || input.role === 'submit') throw new Error('Tipo de input desconocido');
     const component = { id: field.key, component: input.component, label: field.label, value: { path: `/form/${field.key}` } };
     if (field.input === 'date') Object.assign(component, { enableDate: true, enableTime: false });
     if (field.input === 'slider') Object.assign(component, { min: field.min, max: field.max });
+    if (field.input === 'choice') Object.assign(component, { options: [], variant: input.variant, displayStyle: input.displayStyle });
     components.push(component);
   }
   components.push(
@@ -40,7 +45,7 @@ for (const action of registry.actions) {
     { id: 'submit-label', component: 'Text', text: action.submitLabel },
   );
   emit(path.join(mcp, 'a2ui_support/templates', `${action.surfaceId}.json`), [
-    { version: inputs.version, createSurface: { surfaceId: action.surfaceId, catalogId: inputs.catalogId } },
+    { version: inputs.version, createSurface: { surfaceId: action.surfaceId, catalogId: action.catalogId ?? inputs.catalogId } },
     { version: inputs.version, updateComponents: { surfaceId: action.surfaceId, components } },
   ]);
 }

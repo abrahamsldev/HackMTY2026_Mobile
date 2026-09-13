@@ -61,3 +61,31 @@ Guardar estas filas no ejecuta transferencias, bloqueos, reportes, pagos ni noti
 - Prueba: `tests/validate-financial-schema.mjs`, usando PostgreSQL embebido PGlite. No levanta servicios ni utiliza credenciales reales.
 
 La prueba ejecuta tanto los archivos separados como el SQL final y valida relaciones, cálculos, RLS, rechazo de escrituras desde el cliente, ausencia de duplicados, conservación de saldos y rollback completo cuando falta el usuario.
+
+## Saldos después de una transferencia
+
+Después de las migraciones de acciones ejecuta también
+[`202609130004_internal_transfer_balances.sql`](migrations/202609130004_internal_transfer_balances.sql).
+La migración agrega `beneficiaries.linked_account_id` y
+`payment_orders.credited_account_id`. Si la CLABE de un beneficiario coincide
+con una fila de `account_details` perteneciente a otro usuario, lo vincula
+automáticamente. Una transferencia confirmada descuenta la cuenta de origen,
+abona esa cuenta receptora y crea los movimientos débito/crédito dentro de la
+misma transacción.
+
+Los contactos externos sin una cuenta vinculada dejan de producir un éxito
+engañoso: no se ofrecen en el formulario y el dispatcher rechaza cualquier
+evento antiguo que intente utilizarlos. Para vincular manualmente un contacto
+interno, usa el UUID real de la cuenta receptora:
+
+```sql
+update public.beneficiaries
+set linked_account_id = '<UUID-DE-LA-CUENTA-RECEPTORA>'::uuid,
+    status = 'verified'
+where id = '<UUID-DEL-BENEFICIARIO>'::uuid
+  and user_id = '<UUID-DEL-REMITENTE>'::uuid;
+```
+
+No vincules el destinatario de ejemplo `Ana` a una cuenta arbitraria. Su CLABE
+del seed es ficticia; debe reemplazarse por una relación de prueba verificable
+antes de usarla como transferencia interna.

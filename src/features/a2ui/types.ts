@@ -93,6 +93,15 @@ export type A2UIInputComponent = A2UIComponentCommon & (
   | { component: 'TextField'; label: A2UIDynamicString; value: A2UIBinding; variant?: 'shortText' | 'longText' | 'number' | 'obscured' }
   | { component: 'DateTimeInput'; label?: A2UIDynamicString; value: A2UIBinding; enableDate: true; enableTime?: false }
   | { component: 'Slider'; label?: A2UIDynamicString; value: A2UIBinding; min?: number; max: number }
+  | {
+      component: 'ChoicePicker';
+      label?: A2UIDynamicString;
+      value: A2UIBinding;
+      options: { label: A2UIDynamicString; value: string }[];
+      variant?: 'multipleSelection' | 'mutuallyExclusive';
+      displayStyle?: 'checkbox' | 'chips';
+      filterable?: boolean;
+    }
 );
 
 export type A2UIComponent =
@@ -162,4 +171,12 @@ export type A2UIAction = {
   sourceComponentId: string;
   timestamp: string;
   context: Record<string, JSONValue>;
+};
+
+/** Local screen coordinates used only to animate an action in the client. */
+export type A2UIActionOrigin = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
