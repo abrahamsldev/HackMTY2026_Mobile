@@ -3,6 +3,7 @@
     "intent": "financial-summary",
     "title": "Tu panorama financiero",
     "subtitle": "Septiembre de 2026",
+    "totalOwnedBalance": 20500,
     "accounts": [
       {
         "accountId": "example-checking",
@@ -31,7 +32,29 @@
     ],
     "income": 22000,
     "expenses": 15000,
-    "currency": "MXN"
+    "currency": "MXN",
+    "cards": [
+      {
+        "cardId": "example-card-debit",
+        "cardName": "Débito Enlace",
+        "cardType": "debit",
+        "network": "visa",
+        "lastFour": "1234",
+        "status": "active",
+        "expires": "2029-04",
+        "accountId": "example-checking"
+      },
+      {
+        "cardId": "example-card-credit",
+        "cardName": "Tarjeta Oro",
+        "cardType": "credit",
+        "network": "mastercard",
+        "lastFour": "9012",
+        "status": "active",
+        "expires": "2028-11",
+        "accountId": "example-credit"
+      }
+    ]
   },
   {
     "intent": "transactions",
@@ -73,6 +96,7 @@
     "intent": "spending-analysis",
     "title": "Así estás gastando",
     "subtitle": "Septiembre frente a agosto de 2026",
+    "totalSpent": 15000,
     "categories": [
       {
         "category": "food",
@@ -96,6 +120,7 @@
       }
     ],
     "previousTotal": 14000,
+    "insight": "Alimentos y compras concentran dos tercios de tu gasto del periodo.",
     "trend": {
       "title": "Ingresos y gastos",
       "series": [
@@ -318,13 +343,27 @@
   {
     "intent": "credit-card",
     "title": "Organiza el pago de tu tarjeta",
+    "card": {
+      "cardId": "example-card-credit",
+      "cardName": "Tarjeta Oro",
+      "cardType": "credit",
+      "network": "mastercard",
+      "lastFour": "9012",
+      "status": "active",
+      "expires": "2028-11"
+    },
     "cardName": "Tarjeta Oro",
     "lastFour": "9012",
     "debt": 8500,
+    "creditLimit": 10000,
+    "statementBalance": 6200,
     "availableCredit": 1500,
     "minimumPayment": 420,
     "interestFreePayment": 6200,
     "dueDate": "2026-09-25",
+    "cutoffDate": "2026-09-10",
+    "annualInterestRate": 36.9,
+    "catPercentage": 48.2,
     "currency": "MXN"
   },
   {
@@ -363,6 +402,15 @@
   {
     "intent": "card-security",
     "title": "Revisa la actividad de tu tarjeta",
+    "card": {
+      "cardId": "example-card-credit",
+      "cardName": "Tarjeta Oro",
+      "cardType": "credit",
+      "network": "mastercard",
+      "lastFour": "9012",
+      "status": "active",
+      "expires": "2028-11"
+    },
     "cardName": "Tarjeta Oro",
     "lastFour": "9012",
     "status": "active",
