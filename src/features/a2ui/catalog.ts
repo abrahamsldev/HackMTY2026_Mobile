@@ -17,11 +17,16 @@ export const SUPPORTED_FINANCE_COMPONENTS = [
   'Column',
   'Chart',
 ] as const;
+const SUPPORTED_FORM_COMPONENTS = ['TextField', 'DateTimeInput', 'Slider'] as const;
 
 export const SUPPORTED_COMPONENTS_BY_CATALOG: Record<A2UICatalogId, readonly string[]> = {
   [A2UI_BASIC_CATALOG_ID]: SUPPORTED_BASIC_COMPONENTS,
   [A2UI_FINANCE_CATALOG_ID]: SUPPORTED_FINANCE_COMPONENTS,
-  [A2UI_BANKING_CATALOG_ID]: [...SUPPORTED_FINANCE_COMPONENTS, 'BankingView'],
+  [A2UI_BANKING_CATALOG_ID]: [
+    ...SUPPORTED_FINANCE_COMPONENTS,
+    ...SUPPORTED_FORM_COMPONENTS,
+    'BankingView',
+  ],
 };
 
 export function isComponentAllowed(catalogId: A2UICatalogId, component: string): boolean {

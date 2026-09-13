@@ -8,7 +8,19 @@ import { parseAgentReply } from '../src/features/assistant/agent.ts';
 const read = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const registry = read('../src/features/a2ui/a2ui_actions/actions.json');
 const templates = '../hackmty2026-mcp/src/supabase_mcp/a2ui_support/templates/';
-const data = { name: 'Vacaciones', category: 'groceries', limit_amount: 3000, start_date: '2026-09-13', end_date: '2026-10-13', target_amount: 18000, target_date: '2027-01-01', suggested_monthly_contribution: 1500, id: 'f52827d7-0213-4df4-9621-14775d6228d4' };
+const data = {
+  name: 'Vacaciones', category: 'groceries', limit_amount: 3000,
+  start_date: '2026-09-13', end_date: '2026-10-13', target_amount: 18000,
+  target_date: '2027-01-01', suggested_monthly_contribution: 1500,
+  id: 'f52827d7-0213-4df4-9621-14775d6228d4', source_account: 'Cuenta principal',
+  recipient: 'Ana', amount: 500, concept: 'Comida', card: 'Tarjeta oro',
+};
+const preview = {
+  intent: 'credit-card', title: 'Tu tarjeta', currency: 'MXN', cardName: 'Tarjeta oro',
+  lastFour: '1234', debt: 5000, availableCredit: 5000, minimumPayment: 300,
+  interestFreePayment: 2000, dueDate: '2026-10-01',
+  card: { cardId: 'card-1', cardName: 'Tarjeta oro', cardType: 'credit', network: 'visa', lastFour: '1234', status: 'active' },
+};
 
 test('Expo, MCP and agent ship identical input/action registries and every form is renderable', () => {
   for (const file of ['inputs', 'actions']) {
@@ -18,7 +30,7 @@ test('Expo, MCP and agent ship identical input/action registries and every form 
   }
   for (const action of registry.actions) {
     assert.equal(action.inputCount, action.inputs.length);
-    const result = new A2UIMessageProcessor().process([...read(`${templates}${action.surfaceId}.json`), { version: 'v0.9.1', updateDataModel: { surfaceId: action.surfaceId, value: { form: data, help: 'Revisa los datos' } } }]);
+    const result = new A2UIMessageProcessor().process([...read(`${templates}${action.surfaceId}.json`), { version: 'v0.9.1', updateDataModel: { surfaceId: action.surfaceId, value: { form: data, help: 'Revisa los datos', ...(action.preview ? { preview } : {}) } } }]);
     assert.equal(result.ok, true, action.name);
     const model = new InputModel(result.surfaces[0]);
     const event = model.action(model.surface.components.get('submit'));
