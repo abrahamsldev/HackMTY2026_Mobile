@@ -74,16 +74,13 @@ export async function transcribeAudioWebhook({
   }, timeoutMs);
 
   try {
-    const body = new FormData();
     // n8n's Webhook node reads the upload from the binary property named "data".
-    // expo-audio's web recorder yields a `blob:` object URL: it only holds a
-    // MediaRecorder Blob in page memory, so it must be fetched into a real
-    // Blob before it can be attached. Native recordings are plain `file://`
-    // paths; RN's networking bridge streams those directly from disk when
-    // given the classic `{ uri, name, type }` shape, which is both the
-    // documented approach and avoids relying on fetch()+.blob() reading
-    // local files, which is unreliable across RN/Hermes versions.
+    let status: number;
+    let responseText: string;
     if (uri.startsWith('blob:') || uri.startsWith('data:')) {
+      // expo-audio's web recorder yields a `blob:` object URL: it only holds
+      // a MediaRecorder Blob in page memory, so it must be fetched into a
+      // real Blob before it can be attached to FormData.
       let recordingBlob: Blob;
       try {
         const source = await fetch(uri);
@@ -106,26 +103,52 @@ export async function transcribeAudioWebhook({
         : mimeType.includes('mp4') || mimeType.includes('m4a')
         ? 'm4a'
         : 'webm';
-      body.append('data', recordingBlob, `recording.${extension}`);
+      const formBody = new FormData();
+      formBody.append('data', recordingBlob, `recording.${extension}`);
+      const response = await fetchImpl(endpoint.toString(), {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: formBody,
+        signal: controller.signal,
+      });
+      status = response.status;
+      responseText = await response.text();
     } else {
-      body.append('data', { uri, name: 'recording.m4a', type: 'audio/m4a' } as unknown as Blob);
+      // Native `file://` recordings: expo-file-system's native upload task
+      // reads and streams the file straight from disk. This replaces RN's
+      // classic `{ uri, name, type }` FormData shape, which goes through the
+      // same generic fetch/XHR bridge as every other request and has a long
+      // history of failing multipart uploads with a bare "Network request
+      // failed" on some Android/iOS combinations, even though a plain GET
+      // to the same host succeeds.
+      const { File, UploadType } = await import('expo-file-system');
+      let uploadResult: { status: number; body: string };
+      try {
+        uploadResult = await new File(uri).upload(endpoint.toString(), {
+          httpMethod: 'POST',
+          uploadType: UploadType.MULTIPART,
+          fieldName: 'data',
+          mimeType: 'audio/m4a',
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        });
+      } catch (uploadError) {
+        console.error('[assistant] failed to upload recording', uri, uploadError);
+        throw new AgentRequestError('network', 'No se pudo conectar con el webhook de transcripción de n8n.');
+      }
+      status = uploadResult.status;
+      responseText = uploadResult.body;
     }
-    const response = await fetchImpl(endpoint.toString(), {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-      body,
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      console.error('[assistant] n8n webhook responded', response.status, await response.text().catch(() => ''));
+
+    if (status < 200 || status >= 300) {
+      console.error('[assistant] n8n webhook responded', status, responseText);
       throw new AgentRequestError(
         'response',
-        response.status === 404
+        status === 404
           ? 'No se encontró el webhook de transcripción de n8n.'
           : 'n8n no pudo transcribir el audio.',
       );
     }
-    const responseText = await response.text();
     let data: { text?: unknown; transcription?: unknown } | null = null;
     try {
       data = JSON.parse(responseText) as { text?: unknown; transcription?: unknown };
