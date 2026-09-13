@@ -33,7 +33,13 @@
           "imageWidth": 76
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Permite que $(PRODUCT_NAME) acceda al micrófono para transcribir tus consultas de voz."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

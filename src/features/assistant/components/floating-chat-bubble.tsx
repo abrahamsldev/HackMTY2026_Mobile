@@ -40,6 +40,7 @@ export type FloatingChatBubbleProps = {
   value: string;
   onChangeText: (text: string) => void;
   onSubmit: (text: string) => void;
+  onSubmitAudio?: (uri: string) => Promise<void>;
   disabled?: boolean;
   loading?: boolean;
   inputRef?: React.RefObject<TextInputHandle | null>;
@@ -53,6 +54,7 @@ export function FloatingChatBubble({
   value,
   onChangeText,
   onSubmit,
+  onSubmitAudio,
   disabled = false,
   loading = false,
   inputRef,
@@ -367,6 +369,7 @@ export function FloatingChatBubble({
                 value={value}
                 onChangeText={onChangeText}
                 onSubmit={handleSubmit}
+                onSubmitAudio={onSubmitAudio}
                 loading={loading}
                 disabled={disabled}
                 mode="conversation"

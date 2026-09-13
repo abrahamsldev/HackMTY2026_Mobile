@@ -166,6 +166,22 @@ function AssistantWorkspace({
     });
   }
 
+  async function handleAudioSubmit(uri: string) {
+    if (assistant.pending || submissionLocked.current || !assistant.isConfigured) return;
+    submissionLocked.current = true;
+    let text: string;
+    try {
+      text = await assistant.transcribe(uri);
+    } catch (error) {
+      submissionLocked.current = false;
+      throw error;
+    }
+    // handleSubmit re-locks and owns unlocking (via assistant.send's .finally)
+    // once the transcribed query is actually sent to the agent.
+    submissionLocked.current = false;
+    handleSubmit(text);
+  }
+
   function handleSelectSuggestion(suggestion: string) {
     setQuery(suggestion);
     setShowQuestionBank(false);
@@ -271,6 +287,7 @@ function AssistantWorkspace({
                 value={query}
                 onChangeText={setQuery}
                 onSubmit={handleSubmit}
+                onSubmitAudio={handleAudioSubmit}
                 loading={assistant.pending}
                 disabled={!assistant.isConfigured}
                 mode="welcome"
@@ -351,6 +368,7 @@ function AssistantWorkspace({
             value={query}
             onChangeText={setQuery}
             onSubmit={handleSubmit}
+            onSubmitAudio={handleAudioSubmit}
             loading={assistant.pending}
             disabled={!assistant.isConfigured || Boolean(editingTurnId)}
             bottomInset={Math.max(insets.bottom, Spacing.three)}

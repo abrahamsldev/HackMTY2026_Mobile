@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 
 import { type A2UIAction, type A2UISurfaceState } from '../a2ui';
 import { AssistantResponseProcessor } from './response-processor';
-import { AgentRequestError, requestAgent, requestAgentAction, type AgentReply } from './agent';
+import { AgentRequestError, requestAgent, requestAgentAction, transcribeAudioWebhook, type AgentReply } from './agent';
 import { supabase } from '@/lib/supabase';
 import { verifySession } from '../auth/auth-service';
-import { agentBaseUrl } from './connection';
+import { agentBaseUrl, transcriptionUrl } from './connection';
 
 type AssistantSurface = {
   reply: AgentReply;
@@ -74,6 +74,14 @@ export function useAssistant(currentUserId: string) {
     }
   }
 
+  async function transcribe(uri: string) {
+    if (inFlight.current) throw new AgentRequestError('response', 'Espera a que termine la consulta actual.');
+    return transcribeAudioWebhook({
+      endpointUrl: transcriptionUrl,
+      uri,
+    });
+  }
+
   function send(query: string) {
     return run(query);
   }
@@ -95,5 +103,5 @@ export function useAssistant(currentUserId: string) {
     if (previous) return run(previous.query, previous.action);
   }
 
-  return { surface, pending, error, lastQuery, send, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry };
+  return { surface, pending, error, lastQuery, send, transcribe, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry };
 }

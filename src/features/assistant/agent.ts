@@ -39,6 +39,89 @@ export type AgentRequestOptions = {
   fetchImpl?: typeof fetch;
 };
 
+export async function transcribeAudioWebhook({
+  endpointUrl,
+  uri,
+  signal,
+  timeoutMs = 60_000,
+  fetchImpl = fetch,
+}: {
+  endpointUrl: string;
+  uri: string;
+  signal?: AbortSignal;
+  timeoutMs?: number;
+  fetchImpl?: typeof fetch;
+}): Promise<string> {
+  let endpoint: URL;
+  try {
+    endpoint = new URL(endpointUrl);
+    if (endpoint.protocol !== 'https:' || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) {
+      throw new Error();
+    }
+  } catch {
+    throw new AgentRequestError('configuration', 'Falta configurar el webhook de transcripción.');
+  }
+  if (!uri) throw new AgentRequestError('response', 'No se encontró la grabación de audio.');
+
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  if (signal?.aborted) cancel();
+  signal?.addEventListener('abort', cancel, { once: true });
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    const body = new FormData();
+    // n8n's Webhook node reads the upload from the binary property named "data".
+    body.append('data', { uri, name: 'recording.m4a', type: 'audio/m4a' } as unknown as Blob);
+    const response = await fetchImpl(endpoint.toString(), {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      body,
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw new AgentRequestError(
+        'response',
+        response.status === 404
+          ? 'No se encontró el webhook de transcripción de n8n.'
+          : 'n8n no pudo transcribir el audio.',
+      );
+    }
+    const responseText = await response.text();
+    let data: { text?: unknown; transcription?: unknown } | null = null;
+    try {
+      data = JSON.parse(responseText) as { text?: unknown; transcription?: unknown };
+    } catch {
+      // Some webhook workflows return the transcription as plain text.
+    }
+    const text = typeof data?.text === 'string'
+      ? data.text
+      : typeof data?.transcription === 'string'
+      ? data.transcription
+      : responseText;
+    if (!text.trim() || text.length > 8_000) {
+      throw new AgentRequestError('contract', 'La transcripción recibida no es válida.');
+    }
+    return text.trim();
+  } catch (error) {
+    if (signal?.aborted) {
+      const aborted = new Error('Transcripción cancelada.');
+      aborted.name = 'AbortError';
+      throw aborted;
+    }
+    if (timedOut) throw new AgentRequestError('timeout', 'La transcripción tardó demasiado. Inténtalo de nuevo.');
+    if (error instanceof AgentRequestError) throw error;
+    throw new AgentRequestError('network', 'No se pudo conectar con el webhook de transcripción de n8n.');
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener('abort', cancel);
+  }
+}
+
 export async function requestAgent({
   baseUrl,
   query,
