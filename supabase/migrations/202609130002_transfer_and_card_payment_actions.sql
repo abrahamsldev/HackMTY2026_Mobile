@@ -19,6 +19,39 @@ alter table public.payment_orders
   add constraint payment_orders_completion_check
   check ((status = 'completed') = (completed_at is not null));
 
+-- Form preparation runs through the dedicated read pool. These policies let
+-- that role read only the subject placed in the transaction by DatabaseClient.
+do $$
+declare
+  tbl text;
+begin
+  if exists (select 1 from pg_roles where rolname = 'mcp_reader') then
+    grant select on public.users, public.accounts, public.account_details,
+      public.cards, public.credit_card_terms, public.beneficiaries,
+      public.payment_orders, public.budgets, public.savings_goals
+      to mcp_reader;
+
+    alter table public.users enable row level security;
+    drop policy if exists a2ui_reader_owner on public.users;
+    create policy a2ui_reader_owner on public.users
+      for select to mcp_reader
+      using (id = nullif(current_setting('request.jwt.claim.sub', true), '')::uuid);
+
+    foreach tbl in array array[
+      'accounts', 'account_details', 'cards', 'credit_card_terms',
+      'beneficiaries', 'payment_orders', 'budgets', 'savings_goals'
+    ] loop
+      execute format('alter table public.%I enable row level security', tbl);
+      execute format('drop policy if exists a2ui_reader_owner on public.%I', tbl);
+      execute format(
+        'create policy a2ui_reader_owner on public.%I for select to mcp_reader '
+        'using (user_id = nullif(current_setting(''request.jwt.claim.sub'', true), '''')::uuid)',
+        tbl
+      );
+    end loop;
+  end if;
+end $$;
+
 grant select, update on public.accounts to fluidbank_actions;
 grant select on public.account_details, public.cards, public.beneficiaries
   to fluidbank_actions;

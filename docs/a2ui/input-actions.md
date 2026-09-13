@@ -49,7 +49,7 @@ Este cambio no aplica SQL ni despliega servicios. Para activarlo:
 4. Configurar el mismo secreto aleatorio de al menos 32 caracteres como `MCP_ACTIONS_SECRET` en agente y MCP. Nunca usar una variable `EXPO_PUBLIC_*` para este secreto. La firma HMAC incluye el evento completo y el usuario autenticado; funciona con el transporte remoto Horizon existente.
 5. Desplegar el código actualizado de agente y MCP y reconstruir Expo con DateTimePicker.
 
-Las migraciones crean permisos limitados, políticas RLS por usuario, recibos idempotentes y una función SQL fija con derechos del invocador. El MCP conserva su pool de lectura y usa un pool separado para las seis operaciones de escritura. Transferir o pagar bloquea las cuentas involucradas, valida saldo y propiedad, actualiza los importes y crea `payment_orders` y `transactions` en una sola transacción. El modelo no recibe la herramienta de guardar; la confirmación es el botón del formulario. Sin configuración válida, el cliente muestra un fallo explícito y no un éxito simulado.
+Las migraciones crean permisos limitados, políticas RLS por usuario para `mcp_reader` y `fluidbank_actions`, recibos idempotentes y una función SQL fija con derechos del invocador. El MCP coloca el usuario verificado en cada transacción de lectura y conserva un pool separado para las seis operaciones de escritura. Transferir o pagar bloquea las cuentas involucradas, valida saldo y propiedad, actualiza los importes y crea `payment_orders` y `transactions` en una sola transacción. El modelo no recibe la herramienta de guardar; la confirmación es el botón del formulario. Sin configuración válida, el cliente muestra un fallo explícito y no un éxito simulado.
 
 ## Comprobar el flujo
 
