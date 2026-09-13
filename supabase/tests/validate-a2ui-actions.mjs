@@ -9,7 +9,7 @@ await db.exec(`
   create table public.users(id uuid primary key);
   insert into public.users values ('${uid}'), ('${other}');
   create table public.accounts(id uuid primary key default gen_random_uuid(), user_id uuid references public.users(id), account_type text not null, currency text not null default 'MXN', available_balance numeric not null, unique(user_id,id));
-  create table public.account_details(id uuid primary key default gen_random_uuid(), user_id uuid references public.users(id), account_id uuid unique, display_name text not null, last_four text, foreign key(user_id,account_id) references public.accounts(user_id,id), unique(user_id,id));
+  create table public.account_details(id uuid primary key default gen_random_uuid(), user_id uuid references public.users(id), account_id uuid unique, display_name text not null, last_four text, clabe text, foreign key(user_id,account_id) references public.accounts(user_id,id), unique(user_id,id));
   create table public.cards(id uuid primary key default gen_random_uuid(), user_id uuid references public.users(id), account_id uuid not null, display_name text not null, card_type text not null, network text not null, last_four text not null, status text not null, expires_month smallint, expires_year smallint, foreign key(user_id,account_id) references public.accounts(user_id,id), unique(user_id,id));
   create table public.credit_card_terms(id uuid primary key default gen_random_uuid(), user_id uuid references public.users(id), account_id uuid unique, currency text not null default 'MXN', credit_limit numeric not null, current_debt numeric not null, statement_balance numeric not null, minimum_payment numeric not null, interest_free_payment numeric not null, annual_interest_rate numeric not null, cat_percentage numeric, cutoff_date date not null, due_date date not null, as_of date not null, foreign key(user_id,account_id) references public.accounts(user_id,id), unique(user_id,id));
   create table public.beneficiaries(id uuid primary key default gen_random_uuid(), user_id uuid references public.users(id), display_name text not null, bank_name text not null, last_four text not null, status text not null, unique(user_id,id));
@@ -24,13 +24,14 @@ await db.exec(`
     ('10000000-0000-4000-8000-000000000002','${uid}','credit','MXN',1500),
     ('10000000-0000-4000-8000-000000000004','${uid}','savings','MXN',2000),
     ('10000000-0000-4000-8000-000000000003','${other}','checking','MXN',10000);
-  insert into public.account_details(user_id,account_id,display_name,last_four) values
-    ('${uid}','10000000-0000-4000-8000-000000000001','Cuenta principal','1111'),
-    ('${uid}','10000000-0000-4000-8000-000000000002','Tarjeta oro','2222'),
-    ('${uid}','10000000-0000-4000-8000-000000000004','Cuenta de ahorro','4444'),
-    ('${other}','10000000-0000-4000-8000-000000000003','Cuenta ajena','3333');
-  insert into public.beneficiaries(id,user_id,display_name,bank_name,last_four,status) values
-    ('20000000-0000-4000-8000-000000000001','${uid}','Ana','Banco receptor','4321','verified');
+  insert into public.account_details(user_id,account_id,display_name,last_four,clabe) values
+    ('${uid}','10000000-0000-4000-8000-000000000001','Cuenta principal','1111','000000000000001111'),
+    ('${uid}','10000000-0000-4000-8000-000000000002','Tarjeta oro','2222',null),
+    ('${uid}','10000000-0000-4000-8000-000000000004','Cuenta de ahorro','4444','000000000000004444'),
+    ('${other}','10000000-0000-4000-8000-000000000003','Cuenta ajena','3333','000000000000004321');
+  alter table public.beneficiaries add column clabe text;
+  insert into public.beneficiaries(id,user_id,display_name,bank_name,last_four,clabe,status) values
+    ('20000000-0000-4000-8000-000000000001','${uid}','Ana','Banco receptor','4321','000000000000004321','verified');
   insert into public.cards(id,user_id,account_id,display_name,card_type,network,last_four,status) values
     ('30000000-0000-4000-8000-000000000001','${uid}','10000000-0000-4000-8000-000000000002','Tarjeta oro','credit','visa','2222','active');
   insert into public.credit_card_terms(user_id,account_id,currency,credit_limit,current_debt,statement_balance,minimum_payment,interest_free_payment,annual_interest_rate,cutoff_date,due_date,as_of) values
@@ -38,10 +39,13 @@ await db.exec(`
 `);
 const sql = readFileSync(new URL('../migrations/202609130001_a2ui_actions.sql', import.meta.url), 'utf8');
 const moneySql = readFileSync(new URL('../migrations/202609130002_transfer_and_card_payment_actions.sql', import.meta.url), 'utf8');
+const internalTransferSql = readFileSync(new URL('../migrations/202609130004_internal_transfer_balances.sql', import.meta.url), 'utf8');
 await db.exec(sql);
 await db.exec(sql);
 await db.exec(moneySql);
 await db.exec(moneySql);
+await db.exec(internalTransferSql);
+await db.exec(internalTransferSql);
 await db.query("select set_config('request.jwt.claim.sub',$1,false)", [uid]);
 await db.exec('set role mcp_reader');
 assert.equal((await db.query('select count(*)::int n from public.cards')).rows[0].n, 1);
@@ -75,6 +79,7 @@ const transfer = { source_account: 'Cuenta principal', recipient: 'Ana', amount:
 const savedTransfer = (await invoke('transfer.execute', 'k', transfer)).rows[0].result;
 assert.equal(savedTransfer.kind, 'transfer');
 assert.equal(Number((await db.query("select available_balance from public.accounts where id='10000000-0000-4000-8000-000000000001'")).rows[0].available_balance), 9500);
+assert.equal(Number((await db.query("select available_balance from public.accounts where id='10000000-0000-4000-8000-000000000003'")).rows[0].available_balance), 10500);
 assert.deepEqual((await invoke('transfer.execute', 'k', transfer)).rows[0].result, savedTransfer);
 assert.equal((await db.query("select count(*)::int n from public.payment_orders where kind='transfer' and status='completed'")).rows[0].n, 1);
 const payment = { source_account: 'Cuenta principal', card: 'Tarjeta oro', amount: 2000 };
@@ -88,7 +93,7 @@ const internal = { ...transfer, recipient: 'Cuenta de ahorro', amount: 1000, con
 await invoke('transfer.execute', 'n', internal);
 assert.equal(Number((await db.query("select available_balance from public.accounts where id='10000000-0000-4000-8000-000000000004'")).rows[0].available_balance), 3000);
 await db.exec('reset role');
-assert.equal((await db.query('select count(*)::int n from public.transactions')).rows[0].n, 4);
+assert.equal((await db.query('select count(*)::int n from public.transactions')).rows[0].n, 5);
 await db.exec('set role fluidbank_actions');
 await assert.rejects(invoke('execute_sql', 'i', {}), /unknown_action/);
 await db.exec('reset role; set role authenticated');
