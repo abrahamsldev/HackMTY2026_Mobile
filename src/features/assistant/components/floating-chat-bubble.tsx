@@ -2,13 +2,15 @@ import React, { useEffect, useState } from 'react';
 import {
   Animated,
   Easing,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { type TextInputHandle } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
@@ -18,19 +20,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { ChatComposer } from './chat-composer';
 
-function ChatBubbleIcon({ color, size = 28 }: { color: string; size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 3C6.477 3 2 6.91 2 11.73c0 2.76 1.48 5.22 3.77 6.81-.17 1.25-.66 2.89-1.9 4.15 0 0 2.87-.27 5.09-1.77.98.3 2.01.47 3.04.47 5.523 0 10-3.91 10-8.73S17.523 3 12 3z"
-        stroke={color}
-        strokeWidth={2.2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
+const banorteLogo = require('@/assets/images/banorte-logo/banorte.png');
 
 function CloseIcon({ color }: { color: string }) {
   return (
@@ -54,7 +44,10 @@ export type FloatingChatBubbleProps = {
   loading?: boolean;
   inputRef?: React.RefObject<TextInputHandle | null>;
   bottomInset?: number;
+  onRevealReady?: () => void;
 };
+
+type ButtonStage = 'idle' | 'traveling_up' | 'thinking' | 'checkmark' | 'traveling_down';
 
 export function FloatingChatBubble({
   value,
@@ -64,18 +57,30 @@ export function FloatingChatBubble({
   loading = false,
   inputRef,
   bottomInset = 24,
+  onRevealReady,
 }: FloatingChatBubbleProps) {
   const theme = useTheme();
   const { settings } = useAccessibility();
+  const { height: windowHeight } = useWindowDimensions();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [stage, setStage] = useState<ButtonStage>(() => (loading ? 'thinking' : 'idle'));
+
+  // Valores animados usando useState conforme a React 19
   const [floatAnim] = useState(() => new Animated.Value(0));
+  const [travelAnim] = useState(() => new Animated.Value(loading ? 1 : 0));
+  const [rotateAnim] = useState(() => new Animated.Value(0));
+  const [checkmarkScale] = useState(() => new Animated.Value(0.6));
   const [bubbleScale] = useState(() => new Animated.Value(0.1));
   const [bubbleOpacity] = useState(() => new Animated.Value(0));
 
-  // Animación ligera de flotación continua
+  // 1. Animación ligera de flotación continua mientras está en reposo abajo
   useEffect(() => {
-    if (settings.reduceMotion) return;
+    if (stage !== 'idle' || settings.reduceMotion) {
+      floatAnim.setValue(0);
+      return;
+    }
+
     const anim = Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim, {
@@ -94,9 +99,113 @@ export function FloatingChatBubble({
     );
     anim.start();
     return () => anim.stop();
-  }, [floatAnim, settings.reduceMotion]);
+  }, [floatAnim, settings.reduceMotion, stage]);
+
+  const wasLoadingRef = React.useRef(false);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 2. Transición cuando cambia el estado `loading`:
+  // Viaja al centro -> rotación cada .8s -> palomita verde -> viaja abajo
+  useEffect(() => {
+    if (loading) {
+      wasLoadingRef.current = true;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+
+      setTimeout(() => {
+        setIsOpen(false);
+        setStage('traveling_up');
+      }, 0);
+
+      if (!settings.reduceMotion) {
+        Animated.spring(travelAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 50,
+          useNativeDriver: Platform.OS !== 'web',
+        }).start(() => {
+          setStage('thinking');
+        });
+      } else {
+        travelAnim.setValue(1);
+        setTimeout(() => setStage('thinking'), 0);
+      }
+    } else if (wasLoadingRef.current) {
+      wasLoadingRef.current = false;
+
+      // Llegó la respuesta: transformar en palomita verde en el centro
+      setTimeout(() => {
+        setStage('checkmark');
+      }, 0);
+      checkmarkScale.setValue(0.6);
+
+      if (!settings.reduceMotion) {
+        Animated.spring(checkmarkScale, {
+          toValue: 1,
+          friction: 5,
+          tension: 80,
+          useNativeDriver: Platform.OS !== 'web',
+        }).start();
+      } else {
+        checkmarkScale.setValue(1);
+      }
+
+      // Mostrar la palomita ~650ms, luego transformarse en logo y bajar
+      timerRef.current = setTimeout(() => {
+        setStage('traveling_down');
+
+        if (!settings.reduceMotion) {
+          Animated.spring(travelAnim, {
+            toValue: 0,
+            friction: 8,
+            tension: 50,
+            useNativeDriver: Platform.OS !== 'web',
+          }).start(() => {
+            setStage('idle');
+            onRevealReady?.();
+          });
+        } else {
+          travelAnim.setValue(0);
+          setStage('idle');
+          onRevealReady?.();
+        }
+      }, 650);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [loading, settings.reduceMotion, travelAnim, checkmarkScale, onRevealReady]);
+
+  // 3. Animación de rotación del logo:
+  // Rotación medio rápida (480ms), queda en posición original, y cada ~.8s repite
+  useEffect(() => {
+    if (stage !== 'thinking' || settings.reduceMotion) {
+      rotateAnim.setValue(0);
+      return;
+    }
+
+    const spinSequence = Animated.loop(
+      Animated.sequence([
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 480,
+          easing: Easing.bezier(0.4, 0, 0.2, 1),
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+        Animated.delay(800),
+      ]),
+    );
+    spinSequence.start();
+    return () => spinSequence.stop();
+  }, [stage, settings.reduceMotion, rotateAnim]);
 
   function openBubble() {
+    if (stage !== 'idle') return;
     setIsOpen(true);
     Animated.parallel([
       Animated.spring(bubbleScale, {
@@ -138,32 +247,72 @@ export function FloatingChatBubble({
     onSubmit(text);
   }
 
+  const bottomOffset = Math.max(bottomInset, 24);
+  // Distancia para viajar exactamente al centro de la pantalla
+  const travelDistance = Math.max(140, windowHeight / 2 - bottomOffset - 32);
+
+  const translateY = Animated.add(
+    floatAnim,
+    travelAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -travelDistance],
+    }),
+  );
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const isAtCenter = stage === 'thinking' || stage === 'checkmark' || stage === 'traveling_up';
+
   return (
     <>
-      {/* Botón flotante centrado en medio con movimiento ligero */}
+      {/* Botón flotante / Hero logo con movimiento, viaje al centro y spinner rotatorio */}
       {!isOpen && (
         <View
-          style={[
-            styles.floatingButtonContainer,
-            { bottom: Math.max(bottomInset, 20) },
-          ]}
+          style={[styles.floatingButtonContainer, { bottom: bottomOffset }]}
           pointerEvents="box-none">
-          <Animated.View style={{ transform: [{ translateY: floatAnim }] }}>
+          <Animated.View style={[styles.travelWrapper, { transform: [{ translateY }] }]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Abrir barra de consulta"
-              disabled={disabled}
+              accessibilityLabel={isAtCenter ? 'Procesando consulta...' : 'Abrir barra de consulta'}
+              disabled={disabled || isAtCenter}
               onPress={openBubble}
               style={({ pressed }) => [
                 styles.floatingButton,
                 {
-                  backgroundColor: theme.accent,
-                  borderColor: theme.border,
-                  opacity: disabled ? 0.6 : pressed ? 0.85 : 1,
-                  transform: [{ scale: pressed ? 0.94 : 1 }],
+                  backgroundColor: stage === 'checkmark' ? theme.success : '#FFFFFF',
+                  borderColor: stage === 'checkmark' ? theme.success : theme.accent,
+                  opacity: disabled && !isAtCenter ? 0.6 : pressed && !isAtCenter ? 0.88 : 1,
+                  transform: [{ scale: pressed && !isAtCenter ? 0.94 : 1 }],
                 },
               ]}>
-              <ChatBubbleIcon color="#FFFFFF" size={28} />
+              {/* Si está en confirmación: mostrar palomita verde */}
+              {stage === 'checkmark' ? (
+                <Animated.View style={{ transform: [{ scale: checkmarkScale }] }}>
+                  <Svg width={38} height={38} viewBox="0 0 24 24" fill="none">
+                    <Circle cx="12" cy="12" r="10" fill="none" stroke="#FFFFFF" strokeWidth="2.2" />
+                    <Path
+                      d="M7.5 12.5l3 3 6.5-7"
+                      fill="none"
+                      stroke="#FFFFFF"
+                      strokeWidth="2.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </Animated.View>
+              ) : (
+                /* Logo Banorte: estático o rotando 360° cada .8s */
+                <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                  <Image
+                    source={banorteLogo}
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
+                </Animated.View>
+              )}
             </Pressable>
           </Animated.View>
         </View>
@@ -192,7 +341,7 @@ export function FloatingChatBubble({
                   borderColor: theme.accent,
                   opacity: bubbleOpacity,
                   transform: [{ scale: bubbleScale }],
-                  bottom: Math.max(bottomInset, 20),
+                  bottom: bottomOffset,
                 },
               ]}>
               {/* Cabecera de la burbuja */}
@@ -240,27 +389,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 9999,
   },
-  floatingButton: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+  travelWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+  },
+  floatingButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.28,
+        shadowRadius: 10,
       },
       android: {
         elevation: 8,
       },
       web: {
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.28)',
+        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
       },
     }),
+  },
+  logoImage: {
+    width: 44,
+    height: 44,
   },
   modalOverlay: {
     ...StyleSheet.absoluteFill,

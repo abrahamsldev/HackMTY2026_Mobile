@@ -229,9 +229,8 @@ function AssistantWorkspace({
     archiveActiveTurn();
 
     const nextId = `action-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const actionQuery = `Acción: ${action.name}`;
     setActiveResponseFloor(assistant.surface?.revision ?? 0);
-    setActiveQuery(actionQuery);
+    setActiveQuery(null);
     setActiveTurnId(nextId);
     setEditingTurnId(null);
     setEditingQuery("");
@@ -301,19 +300,21 @@ function AssistantWorkspace({
           >
             <View style={styles.messagesInner}>
               {/* Active current turn with bubble collapse & morphing stage */}
-              {activeQuery && (
+              {(Boolean(activeQuery) || Boolean(activeResponse) || assistant.pending) && (
                 <View style={styles.turnContainer}>
-                  <ChatMessage
-                    role="user"
-                    content={activeQuery}
-                    disabled={assistant.pending}
-                    onEdit={assistant.pending ? undefined : handleBeginEdit}
-                    isEditing={editingTurnId === activeTurnId}
-                    editValue={editingQuery}
-                    onEditValueChange={setEditingQuery}
-                    onSubmitEdit={handleSubmitEdit}
-                    onCancelEdit={handleCancelEdit}
-                  />
+                  {Boolean(activeQuery) && (
+                    <ChatMessage
+                      role="user"
+                      content={activeQuery ?? ""}
+                      disabled={assistant.pending}
+                      onEdit={assistant.pending ? undefined : handleBeginEdit}
+                      isEditing={editingTurnId === activeTurnId}
+                      editValue={editingQuery}
+                      onEditValueChange={setEditingQuery}
+                      onSubmitEdit={handleSubmitEdit}
+                      onCancelEdit={handleCancelEdit}
+                    />
+                  )}
                   <MorphingStage
                     isPending={assistant.pending}
                     hasContent={Boolean(activeResponse?.reply.message || activeSurfaces.length > 0 || pastTurns.length > 0)}
