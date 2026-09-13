@@ -1,20 +1,87 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { useTheme } from '@/hooks/use-theme';
 
+import { agentStatusFallbackCopy, agentStatusLabel, type AgentStatusId } from '../agent-status';
+
+export type AgentStatusLabelProps = {
+  /**
+   * The phase the backend last reported for this turn. `null`/`undefined` (no
+   * line yet, or a deployment that does not stream) and unknown identifiers
+   * both fall back to the generic copy: a raw id is never shown.
+   */
+  status?: AgentStatusId | null;
+  centered?: boolean;
+};
+
+/**
+ * The one line of progress copy for a running turn, and the app's single
+ * screen-reader announcement for it. Rendered under the Banorte orb while it
+ * spins, and inside {@link AssistantTypingIndicator} in the thread.
+ *
+ * It reads a phase, it never derives one: no timers, no elapsed time, no
+ * self-advancing sequence. When no phase has been reported the copy stays put.
+ */
+export function AgentStatusLabel({ status, centered = false }: AgentStatusLabelProps) {
+  const { settings } = useAccessibility();
+  const label = agentStatusLabel(status) ?? agentStatusFallbackCopy;
+  const [opacity] = useState(() => new Animated.Value(1));
+
+  // Crossfade the new phrase in. Keyed on the resolved copy, so a phase the
+  // backend repeats — it does emit `interpreting` twice — re-renders nothing
+  // and re-announces nothing.
+  useEffect(() => {
+    if (settings.reduceMotion) {
+      opacity.setValue(1);
+      return;
+    }
+    opacity.setValue(0.2);
+    const fade = Animated.timing(opacity, {
+      toValue: 1,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: Platform.OS !== 'web',
+    });
+    fade.start();
+    return () => fade.stop();
+  }, [label, opacity, settings.reduceMotion]);
+
+  return (
+    <View
+      style={[styles.statusLabelContainer, centered && styles.statusLabelCentered]}
+      accessibilityLiveRegion="polite">
+      <Animated.View
+        style={{ opacity }}
+        accessible
+        accessibilityRole="progressbar"
+        accessibilityLabel={label}
+        accessibilityValue={{ text: label }}>
+        <ThemedText
+          type="small"
+          themeColor="textSecondary"
+          style={[styles.label, centered && styles.labelCentered]}>
+          {label}
+        </ThemedText>
+      </Animated.View>
+    </View>
+  );
+}
+
 export type AssistantTypingIndicatorProps = {
+  status?: AgentStatusId | null;
   onCancel?: () => void;
 };
 
-export function AssistantTypingIndicator({ onCancel }: AssistantTypingIndicatorProps) {
+export function AssistantTypingIndicator({ status, onCancel }: AssistantTypingIndicatorProps) {
   const theme = useTheme();
 
   return (
-    <View style={styles.container} accessibilityLiveRegion="polite">
+    <View style={styles.container}>
       <View
         style={[
           styles.statusLine,
@@ -22,14 +89,8 @@ export function AssistantTypingIndicator({ onCancel }: AssistantTypingIndicatorP
             backgroundColor: theme.background,
             borderColor: theme.accent,
           },
-        ]}
-        accessible
-        accessibilityRole="progressbar"
-        accessibilityLabel="El asistente está analizando tus finanzas"
-        accessibilityValue={{ text: 'En curso' }}>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.label}>
-          Analizando tus finanzas…
-        </ThemedText>
+        ]}>
+        <AgentStatusLabel status={status} />
       </View>
 
       {onCancel && (
@@ -63,9 +124,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
+  // A floor, never a fixed height: the copy must be able to wrap at large text
+  // scales instead of being clipped.
+  statusLabelContainer: {
+    minHeight: 20,
+    justifyContent: 'center',
+  },
+  statusLabelCentered: {
+    alignItems: 'center',
+  },
   label: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  labelCentered: {
+    textAlign: 'center',
   },
   cancelButton: {
     minHeight: 48,

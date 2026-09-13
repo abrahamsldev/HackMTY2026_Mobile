@@ -73,6 +73,19 @@ El cliente realiza `POST /api/v1/agent/chat` con:
 
 La app envía el UUID de la cuenta autenticada como `user_id`, separado de `query`, y su token en Authorization. Al cambiar de usuario, React remonta el espacio del asistente, cancela solicitudes, crea un procesador A2UI nuevo y elimina la superficie anterior antes de mostrar otra respuesta.
 
+### Progreso del turno (`/chat/stream`)
+
+Una consulta de texto o voz usa `POST /api/v1/agent/chat/stream`, que responde `application/x-ndjson`: un objeto JSON por línea, primero cero o más `{"type":"agent_status","status":"<id>"}` y al final exactamente un `{"type":"result","result":{…}}` con el mismo envelope que devuelve `/chat`.
+
+Los ocho identificadores son el contrato congelado del backend: `interpreting`, `discovering_tools`, `selecting_tools`, `executing_tools`, `interpreting_results`, `preparing_action`, `building_ui`, `validating_ui`. Solo llega el identificador —nunca prompts, razonamiento, nombres de herramientas, argumentos ni filas— y puede repetirse, lo que significa un mismo estado.
+
+- `src/features/assistant/agent.ts` lee el cuerpo de forma incremental con `XMLHttpRequest`, porque el `fetch` de React Native no expone `response.body` como stream. Guarda un desplazamiento y solo emite líneas ya terminadas por `\n`.
+- Una línea ilegible se descarta en lugar de fallar: nunca termina un turno que todavía va a entregar su `result`.
+- Si la ruta no existe (404/405/501) o responde algo que no es NDJSON, se reintenta la ruta simple `POST /api/v1/agent/chat` de forma transparente. Las acciones A2UI estructuradas **siempre** usan la ruta simple: el orquestador no emite fases para ellas y no hay motivo para arriesgar ejecutar una acción dos veces.
+- `useAssistant` expone `status` con la última fase reportada. No se infiere, ni se cronometra, ni se adelanta en el cliente.
+
+**El texto que lee la persona es propiedad del cliente y vive en un solo mapa: `src/features/assistant/agent-status.ts` (`agentStatusCopy`, y `agentStatusFallbackCopy` para cuando aún no hay fase —una instalación sin la ruta, o la subida y transcripción de audio previas a llamar al agente).** Cambiar la copia significa editar ese archivo y ningún otro; un identificador desconocido nunca se muestra en crudo. `AgentStatusLabel` lo renderiza como una línea bajo el orbe Banorte y dentro del indicador de escritura del hilo.
+
 El OpenAPI desplegado define la respuesta actual como `{ "message": "…", "data": {}, "a2ui": null }`. La app muestra `message` como texto accesible en la pantalla principal. Valida `data` pero no muestra ni conserva ese contexto interno. El servidor actualmente declara que `a2ui` permanece nulo hasta disponer de las herramientas A2UI del MCP.
 
 El frontend consume exclusivamente mensajes oficiales A2UI `v0.9.1`; rechaza `a2ui/v1`, versiones distintas, catálogos no permitidos y propiedades desconocidas. La respuesta HTTP sigue siendo un contrato de transporte de la aplicación —no un envelope A2UI— y puede usar `resource_uri` (implementación actual del agente) o `resourceUri` (especificación pendiente del agente):
@@ -94,17 +107,19 @@ El frontend consume exclusivamente mensajes oficiales A2UI `v0.9.1`; rechaza `a2
 
 Los cuerpos abreviados del ejemplo representan los envelopes completos. El agente debe resolver `_meta.ui.resourceUri`, leer la plantilla estática del MCP y devolver en `messages` la secuencia ordenada `createSurface` → `updateComponents` → `updateDataModel`. Expo no resuelve ni descarga `a2ui://...`, no habla directamente con MCP y no usa la URI como URL ejecutable.
 
-La capa aislada `src/features/a2ui` valida los mensajes con Zod, mantiene estado inmutable por superficie, aplica actualizaciones incrementales y JSON Pointer RFC 6901, resuelve bindings y renderiza `root`. Permite exactamente el Basic Catalog oficial y `https://fluidbank.app/a2ui/catalogs/finance/v1`:
+La capa aislada `src/features/a2ui` valida los mensajes con Zod, mantiene estado inmutable por superficie, aplica actualizaciones incrementales y JSON Pointer RFC 6901, resuelve bindings y renderiza `root`. Permite exactamente tres catálogos (`src/features/a2ui/catalog.ts`): el Basic Catalog oficial, `https://fluidbank.app/a2ui/catalogs/finance/v1` y `https://fluidbank.app/a2ui/catalogs/finance/v2`.
 
-| A2UI | Adaptador React Native existente |
-| --- | --- |
-| `Text` | `TextBlock` |
-| `Button` | `ActionButton` |
-| `Card` | `Card` |
-| `Column` | `Stack` vertical |
-| `Chart` (solo Finance v1) | adaptador explícito a `AreaChart` o `HeatmapChart` |
+| A2UI | Catálogo | Adaptador React Native existente |
+| --- | --- | --- |
+| `Text` | Basic, v1, v2 | `TextBlock` |
+| `Button` | Basic, v1, v2 | `ActionButton` |
+| `Card` | Basic, v1, v2 | `Card` |
+| `Column` | Basic, v1, v2 | `Stack` vertical |
+| `TextField`, `DateTimeInput`, `Slider` | solo Basic | `A2UIInput` (ver [formularios y acciones](docs/a2ui/input-actions.md)) |
+| `Chart` | v1 y v2 | adaptador explícito a `AreaChart` o `HeatmapChart` |
+| `BankingView` | solo v2 | `A2UIBankingView` (ver [vistas financieras](docs/a2ui/financial-views.md)) |
 
-Componentes Basic no implementados, `Chart` bajo Basic, catálogos desconocidos y propiedades adicionales fallan de forma acotada. El componente de red `Chart` usa `{kind: "area" | "heatmap", accessibleSummary?, props}` y vuelve a validar el valor resuelto antes de delegar. Acepta hasta 240 puntos y cuatro series de área o 500 celdas de heatmap; exige identificadores de serie estables, números finitos y fechas reales, y permite arreglos vacíos para reutilizar los estados vacíos existentes. No acepta callbacks, estilos, formateadores, elementos React, nombres de componente ni valores ejecutables. La galería incluye previews locales de ambos mensajes Finance completos.
+Componentes Basic no implementados, un componente fuera del catálogo que lo declara (`Chart` bajo Basic, `BankingView` fuera de v2), catálogos desconocidos y propiedades adicionales fallan de forma acotada. El componente de red `Chart` usa `{kind: "area" | "heatmap", accessibleSummary?, props}` y vuelve a validar el valor resuelto antes de delegar. Acepta hasta 240 puntos y cuatro series de área o 500 celdas de heatmap; exige identificadores de serie estables, números finitos y fechas reales, y permite arreglos vacíos para reutilizar los estados vacíos existentes. No acepta callbacks, estilos, formateadores, elementos React, nombres de componente ni valores ejecutables. La galería incluye previews locales de ambos mensajes Finance completos.
 
 El MCP publica la plantilla separada `data_chart.json` en `a2ui://finance/data-chart`. `visualize_allowed_data` consulta solo columnas reflejadas y permitidas, omite y cuenta filas con nulos requeridos, y devuelve texto, datos de dominio y un único `updateDataModel`. El agente obtiene y cachea la plantilla, la valida con su copia sincronizada del catálogo y entrega la secuencia completa; Expo nunca descarga recursos MCP.
 
@@ -116,7 +131,7 @@ Comprobaciones del despliegue: `/health` y `/openapi.json` respondieron HTTP 200
 
 - Cada respuesta válida actualiza el texto y procesa sus mensajes en orden. Una respuesta solo textual o con A2UI inválido conserva las últimas superficies válidas. Si falla la red o el contrato HTTP, conserva la última respuesta y ofrece reintentar. Las consultas tienen un límite de 60 segundos y pueden cancelarse.
 - Cambiar de persona o cerrar sesión descarta la respuesta y cancela peticiones pendientes. Una respuesta anterior no puede reemplazar la de una consulta más reciente.
-- Los botones producen la acción oficial con `name`, `surfaceId`, `sourceComponentId`, `timestamp` y el `context` declarado resuelto contra el modelo de datos. El adaptador conserva temporalmente la acción serializada dentro de `query` y envía `user_id` como campo separado; el renderer no conoce esta compatibilidad. Las acciones siguen siendo consultas o simulaciones de solo lectura.
+- Los botones producen la acción oficial con `name`, `surfaceId`, `sourceComponentId`, `timestamp` y el `context` declarado resuelto contra el modelo de datos. El cuerpo enviado es `{ action, user_id }`: cuando hay acción **no** se envía `query` (el texto `Acción: <name>` solo se usa localmente para el historial y las validaciones). El agente conserva un parser heredado para la forma serializada, pero este cliente ya no la produce. Además de las acciones de solo lectura (`request_financial_view`), los botones de formulario disparan las escrituras acotadas de presupuestos y metas descritas en [formularios y acciones](docs/a2ui/input-actions.md).
 - La biblioteca `src/generative-ui` continúa disponible; su árbol `GenerativeNode` es un registro local, no un contrato que el agente desplegado emita actualmente.
 
 El agente local ya puede resolver y combinar superficies Basic y Finance cuando una llamada MCP devuelve `_meta.ui`. Para usar el gráfico con preguntas bancarias reales todavía se debe desplegar esta versión de los tres repositorios, configurar el allowlist de tablas/vistas y enseñar al flujo de selección de herramientas del agente cuándo y con qué columnas invocar `visualize_allowed_data`.

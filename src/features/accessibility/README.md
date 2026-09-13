@@ -2,6 +2,8 @@
 
 Configuración → Accesibilidad permite editar diez variables validadas por Zod. `AccessibilityProvider`, dentro de `SessionProvider`, las expone con `useAccessibility()` a las pantallas, biblioteca local y renderer A2UI.
 
+**El panel de Configuración → Accesibilidad es la única forma de fijar estas preferencias**, y está disponible también desde la pantalla de inicio de sesión (`src/app/sign-in.tsx` monta `AccessibilitySettings` completo antes de que exista una cuenta). El cuestionario de onboarding que se llenaba durante el registro **ya no existe**: `onboarding.ts` y `registration-questions.tsx` fueron eliminados porque quedaron inalcanzables y derivaban un segundo juego de valores a partir de preguntas indirectas. `tests/accessibility-privacy.test.mjs` verifica que no reaparezcan.
+
 | Variable | Opciones | Aplicación |
 | --- | --- | --- |
 | `textScale` | 1, 1.25, 1.5, 2 | Textos y campos; se combina con la escala del sistema, sin límite impuesto por la app. |
@@ -21,7 +23,7 @@ Los elementos SVG y las cuadrículas compactas conservan su geometría de gráfi
 
 ## Persistencia
 
-AsyncStorage usa `accessibility:v1:guest` o `accessibility:v1:user:<id>`. Son preferencias de cada perfil **en este dispositivo**, sin sincronización en Supabase ni envío al agente/MCP. El cierre de sesión conserva estas preferencias y cambia al perfil de invitado. La carga valida versión, opciones y valores; ante errores muestra recuperación mediante reintento o restablecimiento. Las escrituras se serializan para evitar que cambios rápidos se guarden fuera de orden.
+AsyncStorage usa `accessibility:v1:guest` o `accessibility:v1:user:<id>`. Son preferencias de cada perfil **en este dispositivo**, sin sincronización en Supabase ni envío al agente/MCP. Tampoco llegan a `user_metadata`: el alta de cuenta (`auth-service.ts:registerAccount`) envía exclusivamente `full_name`, y una prueba lo afirma en lugar de suponerlo. El cierre de sesión conserva estas preferencias y cambia al perfil de invitado. La carga valida versión, opciones y valores; ante errores muestra recuperación mediante reintento o restablecimiento. Las escrituras se serializan para evitar que cambios rápidos se guarden fuera de orden.
 
 ## Componentes nuevos y A2UI
 

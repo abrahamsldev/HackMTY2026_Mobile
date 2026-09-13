@@ -7,14 +7,14 @@ import { parseAgentReply } from '../src/features/assistant/agent.ts';
 
 const read = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const registry = read('../src/features/a2ui/a2ui_actions/actions.json');
-const templates = '../hackmty2026-mcp/src/supabase_mcp/a2ui_support/templates/';
+const templates = '../../hackmty2026-mcp/src/supabase_mcp/a2ui_support/templates/';
 const data = { name: 'Vacaciones', category: 'groceries', limit_amount: 3000, start_date: '2026-09-13', end_date: '2026-10-13', target_amount: 18000, target_date: '2027-01-01', suggested_monthly_contribution: 1500, id: 'f52827d7-0213-4df4-9621-14775d6228d4' };
 
 test('Expo, MCP and agent ship identical input/action registries and every form is renderable', () => {
   for (const file of ['inputs', 'actions']) {
     const expected = read(`../src/features/a2ui/a2ui_actions/${file}.json`);
-    assert.deepEqual(read(`../hackmty2026-mcp/src/supabase_mcp/a2ui_actions/${file}.json`), expected);
-    assert.deepEqual(read(`../hackmty2026-agent/src/fluidbank_orchestrator/a2ui_actions/${file}.json`), expected);
+    assert.deepEqual(read(`../../hackmty2026-mcp/src/supabase_mcp/a2ui_actions/${file}.json`), expected);
+    assert.deepEqual(read(`../../hackmty2026/src/fluidbank_orchestrator/a2ui_actions/${file}.json`), expected);
   }
   for (const action of registry.actions) {
     assert.equal(action.inputCount, action.inputs.length);

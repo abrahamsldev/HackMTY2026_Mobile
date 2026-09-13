@@ -257,7 +257,7 @@ function AssistantWorkspace({
 
   return (
     <View style={[styles.workspace, { backgroundColor: theme.background }]}>
-      <VoiceProcessingOverlay phase={voice.phase} level={voice.level} onStop={handleVoicePress} />
+      <VoiceProcessingOverlay phase={voice.phase} level={voice.level} status={assistant.status} onStop={handleVoicePress} />
       <View
         accessibilityElementsHidden={voiceOverlayActive}
         importantForAccessibility={voiceOverlayActive ? "no-hide-descendants" : "auto"}
@@ -352,6 +352,7 @@ function AssistantWorkspace({
                       content={activeResponse?.reply.message}
                       surfaces={activeSurfaces}
                       isPending={assistant.pending && !assistant.actionStatus}
+                      agentStatus={assistant.status}
                       error={assistant.error}
                       a2uiError={activeResponse?.reply.a2uiError}
                       onRetry={handleRetry}
@@ -379,6 +380,7 @@ function AssistantWorkspace({
             onSubmit={handleSubmit}
             voice={voiceControl}
             loading={(assistant.pending && !assistant.actionStatus) || voiceProcessing}
+            status={assistant.status}
             disabled={!assistant.isConfigured || Boolean(editingTurnId)}
             bottomInset={Math.max(insets.bottom, Spacing.three)}
           />

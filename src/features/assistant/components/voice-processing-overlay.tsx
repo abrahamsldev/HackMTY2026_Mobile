@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
@@ -9,12 +9,15 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { Pressable } from '@/components/accessible-primitives';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { banortePalette } from '@/features/accessibility/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+import { AgentStatusLabel } from './assistant-typing-indicator';
 import { BanorteLoaderIcon } from './banorte-loader-icon';
 import { VoiceOrb } from './voice-orb';
+import type { AgentStatusId } from '../agent-status';
 import type { VoiceFlowPhase } from '../use-voice-flow';
 
 const MORPH_DURATION_MS = 240;
@@ -24,6 +27,8 @@ export type VoiceProcessingOverlayProps = {
   phase: VoiceFlowPhase;
   level: SharedValue<number>;
   onStop: () => void;
+  /** Coarse phase reported by the backend for the running turn. */
+  status?: AgentStatusId | null;
 };
 
 const ORB_ACTIVE_PHASES: ReadonlySet<VoiceFlowPhase> = new Set(['starting', 'listening', 'stopping']);
@@ -39,7 +44,7 @@ const SPINNER_ACTIVE_PHASES: ReadonlySet<VoiceFlowPhase> = new Set([
  * mounted behind an opaque layer so drafts survive, but no competing UI is
  * visible while recording, transcribing, submitting or waiting for the agent.
  */
-export function VoiceProcessingOverlay({ phase, level, onStop }: VoiceProcessingOverlayProps) {
+export function VoiceProcessingOverlay({ phase, level, onStop, status }: VoiceProcessingOverlayProps) {
   const { settings } = useAccessibility();
   const theme = useTheme();
   const reduceMotion = settings.reduceMotion;
@@ -99,6 +104,10 @@ export function VoiceProcessingOverlay({ phase, level, onStop }: VoiceProcessing
             </View>
           </Animated.View>
         </View>
+        {/* The slot stays mounted so the orb never shifts as it morphs. */}
+        <View style={styles.orbStatus}>
+          {showSpinner && phase !== 'done' && <AgentStatusLabel status={status} centered />}
+        </View>
       </View>
     </View>
   );
@@ -126,6 +135,12 @@ const styles = StyleSheet.create({
     height: ORB_SIZE * 2.4,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  orbStatus: {
+    width: ORB_SIZE * 2.4,
+    minHeight: 20,
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
   stageLayer: {
     position: 'absolute',

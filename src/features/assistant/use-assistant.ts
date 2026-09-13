@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 import { type A2UIAction, type A2UISurfaceState } from '../a2ui';
 import { AssistantResponseProcessor } from './response-processor';
-import { AgentRequestError, requestAgent, requestAgentAction, transcribeAudioWebhook, type AgentReply } from './agent';
+import { AgentRequestError, requestAgentAction, requestAgentStream, transcribeAudioWebhook, type AgentReply } from './agent';
+import { type AgentStatusId } from './agent-status';
 import { supabase } from '@/lib/supabase';
 import { verifySession } from '../auth/auth-service';
 import { agentBaseUrl, transcriptionUrl } from './connection';
@@ -16,6 +17,9 @@ type AssistantSurface = {
 export function useAssistant(currentUserId: string) {
   const [surface, setSurface] = useState<AssistantSurface | null>(null);
   const [pending, setPending] = useState(false);
+  // The coarse phase the backend last reported for the running turn. Set only
+  // from the stream; never inferred, timed or advanced locally.
+  const [status, setStatus] = useState<AgentStatusId | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionStatus, setActionStatus] = useState<{ status: 'pending' | 'success' | 'failure'; message: string } | null>(null);
   const [lastQuery, setLastQuery] = useState('');
@@ -40,6 +44,7 @@ export function useAssistant(currentUserId: string) {
     lastRequest.current = { query: normalized, action };
     setLastQuery(normalized);
     setPending(true);
+    setStatus(null);
     setError(null);
     setActionStatus(action ? { status: 'pending', message: 'Enviando acción…' } : null);
     try {
@@ -52,7 +57,12 @@ export function useAssistant(currentUserId: string) {
       const accessToken = verified.access_token;
       const reply = action
         ? await requestAgentAction({ baseUrl: agentBaseUrl, action, userId: currentUserId, accessToken, signal: controller.signal })
-        : await requestAgent({ baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, accessToken, signal: controller.signal });
+        : await requestAgentStream({
+          baseUrl: agentBaseUrl, query: normalized, userId: currentUserId, accessToken, signal: controller.signal,
+          // A phase the backend repeats keeps the same state, so the label
+          // neither re-renders nor re-announces.
+          onStatus: next => { if (request.current.id === id) setStatus(current => current === next ? current : next); },
+        });
       if (request.current.id === id) {
         if (action) {
           setActionStatus(reply.actionResult ?? (reply.a2uiError
@@ -79,6 +89,7 @@ export function useAssistant(currentUserId: string) {
         request.current.controller = undefined;
         inFlight.current = false;
         setPending(false);
+        setStatus(null);
       }
     }
   }
@@ -101,6 +112,7 @@ export function useAssistant(currentUserId: string) {
     request.current.controller = undefined;
     inFlight.current = false;
     setPending(false);
+    setStatus(null);
     setActionStatus(previous => previous?.status === 'pending' ? { status: 'failure', message: 'Consulta cancelada; no se pudo confirmar el resultado de la acción.' } : previous);
   }
 
@@ -113,5 +125,5 @@ export function useAssistant(currentUserId: string) {
     if (previous) return run(previous.query, previous.action);
   }
 
-  return { surface, pending, error, actionStatus, lastQuery, send, transcribe, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry };
+  return { surface, pending, status, error, actionStatus, lastQuery, send, transcribe, dispatch, cancel, isConfigured: Boolean(agentBaseUrl), retry };
 }

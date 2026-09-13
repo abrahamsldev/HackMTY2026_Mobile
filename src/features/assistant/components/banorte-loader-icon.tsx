@@ -83,7 +83,14 @@ export function BanorteLoaderIcon({ stage, size = 44, checkmarkColor = '#FFFFFF'
 
   return (
     <Animated.View style={{ transform: [{ rotate: spin }] }}>
-      <Image source={banorteLogo} style={[styles.logoImage, { width: size, height: size }]} resizeMode="contain" />
+      {/* Decorative: the AgentStatusLabel below the orb carries the meaning. */}
+      <Image
+        accessible={false}
+        importantForAccessibility="no"
+        source={banorteLogo}
+        style={[styles.logoImage, { width: size, height: size }]}
+        resizeMode="contain"
+      />
     </Animated.View>
   );
 }

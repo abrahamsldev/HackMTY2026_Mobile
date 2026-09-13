@@ -9,6 +9,7 @@ import { type A2UIAction, type A2UISurfaceState } from '@/features/a2ui';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { useTheme } from '@/hooks/use-theme';
 
+import type { AgentStatusId } from '../agent-status';
 import { A2UISurface } from './a2ui-surface';
 import { AssistantErrorMessage } from './assistant-error-message';
 import { AssistantStatusIcon, type AssistantStatus } from './assistant-status-icon';
@@ -19,6 +20,8 @@ export type ChatMessageProps = {
   content?: string;
   surfaces?: readonly A2UISurfaceState[];
   isPending?: boolean;
+  /** Coarse phase reported by the backend for the running turn. */
+  agentStatus?: AgentStatusId | null;
   error?: string | null;
   a2uiError?: string | null;
   onRetry?: () => void;
@@ -39,6 +42,7 @@ export function ChatMessage({
   content,
   surfaces,
   isPending = false,
+  agentStatus,
   error,
   a2uiError,
   onRetry,
@@ -244,7 +248,7 @@ export function ChatMessage({
           </Animated.View>
         )}
         {isPending ? (
-          <AssistantTypingIndicator onCancel={onCancel} />
+          <AssistantTypingIndicator status={agentStatus} onCancel={onCancel} />
         ) : (
           <ThemedText type="smallBold" themeColor="textSecondary" style={styles.assistantLabel}>
             Asistente Banorte

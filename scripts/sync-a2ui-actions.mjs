@@ -3,7 +3,9 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const mcp = path.join(root, 'hackmty2026-mcp/src/supabase_mcp');
+// The MCP server and the orchestrator are siblings of this repository, not children of it.
+const siblings = path.resolve(root, '..');
+const mcp = path.join(siblings, 'hackmty2026-mcp/src/supabase_mcp');
 const check = process.argv.includes('--check');
 function emit(target, value) {
   const encoded = JSON.stringify(value, null, 2) + '\n';
@@ -14,9 +16,9 @@ function emit(target, value) {
 const read = name => JSON.parse(readFileSync(path.join(mcp, 'a2ui_actions', `${name}.json`), 'utf8'));
 const inputs = read('inputs');
 const registry = read('actions');
-for (const relative of ['src/features/a2ui/a2ui_actions', 'hackmty2026-agent/src/fluidbank_orchestrator/a2ui_actions']) {
-  emit(path.join(root, relative, 'inputs.json'), inputs);
-  emit(path.join(root, relative, 'actions.json'), registry);
+for (const target of [path.join(root, 'src/features/a2ui/a2ui_actions'), path.join(siblings, 'hackmty2026/src/fluidbank_orchestrator/a2ui_actions')]) {
+  emit(path.join(target, 'inputs.json'), inputs);
+  emit(path.join(target, 'actions.json'), registry);
 }
 for (const action of registry.actions) {
   if (action.inputCount !== action.inputs.length) throw new Error(`Cantidad incorrecta: ${action.name}`);

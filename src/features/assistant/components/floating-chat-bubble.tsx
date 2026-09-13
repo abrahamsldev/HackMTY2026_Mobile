@@ -4,21 +4,22 @@ import {
   Easing,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
   View,
   useWindowDimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { type TextInputHandle } from '@/components/accessible-primitives';
+import { Pressable, type TextInputHandle } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { useTheme } from '@/hooks/use-theme';
 
+import { AgentStatusLabel } from './assistant-typing-indicator';
 import { BanorteLoaderIcon } from './banorte-loader-icon';
 import { ChatComposer, type VoiceControl } from './chat-composer';
+import type { AgentStatusId } from '../agent-status';
 
 function CloseIcon({ color }: { color: string }) {
   return (
@@ -44,9 +45,13 @@ export type FloatingChatBubbleProps = {
   inputRef?: React.RefObject<TextInputHandle | null>;
   bottomInset?: number;
   onRevealReady?: () => void;
+  /** Coarse phase reported by the backend for the running turn. */
+  status?: AgentStatusId | null;
 };
 
 type ButtonStage = 'idle' | 'traveling_up' | 'thinking' | 'checkmark' | 'traveling_down';
+
+const ORB_STATUS_WIDTH = 280;
 
 export function FloatingChatBubble({
   value,
@@ -58,6 +63,7 @@ export function FloatingChatBubble({
   inputRef,
   bottomInset = 24,
   onRevealReady,
+  status,
 }: FloatingChatBubbleProps) {
   const theme = useTheme();
   const { settings } = useAccessibility();
@@ -224,6 +230,9 @@ export function FloatingChatBubble({
   );
 
   const isAtCenter = stage === 'thinking' || stage === 'checkmark' || stage === 'traveling_up';
+  // Only while the turn is actually running: the checkmark and the trip back
+  // down mean it is over, and nothing should still claim to be working.
+  const showStatus = loading && (stage === 'thinking' || stage === 'traveling_up');
 
   return (
     <>
@@ -249,6 +258,11 @@ export function FloatingChatBubble({
               ]}>
               <BanorteLoaderIcon stage={stage === 'checkmark' ? 'checkmark' : 'thinking'} />
             </Pressable>
+            {showStatus && (
+              <View style={styles.orbStatus} pointerEvents="none">
+                <AgentStatusLabel status={status} centered />
+              </View>
+            )}
           </Animated.View>
         </View>
       )}
@@ -397,11 +411,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     letterSpacing: 0.4,
   },
+  // No fixed 32-point box: the accessible Pressable raises this to the current
+  // minimum target size (48, or 64 with large targets).
   closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Absolutely placed under the 64-point button so the label can never move
+  // the orb: its resting position and its travel to the centre stay exact.
+  orbStatus: {
+    position: 'absolute',
+    top: 64 + Spacing.two,
+    left: (64 - ORB_STATUS_WIDTH) / 2,
+    width: ORB_STATUS_WIDTH,
+    alignItems: 'center',
   },
 });
