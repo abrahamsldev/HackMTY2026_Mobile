@@ -74,9 +74,36 @@ export async function transcribeAudioWebhook({
   }, timeoutMs);
 
   try {
+    // Read the local recording into a real Blob instead of relying on React
+    // Native's `{ uri, name, type }` FormData shape: that trick depends on a
+    // native bridge that doesn't exist on web (Expo also targets web), where
+    // it silently gets stringified instead of attached as file content.
+    let recordingBlob: Blob;
+    try {
+      const source = await fetch(uri);
+      if (!source.ok) throw new Error();
+      recordingBlob = await source.blob();
+    } catch {
+      throw new AgentRequestError('response', 'No se pudo leer la grabación de audio.');
+    }
+    if (recordingBlob.size === 0) {
+      throw new AgentRequestError('response', 'La grabación de audio está vacía.');
+    }
+
+    const mimeType = recordingBlob.type || 'audio/m4a';
+    const extension = mimeType.includes('webm')
+      ? 'webm'
+      : mimeType.includes('wav')
+      ? 'wav'
+      : mimeType.includes('mpeg') || mimeType.includes('mp3')
+      ? 'mp3'
+      : mimeType.includes('ogg')
+      ? 'ogg'
+      : 'm4a';
+
     const body = new FormData();
     // n8n's Webhook node reads the upload from the binary property named "data".
-    body.append('data', { uri, name: 'recording.m4a', type: 'audio/m4a' } as unknown as Blob);
+    body.append('data', recordingBlob, `recording.${extension}`);
     const response = await fetchImpl(endpoint.toString(), {
       method: 'POST',
       headers: { Accept: 'application/json' },
