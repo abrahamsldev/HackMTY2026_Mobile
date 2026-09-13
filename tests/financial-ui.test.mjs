@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { bankingViewSchema, ownedBalance, budgetProgress, filterTransactions, transactionDay } from '../src/features/financial-ui/model.ts';
+import { bankingViewSchema, ownedBalance, budgetProgress, creditUtilization, daysUntil, filterTransactions, transactionDay, trendDelta } from '../src/features/financial-ui/model.ts';
+import { z } from 'zod';
+import { A2UI_BANKING_CATALOG_ID } from '../src/features/a2ui/types.ts';
 import { financialViewCatalog } from '../src/features/financial-ui/catalog.ts';
 import { bankingViewMessages } from '../src/features/financial-ui/a2ui.ts';
 import { A2UIMessageProcessor } from '../src/features/a2ui/message-processor.ts';
@@ -91,4 +93,60 @@ test('network inputs reject missing data, sensitive identifiers, duplicates, NaN
   const oversized = example('savings-goals');
   oversized.goals = Array.from({ length: 31 }, (_, i) => ({ ...oversized.goals[0], id: String(i) }));
   assert.equal(bankingViewSchema.safeParse(oversized).success, false);
+});
+
+test('the exported schema still matches the copy MCP packages as Finance v2', () => {
+  // MCP owns https://fluidbank.app/a2ui/catalogs/finance/v2 and packages this exact
+  // document. Editing the Zod contract without re-running the export and copying the
+  // result into the MCP catalogs directory would silently split the two repositories.
+  const exported = { $id: `${A2UI_BANKING_CATALOG_ID}/banking-view.schema.json`, ...z.toJSONSchema(bankingViewSchema, { io: 'input' }) };
+  assert.deepEqual(exported, read('./fixtures/finance-v2-banking-view.schema.json'));
+  assert.equal(JSON.stringify(exported).includes('$ref'), false);
+});
+
+test('a balance answer carries the masked cards behind the totals', () => {
+  const data = bankingViewSchema.parse(example('financial-summary'));
+  assert.equal(data.totalOwnedBalance, ownedBalance(data.accounts));
+  assert.deepEqual(data.cards.map(card => card.cardType), ['debit', 'credit']);
+  // Only the tail travels: a card number, CVV or full expiry has no property to ride in.
+  for (const field of [{ pan: '4111111111111111' }, { cvv: '123' }, { expires: '2028-11-04' }, { lastFour: '4111111111111111' }]) {
+    const invalid = example('financial-summary');
+    invalid.cards[0] = { ...invalid.cards[0], ...field };
+    assert.equal(bankingViewSchema.safeParse(invalid).success, false);
+  }
+  const orphan = example('financial-summary');
+  orphan.cards[0].accountId = 'not-an-account-of-this-summary';
+  assert.equal(bankingViewSchema.safeParse(orphan).success, false);
+});
+
+test('credit terms stay internally consistent or the view is rejected', () => {
+  const data = bankingViewSchema.parse(example('credit-card'));
+  assert.deepEqual(creditUtilization(data.debt, data.creditLimit), { percentage: 85, level: 'high' });
+  const overLimit = example('credit-card');
+  overLimit.availableCredit = overLimit.creditLimit + 1;
+  assert.equal(bankingViewSchema.safeParse(overLimit).success, false);
+  const lateCutoff = example('credit-card');
+  lateCutoff.cutoffDate = '2026-09-26';
+  assert.equal(bankingViewSchema.safeParse(lateCutoff).success, false);
+  const debitCard = example('credit-card');
+  debitCard.card.cardType = 'debit';
+  assert.equal(bankingViewSchema.safeParse(debitCard).success, false);
+  const mismatched = example('card-security');
+  mismatched.card.status = 'blocked';
+  assert.equal(bankingViewSchema.safeParse(mismatched).success, false);
+});
+
+test('the spending headline is the producer\'s total and never contradicts its slices', () => {
+  const data = bankingViewSchema.parse(example('spending-analysis'));
+  assert.equal(data.totalSpent, 15000);
+  assert.deepEqual(trendDelta(data.totalSpent, data.previousTotal), { amount: 1000, percentage: 1000 / 14000 * 100, direction: 'up' });
+  const inflated = example('spending-analysis');
+  inflated.totalSpent = 100;
+  assert.equal(bankingViewSchema.safeParse(inflated).success, false);
+});
+
+test('the payment countdown reads calendar days in Monterrey, not UTC instants', () => {
+  assert.equal(daysUntil('2026-09-25', new Date('2026-09-12T02:00:00Z')), 14);
+  assert.equal(daysUntil('2026-09-12', new Date('2026-09-12T18:00:00Z')), 0);
+  assert.equal(daysUntil('2026-09-10', new Date('2026-09-12T18:00:00Z')), -2);
 });

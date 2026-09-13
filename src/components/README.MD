@@ -172,6 +172,10 @@ HackMTY2026_Mobile/
 | `TransactionList` | Contenedor de movimientos recientes. |
 | `TransactionItem` | Movimiento individual con monto, fecha, categoria y estado. |
 | `SpendingCategoryChart` | Gastos agregados por categoria mediante barras horizontales. |
+| `PaymentCard` | Cara de tarjeta de credito o debito: red, numero enmascarado, vigencia `YYYY-MM`, estado y monto opcional. Nunca recibe PAN, CVV ni dia de vencimiento. |
+| `CreditUtilizationGauge` | Arco SVG del uso de la linea de credito con umbrales sano/moderado/alto/al limite, usado y disponible. |
+| `DueDateCountdown` | Dias restantes para la fecha limite en calendario de Monterrey, con fecha de corte opcional y tono por urgencia. |
+| `TrendIndicator` | Variacion contra el periodo anterior en monto y porcentaje; `inverse` marca que subir es mala noticia. |
 
 ## Contrato de UI generativa
 
