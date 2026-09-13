@@ -40,6 +40,7 @@ export function extractFirstName(
 }
 
 const DEFAULT_SUGGESTIONS = [
+  'Crear una transferencia',
   'Quiero crear un presupuesto',
   'Quiero pagar mi tarjeta de crédito',
   'Muéstrame mi resumen financiero',
