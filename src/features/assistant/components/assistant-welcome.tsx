@@ -3,10 +3,12 @@ import { Animated, Platform, StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import type { A2UIActionOrigin } from '@/features/a2ui';
-import { useAccessibility } from '@/features/accessibility/accessibility-provider';
+import { useMotion } from '@/hooks/use-motion';
 import { useTheme } from '@/hooks/use-theme';
+
+import { AssistantMark } from './assistant-mark';
 
 export function extractFirstName(
   userMetadata?: Record<string, unknown> | null,
@@ -39,34 +41,34 @@ export function extractFirstName(
   return null;
 }
 
+/**
+ * Two openers, not a menu: one that reads data and one that starts an
+ * operation, so the pair shows both halves of what the assistant does without
+ * turning the first screen into a list of features. Everything else is typed or
+ * spoken.
+ */
 const DEFAULT_SUGGESTIONS = [
-  'Quiero crear un presupuesto',
-  'Quiero pagar mi tarjeta de crédito',
   'Muéstrame mi resumen financiero',
-  'Muéstrame mis movimientos recientes',
+  'Quiero pagar mi tarjeta de crédito',
 ];
 
 export type AssistantWelcomeProps = {
   firstName: string | null;
   onSelectSuggestion: (question: string, origin?: A2UIActionOrigin) => void;
-  onOpenQuestionBank?: () => void;
   disabled?: boolean;
 };
 
 export function AssistantWelcome({
   firstName,
   onSelectSuggestion,
-  onOpenQuestionBank,
   disabled = false,
 }: AssistantWelcomeProps) {
-  const theme = useTheme();
-  const { settings } = useAccessibility();
-
-  const [animOpacity] = useState(() => new Animated.Value(settings.reduceMotion ? 1 : 0));
-  const [animTranslateY] = useState(() => new Animated.Value(settings.reduceMotion ? 0 : 8));
+  const motion = useMotion();
+  const [animOpacity] = useState(() => new Animated.Value(motion.enabled ? 0 : 1));
+  const [animTranslateY] = useState(() => new Animated.Value(motion.enabled ? 8 : 0));
 
   useEffect(() => {
-    if (settings.reduceMotion) {
+    if (!motion.enabled) {
       animOpacity.setValue(1);
       animTranslateY.setValue(0);
       return;
@@ -75,16 +77,16 @@ export function AssistantWelcome({
     Animated.parallel([
       Animated.timing(animOpacity, {
         toValue: 1,
-        duration: 560,
+        duration: motion.duration.entrance,
         useNativeDriver: Platform.OS !== 'web',
       }),
       Animated.timing(animTranslateY, {
         toValue: 0,
-        duration: 560,
+        duration: motion.duration.entrance,
         useNativeDriver: Platform.OS !== 'web',
       }),
     ]).start();
-  }, [settings.reduceMotion, animOpacity, animTranslateY]);
+  }, [motion.enabled, motion.duration.entrance, animOpacity, animTranslateY]);
 
   const greeting = firstName ? `Hola, ${firstName}` : 'Hola';
 
@@ -97,48 +99,26 @@ export function AssistantWelcome({
           transform: [{ translateY: animTranslateY }],
         },
       ]}>
+      <AssistantMark />
+
       <View style={styles.header}>
-        <ThemedText style={styles.greeting}>{greeting}</ThemedText>
-        <ThemedText style={styles.prompt}>¿Cómo puedo ayudarte hoy?</ThemedText>
-        <ThemedText style={styles.subtitle} themeColor="textSecondary">
-          Consulta movimientos, analiza presupuestos o simula escenarios financieros.
+        <ThemedText style={styles.greeting} themeColor="textSecondary">
+          {greeting}
+        </ThemedText>
+        <ThemedText accessibilityRole="header" style={styles.prompt}>
+          ¿Cómo puedo ayudarte hoy?
         </ThemedText>
       </View>
 
-      <View style={styles.suggestionsContainer}>
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.suggestionsTitle}>
-          Sugerencias rápidas
-        </ThemedText>
-        <View style={styles.chipsRow}>
-          {DEFAULT_SUGGESTIONS.map((suggestion) => (
-            <QuickSuggestion
-              key={suggestion}
-              suggestion={suggestion}
-              disabled={disabled}
-              onSelect={onSelectSuggestion}
-            />
-          ))}
-        </View>
-
-        {onOpenQuestionBank && (
-          <Pressable
+      <View style={styles.chipsRow}>
+        {DEFAULT_SUGGESTIONS.map((suggestion) => (
+          <QuickSuggestion
+            key={suggestion}
+            suggestion={suggestion}
             disabled={disabled}
-            accessibilityRole="button"
-            accessibilityLabel="Ver banco de preguntas completo"
-            accessibilityState={{ disabled }}
-            onPress={onOpenQuestionBank}
-            style={({ pressed }) => [
-              styles.moreQuestionsButton,
-              {
-                opacity: pressed ? 0.6 : 1,
-                transform: [{ scale: pressed && !settings.reduceMotion ? 0.985 : 1 }],
-              },
-            ]}>
-            <ThemedText type="smallBold" style={{ color: theme.accent }}>
-              Ver banco de preguntas
-            </ThemedText>
-          </Pressable>
-        )}
+            onSelect={onSelectSuggestion}
+          />
+        ))}
       </View>
     </Animated.View>
   );
@@ -154,7 +134,7 @@ function QuickSuggestion({
   onSelect: (question: string, origin?: A2UIActionOrigin) => void;
 }) {
   const theme = useTheme();
-  const { settings } = useAccessibility();
+  const motion = useMotion();
   const buttonRef = useRef<View>(null);
 
   function handlePress() {
@@ -184,12 +164,12 @@ function QuickSuggestion({
         styles.chip,
         {
           backgroundColor: pressed ? theme.backgroundElement : theme.background,
-          borderColor: theme.accent,
+          borderColor: theme.border,
           opacity: disabled ? 0.6 : 1,
-          transform: [{ scale: pressed && !settings.reduceMotion ? 0.985 : 1 }],
+          transform: [{ scale: pressed && motion.enabled ? 0.985 : 1 }],
         },
       ]}>
-      <ThemedText type="smallBold" style={styles.chipText}>
+      <ThemedText type="small" style={styles.chipText} themeColor="textSecondary">
         {suggestion}
       </ThemedText>
     </Pressable>
@@ -199,76 +179,47 @@ function QuickSuggestion({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    gap: Spacing.four,
-    paddingVertical: Spacing.three,
+    gap: Spacing.lg,
     width: '100%',
   },
   header: {
     alignItems: 'center',
-    gap: Spacing.one,
-    textAlign: 'center',
+    gap: Spacing.xxs,
   },
   greeting: {
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: '500',
-    opacity: 0.9,
-    textAlign: 'center',
-  },
-  prompt: {
-    fontSize: 28,
-    lineHeight: 36,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  subtitle: {
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
-    marginTop: Spacing.half,
-    maxWidth: 520,
   },
-  suggestionsContainer: {
-    width: '100%',
-    alignItems: 'center',
-    gap: Spacing.two,
-    marginTop: Spacing.two,
-  },
-  suggestionsTitle: {
-    fontSize: 13,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+  prompt: {
+    fontSize: 26,
+    lineHeight: 34,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: Spacing.two,
-    maxWidth: 640,
+    gap: Spacing.sm,
+    maxWidth: 560,
     width: '100%',
   },
   chip: {
     flexBasis: '46%',
     flexGrow: 1,
-    maxWidth: 312,
-    borderRadius: 16,
-    borderWidth: 2,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    maxWidth: 272,
+    // A hairline pill, not an outlined button: these are openers, and the
+    // composer below them is the primary action.
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     minHeight: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
   chipText: {
-    fontSize: 14,
-    lineHeight: 20,
     textAlign: 'center',
-  },
-  moreQuestionsButton: {
-    marginTop: Spacing.one,
-    minHeight: 48,
-    justifyContent: 'center',
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.two,
   },
 });

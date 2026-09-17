@@ -93,16 +93,16 @@ export function InfoBanner({
 const styles = StyleSheet.create({
   banner: {
     width: '100%',
-    padding: Spacing.three,
-    borderRadius: Spacing.two,
+    padding: Spacing.md,
+    borderRadius: Spacing.sm,
   },
   content: {
-    gap: Spacing.half,
+    gap: Spacing.xxs,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.xs,
     flexWrap: 'wrap',
   },
   badge: {

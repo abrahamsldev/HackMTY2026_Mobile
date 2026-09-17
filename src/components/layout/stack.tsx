@@ -33,10 +33,10 @@ const justifyMap = {
 
 const spacingMap = {
   none: 0,
-  sm: Spacing.two,
-  md: Spacing.three,
-  lg: Spacing.four,
-  xl: Spacing.five,
+  sm: Spacing.sm,
+  md: Spacing.md,
+  lg: Spacing.lg,
+  xl: Spacing.xl,
 } as const;
 
 export function Stack({

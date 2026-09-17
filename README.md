@@ -49,6 +49,19 @@ La app obtiene el UUID de `session.user.id`, ya no de una tabla de correos demo,
 
 La copia local `hackmty2026-agent` incluye validación del token contra Supabase, rechazo de cuentas anónimas/no confirmadas, comprobación de coincidencia con `user_id` y CORS con Authorization. También evita sustituir datos faltantes por un perfil financiero estático. **Estos cambios deben desplegarse en el agente**: las rutas protegidas del móvil no protegen por sí solas un endpoint público. El agente necesita `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` (o `SUPABASE_ANON_KEY`) del mismo proyecto de Auth.
 
+## Sistema de diseño
+
+`src/constants/theme.ts` define los tokens: `Spacing` (`xxs`…`huge`), `Radius`, `Elevation`, `Typography` y `Motion`. Ningún componente escribe un color, un radio ni una duración literal.
+
+- **Color.** `accessibleColors()` en `src/features/accessibility/theme.ts` sigue siendo la única autoridad: deriva cada rol por paleta, por esquema y por alto contraste. A los roles existentes se suman `accentSurface`, `skeleton`, `skeletonHighlight`, `overlay` y `shadow`. `tests/accessibility.test.mjs` verifica el contraste de cada texto sobre cada superficie en las cuatro paletas.
+- **Tipografía.** Spline Sans se carga con `expo-font` (`src/hooks/use-app-fonts.ts`). Como una fuente cargada en runtime trae un archivo por peso, el peso se traduce a familia en `accessible-primitives`: los componentes siguen escribiendo `fontWeight` y nunca nombran una familia.
+- **Movimiento.** `useMotion()` (`src/hooks/use-motion.ts`) devuelve duraciones en cero cuando la persona —o el sistema— pide movimiento reducido. Es el único lugar donde se resuelve esa preferencia.
+- **Iconos.** `src/components/ui/icon.tsx` expone un vocabulario semántico (`send`, `mic`, `retry`…). iOS dibuja SF Symbols y Android Material Symbols vía `@expo/ui`; web conserva un set SVG porque `Icon` no renderiza ahí. Los nombres están tipados: un símbolo mal escrito no compila.
+- **Controles nativos.** `NativeHost` (`src/components/ui/native-host.tsx`) es la única puerta a `@expo/ui`. Propaga el esquema de color elegido en la app y el acento de la paleta, porque un `Host` sin ellos sigue al sistema y no a la app. Las etiquetas quedan fuera del host: un host no hereda la escala de texto de la app.
+- **Háptica.** `src/features/assistant/haptics.ts` fija el vocabulario: `selection` para elegir de una lista, `edge` para inicio/fin de grabación, y `settled`/`failed` solo cuando una petición que la persona esperaba se resuelve. Todas fallan en silencio.
+- **Esqueletos.** `SurfaceSkeleton` aparece únicamente cuando el backend reporta `building_ui` o `validating_ui`. Antes de esa fase no hay forma que anticipar, así que no se dibuja ninguna.
+- **Vidrio.** `GlassSurface` usa `expo-glass-effect` solo si la API existe en tiempo de ejecución y la persona no activó reducir transparencia, reducir movimiento ni alto contraste. Nunca es lo que hace legible el contenido.
+
 ## A2UI, agente y MCP
 
 El flujo financiero es **app → agente → MCP → Supabase → agente → app**. El móvil solo habla con el agente. No importa archivos de los otros repositorios ni usa claves de MCP. Supabase Auth mantiene una conexión separada para sesión y perfil.
@@ -138,7 +151,7 @@ El agente local ya puede resolver y combinar superficies Basic y Finance cuando 
 
 ## Banco de preguntas
 
-Inicio incluye un banco desplegable con **13 áreas y 25 preguntas**: resumen financiero, movimientos, análisis de gastos, flujo de efectivo, presupuestos, pagos recurrentes, tarjeta de crédito, deudas, transferencias, seguridad de tarjeta, metas de ahorro, información bancaria y educación financiera.
+Inicio abre, desde el botón «Ver banco de preguntas» y desde el compositor, una hoja con **13 áreas y 25 preguntas**: resumen financiero, movimientos, análisis de gastos, flujo de efectivo, presupuestos, pagos recurrentes, tarjeta de crédito, deudas, transferencias, seguridad de tarjeta, metas de ahorro, información bancaria y educación financiera.
 
 La fuente reutilizable es `src/features/assistant/question-bank.json`. Cada área conserva un identificador, las preguntas naturales, la vista esperada (`expectedDisplay`) y las acciones posibles (`possibleActions`). Estos últimos campos describen requisitos del producto, no capacidades implementadas del backend.
 

@@ -17,9 +17,9 @@ export function Divider({
 
   const insetMap = {
     none: 0,
-    sm: Spacing.two,
-    md: Spacing.four,
-    lg: Spacing.six,
+    sm: Spacing.sm,
+    md: Spacing.lg,
+    lg: Spacing.huge,
   };
 
   const marginHorizontal = insetMap[inset];

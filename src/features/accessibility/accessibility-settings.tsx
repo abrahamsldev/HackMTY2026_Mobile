@@ -1,8 +1,11 @@
+import { Switch } from '@expo/ui';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Pressable } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
 import { ActionButton } from '@/components/ui/action-button';
+import { AppIcon } from '@/components/ui/icon';
 import { InfoBanner } from '@/components/ui/info-banner';
+import { NativeHost } from '@/components/ui/native-host';
 import { useTheme } from '@/hooks/use-theme';
 import { useAccessibility } from './accessibility-provider';
 import type { AccessibilityPreferences } from './preferences';
@@ -11,10 +14,20 @@ export function AccessibilitySettings() {
   const { preferences, settings, ready, saving, error, update, reset } = useAccessibility();
   const theme = useTheme();
   function choices<K extends keyof AccessibilityPreferences>(key: K, label: string, items: { label: string; value: AccessibilityPreferences[K] }[]) {
-    return <View style={styles.group}><ThemedText type="smallBold">{label}</ThemedText><View style={styles.choices}>{items.map((item) => <Pressable key={String(item.value)} disabled={!ready} accessibilityRole="radio" accessibilityLabel={`${label}: ${item.label}`} accessibilityState={{ checked: preferences[key] === item.value, disabled: !ready }} onPress={() => update({ [key]: item.value })} style={[styles.choice, { backgroundColor: preferences[key] === item.value ? theme.backgroundSelected : theme.background, borderColor: preferences[key] === item.value ? theme.text : theme.border }]}><ThemedText>{preferences[key] === item.value ? '✓ ' : ''}{item.label}</ThemedText></Pressable>)}</View></View>;
+    return <View style={styles.group}><ThemedText type="smallBold">{label}</ThemedText><View style={styles.choices}>{items.map((item) => <Pressable key={String(item.value)} disabled={!ready} accessibilityRole="radio" accessibilityLabel={`${label}: ${item.label}`} accessibilityState={{ checked: preferences[key] === item.value, disabled: !ready }} onPress={() => update({ [key]: item.value })} style={[styles.choice, { backgroundColor: preferences[key] === item.value ? theme.backgroundSelected : theme.background, borderColor: preferences[key] === item.value ? theme.text : theme.border }]}><View style={styles.choiceLabel}>{preferences[key] === item.value && <AppIcon name="confirm" size={14} color={theme.text} />}<ThemedText>{item.label}</ThemedText></View></Pressable>)}</View></View>;
   }
   function toggle(key: 'boldText' | 'highContrast' | 'reduceMotion' | 'largeTargets' | 'chartDataTable', label: string, description: string) {
-    return <Pressable disabled={!ready} accessibilityRole="switch" accessibilityLabel={label} accessibilityHint={description} accessibilityState={{ checked: preferences[key], disabled: !ready }} onPress={() => update({ [key]: !preferences[key] })} style={[styles.toggle, { borderColor: theme.border }]}><ThemedText type="smallBold">{label} · {preferences[key] ? 'Activado' : 'Desactivado'}</ThemedText><ThemedText type="small" themeColor="textSecondary">{description}</ThemedText></Pressable>;
+    return <Pressable disabled={!ready} accessibilityRole="switch" accessibilityLabel={label} accessibilityHint={description} accessibilityState={{ checked: preferences[key], disabled: !ready }} onPress={() => update({ [key]: !preferences[key] })} style={[styles.toggle, { borderColor: theme.border }]}>
+      <View style={styles.toggleText}>
+        <ThemedText type="smallBold">{label}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{description}</ThemedText>
+      </View>
+      <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <NativeHost>
+          <Switch value={preferences[key]} disabled={!ready} onValueChange={(value) => update({ [key]: value })} />
+        </NativeHost>
+      </View>
+    </Pressable>;
   }
   return <View style={styles.section}>
     <ThemedText accessibilityRole="header" style={{ fontSize: 28 }}>Accesibilidad</ThemedText>
@@ -38,4 +51,4 @@ export function AccessibilitySettings() {
     <ActionButton label="Restablecer accesibilidad" variant="outline" disabled={!ready} onPress={reset} />
   </View>;
 }
-const styles = StyleSheet.create({ section: { gap: 20, paddingVertical: 24 }, group: { gap: 8 }, choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, choice: { padding: 12, borderWidth: 1, borderRadius: 10, justifyContent: 'center', maxWidth: '100%' }, toggle: { gap: 8, borderWidth: 1, borderRadius: 12, padding: 14 }, preview: { borderWidth: 1, borderRadius: 12, padding: 16, gap: 12 } });
+const styles = StyleSheet.create({ section: { gap: 20, paddingVertical: 24 }, group: { gap: 8 }, choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, choice: { padding: 12, borderWidth: 1, borderRadius: 10, justifyContent: 'center', maxWidth: '100%' }, toggle: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, padding: 14 }, toggleText: { flex: 1, gap: 4 }, choiceLabel: { flexDirection: 'row', alignItems: 'center', gap: 6 }, preview: { borderWidth: 1, borderRadius: 12, padding: 16, gap: 12 } });

@@ -45,11 +45,11 @@ export function EmptyState({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    paddingVertical: Spacing.six,
-    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.huge,
+    paddingHorizontal: Spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.one,
+    gap: Spacing.xs,
   },
   title: {
     fontFamily: Fonts.sans,

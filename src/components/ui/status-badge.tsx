@@ -84,16 +84,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    borderRadius: Spacing.four,
-    gap: Spacing.one,
+    borderRadius: Spacing.lg,
+    gap: Spacing.xs,
   },
   sm: {
     paddingVertical: 2,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.sm,
   },
   md: {
     paddingVertical: 4,
-    paddingHorizontal: Spacing.two + 2,
+    paddingHorizontal: Spacing.sm + 2,
   },
   dot: {
     width: 6,

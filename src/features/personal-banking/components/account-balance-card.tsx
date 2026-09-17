@@ -129,7 +129,7 @@ export function AccountBalanceCard({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    gap: Spacing.two,
+    gap: Spacing.sm,
   },
   headerRow: {
     flexDirection: 'row',
@@ -138,20 +138,20 @@ const styles = StyleSheet.create({
   },
   nameContainer: {
     flex: 1,
-    gap: Spacing.half,
+    gap: Spacing.xxs,
   },
   statusBadge: {
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
-    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
+    borderRadius: Spacing.sm,
     alignSelf: 'flex-start',
   },
   balanceContainer: {
-    marginTop: Spacing.one,
-    gap: Spacing.half,
+    marginTop: Spacing.xs,
+    gap: Spacing.xxs,
   },
   footerRow: {
-    marginTop: Spacing.one,
+    marginTop: Spacing.xs,
     flexDirection: 'row',
     justifyContent: 'flex-end',
   },

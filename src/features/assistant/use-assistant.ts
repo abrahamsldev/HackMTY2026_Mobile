@@ -4,6 +4,7 @@ import { type A2UIAction, type A2UISurfaceState } from '../a2ui';
 import { AssistantResponseProcessor } from './response-processor';
 import { AgentRequestError, requestAgentAction, requestAgentStream, transcribeAudioWebhook, type AgentReply } from './agent';
 import { type AgentStatusId } from './agent-status';
+import { haptics } from './haptics';
 import { supabase } from '@/lib/supabase';
 import { verifySession } from '../auth/auth-service';
 import { agentBaseUrl, transcriptionUrl } from './connection';
@@ -113,7 +114,10 @@ export function useAssistant(currentUserId: string) {
             ? { status: 'failure', message: reply.a2uiError }
             : reply.messages?.length ? null : { status: 'failure', message: reply.message || 'El servicio no confirmó el resultado de la acción.' });
           setActionStatus(result);
-          if (result?.status === 'failure') return false;
+          if (result?.status === 'failure') {
+            haptics.failed();
+            return false;
+          }
           if (!reply.messages) return result?.status === 'success';
         }
         const processed = processor.current.process(reply.messages, !action);
@@ -125,12 +129,14 @@ export function useAssistant(currentUserId: string) {
           revision: id,
           a2uiSurfaces: processed.surfaces,
         });
+        haptics.settled();
       }
       return true;
     } catch (cause) {
       if (request.current.id !== id || controller.signal.aborted) return false;
       if (action) setActionStatus({ status: 'failure', message: cause instanceof AgentRequestError ? cause.message : 'No se pudo confirmar el resultado. Intenta de nuevo la misma operación.' });
       if (!action) setError(cause instanceof AgentRequestError ? cause.message : 'No se pudo mostrar la respuesta. Inténtalo de nuevo.');
+      haptics.failed();
       return false;
     } finally {
       if (request.current.id === id) {

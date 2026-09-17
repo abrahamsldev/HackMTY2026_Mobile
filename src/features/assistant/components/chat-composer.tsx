@@ -9,12 +9,11 @@ import {
   TextInputKeyPressEventData,
   View,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-
 import { Pressable, TextInput, type TextInputHandle } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
+import { AppIcon } from '@/components/ui/icon';
 import { Spacing } from '@/constants/theme';
-import { useAccessibility } from '@/features/accessibility/accessibility-provider';
+import { useMotion } from '@/hooks/use-motion';
 import { useTheme } from '@/hooks/use-theme';
 
 const MIN_INPUT_HEIGHT = 48;
@@ -32,7 +31,6 @@ export type ChatComposerProps = {
   onChangeText: (text: string) => void;
   onSubmit: (text: string) => void;
   voice?: VoiceControl;
-  onOpenQuestionBank?: () => void;
   disabled?: boolean;
   loading?: boolean;
   placeholder?: string;
@@ -40,36 +38,11 @@ export type ChatComposerProps = {
   inputRef?: React.RefObject<TextInputHandle | null>;
 };
 
-function SendIcon({ color }: { color: string }) {
-  return (
-    <Svg width={20} height={20} viewBox="0 0 24 24">
-      <Path
-        d="M5 12h13M13 6l6 6-6 6"
-        fill="none"
-        stroke={color}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2.2}
-      />
-    </Svg>
-  );
-}
-
-function MicrophoneIcon({ color }: { color: string }) {
-  return (
-    <Svg width={20} height={20} viewBox="0 0 24 24">
-      <Path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" fill="none" stroke={color} strokeWidth={2} />
-      <Path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8" fill="none" stroke={color} strokeLinecap="round" strokeWidth={2} />
-    </Svg>
-  );
-}
-
 export function ChatComposer({
   value,
   onChangeText,
   onSubmit,
   voice,
-  onOpenQuestionBank,
   disabled = false,
   loading = false,
   placeholder = 'Pregúntame sobre tus finanzas...',
@@ -77,7 +50,7 @@ export function ChatComposer({
   inputRef,
 }: ChatComposerProps) {
   const theme = useTheme();
-  const { settings } = useAccessibility();
+  const motion = useMotion();
   const [inputHeight] = useState(() => new Animated.Value(MIN_INPUT_HEIGHT));
 
   const canSubmit = Boolean(value.trim()) && !disabled && !loading;
@@ -107,14 +80,14 @@ export function ChatComposer({
     );
 
     inputHeight.stopAnimation();
-    if (settings.reduceMotion) {
+    if (!motion.enabled) {
       inputHeight.setValue(nextHeight);
       return;
     }
 
     Animated.timing(inputHeight, {
       toValue: nextHeight,
-      duration: 360,
+      duration: motion.duration.slow,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -128,30 +101,6 @@ export function ChatComposer({
         styles.wrapper,
         isWelcome ? styles.wrapperWelcome : styles.wrapperConversation,
       ]}>
-      {/* Optional quick question bank helper pill */}
-      {onOpenQuestionBank && (
-        <View style={styles.topBar}>
-          <Pressable
-            disabled={disabled || loading}
-            accessibilityRole="button"
-            accessibilityLabel="Abrir banco de preguntas"
-            accessibilityState={{ disabled: disabled || loading }}
-            onPress={onOpenQuestionBank}
-            style={({ pressed }) => [
-              styles.questionBankPill,
-              {
-                backgroundColor: theme.background,
-                borderColor: theme.accent,
-                opacity: pressed ? 0.7 : 1,
-                transform: [{ scale: pressed && !settings.reduceMotion ? 0.98 : 1 }],
-              },
-            ]}>
-            <ThemedText type="smallBold" style={{ color: theme.accent, fontSize: 12 }}>
-              Preguntas sugeridas
-            </ThemedText>
-          </Pressable>
-        </View>
-      )}
 
       <View
         style={[
@@ -215,7 +164,7 @@ export function ChatComposer({
                 opacity: pressed ? 0.82 : 1,
               },
             ]}>
-            <MicrophoneIcon color={voice.isRecording ? theme.onAccent : theme.accent} />
+            <AppIcon name="mic" color={voice.isRecording ? theme.onAccent : theme.accent} />
           </Pressable>
         )}
         <Pressable
@@ -229,10 +178,10 @@ export function ChatComposer({
             {
               backgroundColor: theme.accent,
               opacity: canSubmit ? (pressed ? 0.82 : 1) : 0.52,
-              transform: [{ scale: pressed && canSubmit && !settings.reduceMotion ? 0.94 : 1 }],
+              transform: [{ scale: pressed && canSubmit && motion.enabled ? 0.94 : 1 }],
             },
           ]}>
-          <SendIcon color={theme.onAccent} />
+          <AppIcon name="send" color={theme.onAccent} />
         </Pressable>
       </View>
     </View>
@@ -249,30 +198,16 @@ const styles = StyleSheet.create({
   },
   wrapperConversation: {
     maxWidth: 800,
-    paddingTop: Spacing.one,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    marginBottom: Spacing.one,
-    paddingHorizontal: Spacing.one,
-  },
-  questionBankPill: {
-    borderRadius: 14,
-    borderWidth: 2,
-    minHeight: 48,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
+    paddingTop: Spacing.xs,
   },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 24,
     borderWidth: 1.5,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.md,
     paddingVertical: 6,
-    gap: Spacing.two,
+    gap: Spacing.sm,
     minHeight: 56,
     ...Platform.select({
       ios: {
@@ -331,7 +266,7 @@ const styles = StyleSheet.create({
     minWidth: 48,
     height: 48,
     borderRadius: 24,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
@@ -340,7 +275,7 @@ const styles = StyleSheet.create({
     minWidth: 48,
     height: 48,
     borderRadius: 24,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',

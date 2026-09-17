@@ -118,9 +118,9 @@ export function FinancialStatCard({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    gap: Spacing.one,
+    gap: Spacing.xs,
   },
   comparisonRow: {
-    marginTop: Spacing.half,
+    marginTop: Spacing.xxs,
   },
 });

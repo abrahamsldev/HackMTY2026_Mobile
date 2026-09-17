@@ -107,7 +107,7 @@ export function CreditUtilizationGauge({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    gap: Spacing.two,
+    gap: Spacing.sm,
   },
   label: {
     fontFamily: Fonts.sans,
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     alignItems: 'center',
-    gap: Spacing.half,
+    gap: Spacing.xxs,
   },
   percentage: {
     fontFamily: Fonts.sans,
@@ -138,12 +138,12 @@ const styles = StyleSheet.create({
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.three,
+    gap: Spacing.md,
   },
   legendItem: {
     flexGrow: 1,
     flexBasis: 96,
-    gap: Spacing.half,
+    gap: Spacing.xxs,
   },
   legendCaption: {
     fontFamily: Fonts.sans,

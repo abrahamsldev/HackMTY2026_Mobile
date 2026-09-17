@@ -114,15 +114,15 @@ export function AssistantTypingIndicator({ status, onCancel }: AssistantTypingIn
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    gap: Spacing.half,
+    gap: Spacing.xxs,
   },
   statusLine: {
     minHeight: 48,
     justifyContent: 'center',
     borderWidth: 2,
     borderRadius: 16,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   // A floor, never a fixed height: the copy must be able to wrap at large text
   // scales instead of being clipped.

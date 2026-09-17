@@ -7,6 +7,6 @@ export { ChatMessage, type ChatMessageProps } from './chat-message';
 export { FloatingChatBubble, type FloatingChatBubbleProps } from './floating-chat-bubble';
 export { MorphingStage, type MorphingStageProps } from './morphing-stage';
 export { RequestProcessingOverlay, type RequestProcessingOverlayProps } from './quick-suggestion-processing-overlay';
-export { QuestionBank } from './question-bank';
+export { QuestionBankSheet, type QuestionBankSheetProps } from './question-bank';
 export { VoiceProcessingOverlay, type VoiceProcessingOverlayProps } from './voice-processing-overlay';
 export { WelcomeComposerReveal, type WelcomeComposerRevealProps } from './welcome-composer-reveal';

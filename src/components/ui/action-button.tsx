@@ -127,7 +127,7 @@ export function ActionButton({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: Spacing.two,
+    borderRadius: Spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -140,15 +140,15 @@ const styles = StyleSheet.create({
   },
   sm: {
     paddingVertical: 6,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.sm,
   },
   md: {
     paddingVertical: 10,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.lg,
   },
   lg: {
     paddingVertical: 14,
-    paddingHorizontal: Spacing.five,
+    paddingHorizontal: Spacing.xl,
   },
   label: {
     fontFamily: Fonts.sans,
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.xs,
   },
   spinner: {
     marginRight: 4,

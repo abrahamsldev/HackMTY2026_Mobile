@@ -50,8 +50,8 @@ const styles = StyleSheet.create({
     width: '100%',
     borderLeftWidth: 4,
     borderRadius: 12,
-    padding: Spacing.three,
-    gap: Spacing.half,
+    padding: Spacing.md,
+    gap: Spacing.xxs,
   },
   label: {
     fontFamily: Fonts.sans,

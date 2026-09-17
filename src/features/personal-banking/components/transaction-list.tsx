@@ -15,8 +15,8 @@ export type TransactionListProps = {
 
 const spacingMap = {
   none: 0,
-  sm: Spacing.one,
-  md: Spacing.two,
+  sm: Spacing.xs,
+  md: Spacing.sm,
 } as const;
 
 export function TransactionList({
@@ -74,8 +74,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   titleRow: {
-    paddingHorizontal: Spacing.one,
-    marginBottom: Spacing.one,
+    paddingHorizontal: Spacing.xs,
+    marginBottom: Spacing.xs,
   },
   titleText: {
     fontSize: 20,
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   emptyContainer: {
-    paddingVertical: Spacing.four,
+    paddingVertical: Spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },

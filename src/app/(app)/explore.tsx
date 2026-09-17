@@ -557,8 +557,8 @@ export default function ComponentCatalogScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    paddingVertical: Spacing.two,
-    gap: Spacing.one,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.xs,
   },
   sectionTitle: {
     fontSize: 18,
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.one,
+    marginBottom: Spacing.xs,
   },
   debugTitle: {
     color: '#208AEF',
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   badgeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.two,
+    gap: Spacing.sm,
     alignItems: 'center',
   },
 });

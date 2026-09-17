@@ -12,8 +12,8 @@ export function AssistantFallback({ message, onRetry, onEdit }: {
 }) {
   return (
     <Card variant="outlined">
-      <View style={{ gap: Spacing.three }}>
-        <View accessibilityLiveRegion="polite" style={{ gap: Spacing.two }}>
+      <View style={{ gap: Spacing.md }}>
+        <View accessibilityLiveRegion="polite" style={{ gap: Spacing.sm }}>
           <ThemedText accessibilityRole="header" type="smallBold">No pudimos completar tu respuesta</ThemedText>
           <ThemedText themeColor="textSecondary">{message}</ThemedText>
           <ThemedText type="small">Puedes volver a intentarlo o ajustar tu pregunta.</ThemedText>

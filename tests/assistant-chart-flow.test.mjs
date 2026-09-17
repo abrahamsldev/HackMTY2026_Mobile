@@ -155,15 +155,19 @@ test('assistant chrome uses restrained Banorte outlines and animated vector stat
   assert.match(composer, /outlineWidth: 0/);
   assert.match(composer, /boxShadow: 'none'/);
   assert.match(composer, /paddingVertical: 11/);
-  assert.match(composer, /borderWidth: 2/);
+  assert.match(composer, /borderWidth: 1.5/);
   assert.match(composer, /MAX_INPUT_HEIGHT = 132/);
-  assert.match(composer, /duration: 360/);
+  assert.match(composer, /duration: motion\.duration\.slow/);
+  assert.doesNotMatch(composer, /settings\.reduceMotion/);
   assert.match(composer, /<View pointerEvents="none" style=\{styles\.placeholderContainer\}>/);
   assert.match(composer, /scrollEnabled/);
-  assert.match(composer, /backgroundColor: banortePalette\.strongRed/);
-  assert.match(composer, /borderColor: banortePalette\.white/);
+  // Chrome resolves through the palette, not raw brand constants, so the
+  // composer follows the selected palette and high-contrast setting.
+  assert.match(composer, /backgroundColor: theme\.accent/);
+  assert.match(composer, /borderColor: theme\.border/);
+  assert.doesNotMatch(composer, /banortePalette/);
   assert.doesNotMatch(composer, /💡|↵/u);
-  assert.match(welcome, /borderColor: theme\.accent/);
+  assert.match(welcome, /borderColor: theme\.border/);
   assert.match(chatMessage, /borderColor: theme\.accent/);
   assert.match(chatMessage, /duration: settings\.reduceMotion \? 0 : 620/);
   assert.match(statusIcon, /Animated\.loop/);
@@ -199,8 +203,34 @@ test('the latest query edits inline and retry actions use icon-only controls', (
   assert.match(chatMessage, /label="Cancelar edición"[\s\S]*color=\{theme\.danger\}/);
   assert.match(chatMessage, /label="Enviar consulta editada"[\s\S]*color=\{theme\.success\}/);
   assert.match(chatMessage, /<TextInput[\s\S]*autoFocus/);
-  assert.match(errorMessage, /function RetryIcon/);
-  assert.match(errorMessage, /<RetryIcon color=\{theme\.accent\}/);
+  assert.match(errorMessage, /from '@\/components\/ui\/icon'/);
+  assert.match(errorMessage, /<AppIcon name="retry" color=\{theme\.accent\}/);
   assert.doesNotMatch(errorMessage, />\s*Reintentar\s*</);
   assert.doesNotMatch(errorMessage, />\s*Editar consulta\s*</);
+});
+
+test('the welcome screen stays minimal: a mark, a greeting and exactly two openers', () => {
+  const welcome = readFileSync(
+    new URL('../src/features/assistant/components/assistant-welcome.tsx', import.meta.url),
+    'utf8',
+  );
+  const composer = readFileSync(
+    new URL('../src/features/assistant/components/chat-composer.tsx', import.meta.url),
+    'utf8',
+  );
+  const home = readFileSync(new URL('../src/app/(app)/index.tsx', import.meta.url), 'utf8');
+
+  const suggestions = welcome.match(/const DEFAULT_SUGGESTIONS = \[([\s\S]*?)\]/);
+  assert.ok(suggestions, 'DEFAULT_SUGGESTIONS must be declared');
+  assert.equal(suggestions[1].match(/'/g).length / 2, 2, 'exactly two openers');
+
+  // The assistant's own mark is what identifies the screen.
+  assert.match(welcome, /<AssistantMark \/>/);
+
+  // Nothing else competes with the composer: no section heading over the
+  // openers, and no entry point into the question bank from either surface.
+  assert.doesNotMatch(welcome, /Sugerencias rápidas|Ver banco de preguntas/);
+  assert.doesNotMatch(welcome, /onOpenQuestionBank/);
+  assert.doesNotMatch(composer, /onOpenQuestionBank|Preguntas sugeridas/);
+  assert.doesNotMatch(home, /QuestionBankSheet/);
 });

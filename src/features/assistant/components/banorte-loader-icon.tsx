@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Animated, Easing, Image, Platform, StyleSheet } from 'react-native';
+import { Animated, Easing, Platform, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
@@ -99,7 +100,11 @@ export function BanorteLoaderIcon({ stage, size = 44, checkmarkColor = '#FFFFFF'
         importantForAccessibility="no"
         source={banorteLogo}
         style={[styles.logoImage, { width: size, height: size }]}
-        resizeMode="contain"
+        contentFit="contain"
+        // The mark sits on the floating button from the first frame of a
+        // conversation; a short crossfade keeps it from snapping in on the
+        // first paint, and expo-image caches the decode across remounts.
+        transition={120}
       />
     </Animated.View>
   );

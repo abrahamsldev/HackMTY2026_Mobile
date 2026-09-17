@@ -8,10 +8,11 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
 import { Pressable, type TextInputHandle } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
+import { GlassSurface } from '@/components/ui/glass-surface';
+import { AppIcon } from '@/components/ui/icon';
 import { Spacing } from '@/constants/theme';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,20 +21,6 @@ import { AgentStatusLabel } from './assistant-typing-indicator';
 import { BanorteLoaderIcon } from './banorte-loader-icon';
 import { ChatComposer, type VoiceControl } from './chat-composer';
 import type { AgentStatusId } from '../agent-status';
-
-function CloseIcon({ color }: { color: string }) {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M18 6L6 18M6 6l12 12"
-        stroke={color}
-        strokeWidth={2.2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
 
 export type FloatingChatBubbleProps = {
   value: string;
@@ -76,7 +63,6 @@ export function FloatingChatBubble({
   const [floatAnim] = useState(() => new Animated.Value(0));
   const [travelAnim] = useState(() => new Animated.Value(loading ? 1 : 0));
   const [bubbleScale] = useState(() => new Animated.Value(0.1));
-  const [bubbleOpacity] = useState(() => new Animated.Value(0));
 
   // 1. Animación ligera de flotación continua mientras está en reposo abajo
   useEffect(() => {
@@ -209,11 +195,6 @@ export function FloatingChatBubble({
         tension: 60,
         useNativeDriver: Platform.OS !== 'web',
       }),
-      Animated.timing(bubbleOpacity, {
-        toValue: 1,
-        duration: 220,
-        useNativeDriver: Platform.OS !== 'web',
-      }),
     ]).start(() => {
       inputRef?.current?.focus();
     });
@@ -225,11 +206,6 @@ export function FloatingChatBubble({
         toValue: 0.1,
         duration: 180,
         easing: Easing.in(Easing.cubic),
-        useNativeDriver: Platform.OS !== 'web',
-      }),
-      Animated.timing(bubbleOpacity, {
-        toValue: 0,
-        duration: 180,
         useNativeDriver: Platform.OS !== 'web',
       }),
     ]).start(() => {
@@ -310,15 +286,19 @@ export function FloatingChatBubble({
             pointerEvents="box-none">
             <Animated.View
               style={[
-                styles.bubbleCard,
+                styles.bubbleCardWrapper,
                 {
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: theme.accent,
-                  opacity: bubbleOpacity,
+                  // Scale alone carries the entry. Animating opacity here would
+                  // silently disable the liquid-glass effect below — an opacity
+                  // of 0 on a GlassView or any ancestor stops it rendering at
+                  // all — and the spring already reads as an appear.
                   transform: [{ scale: bubbleScale }],
                   bottom: bottomOffset,
                 },
               ]}>
+              <GlassSurface
+                style={[styles.bubbleCard, { borderColor: theme.accent }]}
+                fallbackColor={theme.backgroundElement}>
               {/* Cabecera de la burbuja */}
               <View style={styles.bubbleHeader}>
                 <ThemedText type="smallBold" style={styles.bubbleTitle}>
@@ -332,7 +312,7 @@ export function FloatingChatBubble({
                     styles.closeButton,
                     { opacity: pressed ? 0.6 : 1 },
                   ]}>
-                  <CloseIcon color={theme.textSecondary} />
+                  <AppIcon name="close" size={18} color={theme.textSecondary} />
                 </Pressable>
               </View>
 
@@ -348,6 +328,7 @@ export function FloatingChatBubble({
                 mode="conversation"
                 placeholder="Escribe tu nueva pregunta..."
               />
+              </GlassSurface>
             </Animated.View>
           </KeyboardAvoidingView>
         </View>
@@ -403,15 +384,15 @@ const styles = StyleSheet.create({
   bubbleKeyboardWrapper: {
     width: '100%',
     alignItems: 'center',
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.md,
   },
-  bubbleCard: {
+  // Split in two: the wrapper animates and casts the shadow, the card is the
+  // surface itself — which may be a GlassView, and a glass surface must not
+  // have a shadow painted on the same node it blurs through.
+  bubbleCardWrapper: {
     width: '100%',
     maxWidth: 600,
     borderRadius: 24,
-    borderWidth: 2,
-    padding: Spacing.three,
-    gap: Spacing.two,
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
@@ -427,11 +408,19 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  bubbleCard: {
+    width: '100%',
+    borderRadius: 24,
+    borderWidth: 2,
+    overflow: 'hidden',
+    padding: Spacing.md,
+    gap: Spacing.sm,
+  },
   bubbleHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.one,
+    paddingHorizontal: Spacing.xs,
   },
   bubbleTitle: {
     fontSize: 14,
@@ -448,7 +437,7 @@ const styles = StyleSheet.create({
   // the orb: its resting position and its travel to the centre stay exact.
   orbStatus: {
     position: 'absolute',
-    top: 64 + Spacing.two,
+    top: 64 + Spacing.sm,
     left: (64 - ORB_STATUS_WIDTH) / 2,
     width: ORB_STATUS_WIDTH,
     alignItems: 'center',

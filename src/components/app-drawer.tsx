@@ -12,12 +12,14 @@ import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ActionButton } from '@/components/ui/action-button';
+import { AppIcon } from '@/components/ui/icon';
 import { InfoBanner } from '@/components/ui/info-banner';
 import { Spacing } from '@/constants/theme';
 import { useSession } from '@/features/auth/session-provider';
 import { useTheme } from '@/hooks/use-theme';
 
 function AccountDrawerContent(props: DrawerContentComponentProps) {
+  const theme = useTheme();
   const { profile, isLoading, signOut } = useSession();
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ function AccountDrawerContent(props: DrawerContentComponentProps) {
           accessibilityLabel="Cerrar menú"
           onPress={() => props.navigation.closeDrawer()}
           style={styles.headerButton}>
-          <ThemedText style={styles.closeIcon}>×</ThemedText>
+          <AppIcon name="close" size={24} color={theme.text} />
         </Pressable>
       </View>
       <View style={styles.profile}>
@@ -80,6 +82,7 @@ function AccountDrawerContent(props: DrawerContentComponentProps) {
 }
 
 function BackToMainButton() {
+  const theme = useTheme();
   const navigation = useNavigation<DrawerNavigationProp<{ index: undefined; settings: undefined; explore: undefined }>>();
   return (
     <Pressable
@@ -87,14 +90,15 @@ function BackToMainButton() {
       accessibilityLabel="Volver al inicio"
       style={styles.headerButton}
       onPress={() => navigation.navigate('index')}>
-      <ThemedText style={styles.backIcon}>←</ThemedText>
+      <AppIcon name="back" size={24} color={theme.text} />
     </Pressable>
   );
 }
 
 function OpenMenuButton() {
+  const theme = useTheme();
   const navigation = useNavigation<DrawerNavigationProp<{ index: undefined }>>();
-  return <Pressable accessibilityRole="button" accessibilityLabel="Abrir menú" style={styles.headerButton} onPress={() => navigation.openDrawer()}><ThemedText style={{ fontSize: 22 }}>☰</ThemedText></Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel="Abrir menú" style={styles.headerButton} onPress={() => navigation.openDrawer()}><AppIcon name="menu" size={24} color={theme.text} /></Pressable>;
 }
 
 export function AppDrawer() {
@@ -135,12 +139,10 @@ export function AppDrawer() {
 }
 
 const styles = StyleSheet.create({
-  drawerContent: { flexGrow: 1, paddingHorizontal: Spacing.three, gap: Spacing.four },
+  drawerContent: { flexGrow: 1, paddingHorizontal: Spacing.md, gap: Spacing.lg },
   drawerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   headerButton: { minWidth: 48, minHeight: 48, justifyContent: 'center', alignItems: 'center' },
-  closeIcon: { fontSize: 28, lineHeight: 32 },
-  backIcon: { fontSize: 28, lineHeight: 32 },
-  profile: { gap: Spacing.two },
+  profile: { gap: Spacing.sm },
   name: { fontSize: 24, lineHeight: 32, fontWeight: '600' },
-  footer: { marginTop: 'auto', gap: Spacing.three, paddingTop: Spacing.four, paddingBottom: Spacing.three },
+  footer: { marginTop: 'auto', gap: Spacing.md, paddingTop: Spacing.lg, paddingBottom: Spacing.md },
 });

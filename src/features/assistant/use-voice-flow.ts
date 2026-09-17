@@ -8,6 +8,8 @@ import {
 } from 'expo-audio';
 import { useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 
+import { haptics } from './haptics';
+
 // expo-audio reports metering in dBFS on every platform (iOS `averagePower`,
 // Android `20*log10(amplitude/32767)`, web via a Web Audio analyser) — roughly
 // -160 (silence) to 0 (full scale). Real rooms rarely get near either extreme,
@@ -122,6 +124,7 @@ export function useVoiceFlow({ transcribe, submit }: VoiceFlowOptions): VoiceFlo
       await recorder.prepareToRecordAsync();
       if (!mountedRef.current) return;
       recorder.record();
+      haptics.edge();
       smoothedLevelRef.current = 0;
       // eslint-disable-next-line react-hooks/immutability -- Reanimated's SharedValue.value mutation is the documented API; the rule doesn't yet recognize it.
       level.value = 0;
@@ -137,6 +140,7 @@ export function useVoiceFlow({ transcribe, submit }: VoiceFlowOptions): VoiceFlo
   const stop = useCallback(async () => {
     if (phase !== 'listening') return;
     setPhase('stopping');
+    haptics.edge();
     stopMetering();
     // eslint-disable-next-line react-hooks/immutability -- Reanimated's SharedValue.value mutation is the documented API; the rule doesn't yet recognize it.
     level.value = withTiming(0, { duration: VOICE_LEVEL_RELEASE_MS });

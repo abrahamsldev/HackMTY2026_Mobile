@@ -35,11 +35,11 @@ export function GenerativeError({ nodeId, type, error }: GenerativeErrorProps) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: Spacing.three,
-    borderRadius: Spacing.three,
+    padding: Spacing.md,
+    borderRadius: Spacing.md,
     borderWidth: 1,
-    gap: Spacing.one,
-    marginVertical: Spacing.two,
+    gap: Spacing.xs,
+    marginVertical: Spacing.sm,
   },
   errorTitle: {
     color: '#EF4444',

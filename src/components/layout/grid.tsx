@@ -18,9 +18,9 @@ export type GridProps = {
 
 const spacingMap = {
   none: 0,
-  sm: Spacing.two,
-  md: Spacing.three,
-  lg: Spacing.four,
+  sm: Spacing.sm,
+  md: Spacing.md,
+  lg: Spacing.lg,
 } as const;
 
 export function Grid({

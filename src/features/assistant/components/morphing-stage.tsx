@@ -7,12 +7,23 @@ import {
   View,
 } from 'react-native';
 
-import { useAccessibility } from '@/features/accessibility/accessibility-provider';
+import { SurfaceSkeleton } from '@/components/ui/skeleton';
+import type { AgentStatusId } from '../agent-status';
+import { useMotion } from '@/hooks/use-motion';
 import { useTheme } from '@/hooks/use-theme';
+
+/**
+ * The phases in which the backend says it is assembling a surface. Only then is
+ * there a shape worth standing in for — before that the turn is still fetching
+ * data and the outline would be a guess.
+ */
+const BUILDING_PHASES: readonly AgentStatusId[] = ['building_ui', 'validating_ui'];
 
 export type MorphingStageProps = {
   isPending: boolean;
   hasContent: boolean;
+  /** Last phase reported by the backend for the running turn. */
+  status?: AgentStatusId | null;
   revealed?: boolean;
   error?: string | null;
   children: React.ReactNode;
@@ -22,12 +33,13 @@ export type MorphingStageProps = {
 export function MorphingStage({
   isPending,
   hasContent,
+  status,
   revealed = true,
   children,
 }: MorphingStageProps) {
   if (isPending) {
     return (
-      <PendingStage hasContent={hasContent}>
+      <PendingStage hasContent={hasContent} status={status}>
         {children}
       </PendingStage>
     );
@@ -47,7 +59,7 @@ function CompletedStage({
   revealed: boolean;
   children: React.ReactNode;
 }) {
-  const { settings } = useAccessibility();
+  const motion = useMotion();
   const [opacity] = useState(() => new Animated.Value(revealed ? 1 : 0));
 
   useEffect(() => {
@@ -57,20 +69,20 @@ function CompletedStage({
       return;
     }
 
-    if (settings.reduceMotion) {
+    if (!motion.enabled) {
       opacity.setValue(1);
       return;
     }
 
     const reveal = Animated.timing(opacity, {
       toValue: 1,
-      duration: 360,
+      duration: motion.duration.slow,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: Platform.OS !== 'web',
     });
     reveal.start();
     return () => reveal.stop();
-  }, [opacity, revealed, settings.reduceMotion]);
+  }, [opacity, revealed, motion.enabled, motion.duration.slow]);
 
   return (
     <View
@@ -87,14 +99,16 @@ function CompletedStage({
 
 function PendingStage({
   hasContent,
+  status,
   children,
 }: {
   hasContent: boolean;
+  status?: AgentStatusId | null;
   children: React.ReactNode;
 }) {
   const theme = useTheme();
-  const { settings } = useAccessibility();
-  const shouldCollapse = hasContent && !settings.reduceMotion;
+  const motion = useMotion();
+  const shouldCollapse = hasContent && motion.enabled;
   const [collapsed, setCollapsed] = useState(!shouldCollapse);
   const [collapseScale] = useState(() => new Animated.Value(1));
   const [collapseOpacity] = useState(() => new Animated.Value(1));
@@ -155,6 +169,12 @@ function PendingStage({
             {children}
           </View>
         </Animated.View>
+      ) : BUILDING_PHASES.includes(status as AgentStatusId) ? (
+        // A surface is being assembled, so stand in for its shape instead of
+        // holding an empty gap until it lands.
+        <View style={styles.waitingSurface}>
+          <SurfaceSkeleton />
+        </View>
       ) : (
         <View style={styles.waitingSpacer} />
       )}
@@ -197,6 +217,9 @@ const styles = StyleSheet.create({
   waitingSpacer: {
     width: '100%',
     minHeight: 160,
+  },
+  waitingSurface: {
+    width: '100%',
   },
   idleWrapper: {
     width: '100%',

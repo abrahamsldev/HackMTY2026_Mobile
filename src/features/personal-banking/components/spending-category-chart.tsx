@@ -219,35 +219,35 @@ export function SpendingCategoryChart({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    gap: Spacing.three,
+    gap: Spacing.md,
   },
   header: {
-    gap: Spacing.half,
+    gap: Spacing.xxs,
   },
   titleText: {
     fontSize: 18,
     lineHeight: 24,
   },
   emptyContainer: {
-    paddingVertical: Spacing.four,
+    paddingVertical: Spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   chartBody: {
     width: '100%',
-    gap: Spacing.three,
+    gap: Spacing.md,
   },
   rowPressable: {
     width: '100%',
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.half,
+    borderRadius: Spacing.sm,
+    paddingVertical: Spacing.xxs,
   },
   rowPressed: {
     opacity: 0.75,
   },
   rowInner: {
     width: '100%',
-    gap: Spacing.one,
+    gap: Spacing.xs,
   },
   rowHeader: {
     width: '100%',
@@ -258,9 +258,9 @@ const styles = StyleSheet.create({
   labelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.xs,
     flex: 1,
-    paddingRight: Spacing.two,
+    paddingRight: Spacing.sm,
   },
   colorDot: {
     width: 8,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   amountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.sm,
   },
   percentageText: {
     minWidth: 42,

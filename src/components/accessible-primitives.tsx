@@ -1,16 +1,28 @@
 import { forwardRef } from 'react';
 import { Text as NativeText, TextInput as NativeTextInput, Pressable as NativePressable, StyleSheet, type TextProps, type TextInputProps, type TextStyle, type PressableProps, type View } from 'react-native';
+import { fontFor, isSansFamily } from '@/constants/theme';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 
 function useAccessibleTextStyle(style: TextProps['style']): TextStyle {
   const { settings } = useAccessibility();
   const base = StyleSheet.flatten(style) ?? {};
   const fontSize = (base.fontSize ?? 14) * settings.textScale;
+  const weight = settings.boldText ? '700' : base.fontWeight;
+  // The app face ships one file per weight, so the weight has to become a family
+  // name (Android will not synthesize one). A style that deliberately asked for
+  // another family — mono card numbers, code — keeps it and its own weight.
+  const sans = isSansFamily(base.fontFamily);
   return {
     fontSize,
     lineHeight: Math.max(fontSize * 1.3, (base.lineHeight ?? (base.fontSize ?? 14) * 1.4) * settings.textScale) * settings.lineSpacing,
     letterSpacing: (base.letterSpacing ?? 0) + settings.letterSpacing,
-    ...(settings.boldText ? { fontWeight: '700' } : {}),
+    ...(sans
+      // `fontWeight: undefined` clears the incoming weight so iOS does not
+      // synthesize a second bold on top of an already-bold family.
+      ? { fontFamily: fontFor(weight), fontWeight: undefined }
+      : settings.boldText
+        ? { fontWeight: '700' as const }
+        : {}),
     flexShrink: 1,
   };
 }

@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
+// Not the @expo/ui drop-in: its props carry no accessibilityLabel or
+// adjustable semantics, which a money field in a transfer form needs.
 import Slider from '@react-native-community/slider';
 import { Pressable, TextInput } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
+import { haptics } from '@/features/assistant/haptics';
 import { useTheme } from '@/hooks/use-theme';
 import { resolveDynamicString } from '../bindings';
 import { resolveDataPath } from '../data-model';
@@ -38,6 +41,7 @@ export function A2UIInput({ component, model, disabled, onChange }: { component:
             accessibilityState={{ checked: selected, disabled }}
             disabled={disabled}
             onPress={() => {
+              haptics.selection();
               const current = Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
               const next = component.variant === 'multipleSelection'
                 ? selected ? current.filter((item) => item !== option.value) : [...current, option.value]

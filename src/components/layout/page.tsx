@@ -15,9 +15,9 @@ export type PageProps = {
 
 const paddingMap = {
   none: 0,
-  sm: Spacing.two,
-  md: Spacing.four,
-  lg: Spacing.five,
+  sm: Spacing.sm,
+  md: Spacing.lg,
+  lg: Spacing.xl,
 } as const;
 
 export function Page({

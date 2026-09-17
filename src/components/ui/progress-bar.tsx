@@ -96,7 +96,7 @@ export function ProgressBar({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    gap: Spacing.one,
+    gap: Spacing.xs,
   },
   headerRow: {
     flexDirection: 'row',

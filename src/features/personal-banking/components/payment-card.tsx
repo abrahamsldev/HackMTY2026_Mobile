@@ -134,15 +134,15 @@ const styles = StyleSheet.create({
     minWidth: 240,
     borderRadius: 18,
     borderWidth: 1,
-    padding: Spacing.four,
-    gap: Spacing.three,
+    padding: Spacing.lg,
+    gap: Spacing.md,
   },
   headerRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.sm,
   },
   network: {
     fontFamily: Fonts.sans,
@@ -172,10 +172,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: Spacing.three,
+    gap: Spacing.md,
   },
   footerBlock: {
-    gap: Spacing.half,
+    gap: Spacing.xxs,
     flexShrink: 1,
   },
   footerLabel: {
@@ -192,10 +192,10 @@ const styles = StyleSheet.create({
   },
   statusPill: {
     alignSelf: 'flex-start',
-    borderRadius: Spacing.four,
+    borderRadius: Spacing.lg,
     borderWidth: 1,
     paddingVertical: 2,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.sm,
   },
   statusText: {
     fontFamily: Fonts.sans,
@@ -204,8 +204,8 @@ const styles = StyleSheet.create({
   },
   amountBlock: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: Spacing.two,
-    gap: Spacing.half,
+    paddingTop: Spacing.sm,
+    gap: Spacing.xxs,
   },
   amount: {
     fontFamily: Fonts.sans,

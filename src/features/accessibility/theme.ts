@@ -7,7 +7,9 @@ export const banortePalette = {
   heatmap: ['#FFE0E6', '#FF8FA0', '#C51A35', '#8C1024'],
 } as const;
 
-export function accessibleColors(base: { text: string; background: string; backgroundElement: string; backgroundSelected: string; textSecondary: string }, colorScheme: 'light' | 'dark', settings: AccessibilityPreferences) {
+type BaseColors = { text: string; background: string; backgroundElement: string; backgroundSelected: string; textSecondary: string };
+
+function corePalette(base: BaseColors, colorScheme: 'light' | 'dark', settings: AccessibilityPreferences) {
   const dark = colorScheme === 'dark';
   if (settings.colorPalette === 'banorte') {
     // Exact brand red has insufficient contrast with small white text; use black
@@ -47,5 +49,26 @@ export function accessibleColors(base: { text: string; background: string; backg
     warning: mono || settings.highContrast ? base.text : dark ? '#FDE68A' : '#854D0E',
     dangerBackground: mono ? '#333333' : alternate ? '#9A3412' : '#991B1B',
     chartColors: mono ? (dark ? ['#FFFFFF', '#BBBBBB', '#888888', '#666666'] : ['#111111', '#555555', '#888888', '#AAAAAA']) : alternate ? ['#0072B2', '#D55E00', '#CC79A7', '#009E73'] : dark ? ['#60A5FA', '#C4B5FD', '#86EFAC', '#FDBA74'] : ['#1D4ED8', '#7C3AED', '#15803D', '#C2410C'],
+  };
+}
+
+export function accessibleColors(base: BaseColors, colorScheme: 'light' | 'dark', settings: AccessibilityPreferences) {
+  const core = corePalette(base, colorScheme, settings);
+  return {
+    ...core,
+    /**
+     * Tinted ground for selected chips, brand callouts and anything that should
+     * read as "accent" behind text. It is the palette's own `backgroundSelected`,
+     * so the contrast the tests already assert for that surface covers it too.
+     */
+    accentSurface: core.backgroundSelected,
+    /** Placeholder fill while a generated surface is still arriving. Never carries text. */
+    skeleton: core.backgroundElement,
+    /** The sweep that passes over `skeleton`. Never carries text. */
+    skeletonHighlight: core.backgroundSelected,
+    /** Scrim behind sheets and full-screen overlays. */
+    overlay: colorScheme === 'dark' ? 'rgba(0, 0, 0, 0.65)' : 'rgba(17, 12, 14, 0.45)',
+    /** Shadow color for components that opt out of the neutral `Elevation` presets. */
+    shadow: colorScheme === 'dark' ? '#000000' : '#181215',
   };
 }

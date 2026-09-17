@@ -119,8 +119,8 @@ function ProfileForm({ initialProfile }: { initialProfile: UserProfile }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { gap: Spacing.four },
+  content: { gap: Spacing.lg },
   title: { fontSize: 28, lineHeight: 36, fontWeight: '600' },
-  field: { gap: Spacing.two },
-  input: { minHeight: 52, borderWidth: 1, borderRadius: Spacing.two, padding: Spacing.three, fontSize: 16 },
+  field: { gap: Spacing.sm },
+  input: { minHeight: 52, borderWidth: 1, borderRadius: Spacing.sm, padding: Spacing.md, fontSize: 16 },
 });

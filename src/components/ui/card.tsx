@@ -1,10 +1,10 @@
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
 import { Pressable } from '@/components/accessible-primitives';
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Elevation, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type CardProps = {
@@ -16,9 +16,9 @@ export type CardProps = {
 
 const paddingMap = {
   none: 0,
-  sm: Spacing.two,
-  md: Spacing.four,
-  lg: Spacing.five,
+  sm: Spacing.sm,
+  md: Spacing.lg,
+  lg: Spacing.xl,
 } as const;
 
 export function Card({
@@ -59,7 +59,7 @@ export function Card({
       borderWidth,
       padding: paddingMap[padding],
     },
-    isElevated && styles.elevated,
+    isElevated && Elevation.low,
   ];
 
   if (onPress) {
@@ -81,7 +81,7 @@ export type CardHeaderProps = {
 };
 
 export function CardHeader({ children, spacing = 'sm' }: CardHeaderProps) {
-  const gap = spacing === 'none' ? 0 : spacing === 'sm' ? Spacing.one : Spacing.two;
+  const gap = spacing === 'none' ? 0 : spacing === 'sm' ? Spacing.xs : Spacing.sm;
   return <View style={[styles.header, { gap }]}>{children}</View>;
 }
 
@@ -126,24 +126,8 @@ export function CardFooter({ children }: CardFooterProps) {
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    borderRadius: Spacing.four,
+    borderRadius: Radius.xl,
     overflow: 'hidden',
-  },
-  elevated: {
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-      },
-    }),
   },
   pressed: {
     opacity: 0.85,
@@ -151,14 +135,14 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    marginBottom: Spacing.two,
+    marginBottom: Spacing.sm,
   },
   content: {
     width: '100%',
   },
   footer: {
     width: '100%',
-    marginTop: Spacing.three,
+    marginTop: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',

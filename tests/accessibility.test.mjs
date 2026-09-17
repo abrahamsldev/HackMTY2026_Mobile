@@ -76,11 +76,35 @@ test('text and button tokens remain readable across all themes and palettes', ()
       : { text: '#FFFFFF', background: '#000000', backgroundElement: '#212225', backgroundSelected: '#2E3135', textSecondary: '#B0B4BA' };
     for (const colorPalette of ['default', 'blue-orange', 'monochrome', 'banorte']) for (const highContrast of [false, true]) {
       const colors = accessibleColors(base, mode, { ...defaults, colorPalette, highContrast });
-      for (const token of ['text', 'textSecondary', 'info', 'success', 'danger', 'warning']) for (const surface of ['background', 'backgroundElement', 'backgroundSelected']) {
+      for (const token of ['text', 'textSecondary', 'info', 'success', 'danger', 'warning']) for (const surface of ['background', 'backgroundElement', 'backgroundSelected', 'accentSurface']) {
         assert.ok(contrast(colors[token], colors[surface]) >= (highContrast ? 7 : 4.5), `${mode}/${colorPalette}/${token}/${surface}`);
       }
       assert.ok(contrast(colors.onAccent, colors.accent) >= (highContrast ? 7 : 4.5));
       assert.ok(contrast('#FFFFFF', colors.dangerBackground) >= 4.5);
+    }
+  }
+});
+
+test('derived surface tokens exist for every palette and never carry text colors of their own', () => {
+  for (const mode of ['light', 'dark']) {
+    const base = mode === 'light'
+      ? { text: '#000000', background: '#FFFFFF', backgroundElement: '#F0F0F3', backgroundSelected: '#E0E1E6', textSecondary: '#60646C' }
+      : { text: '#FFFFFF', background: '#000000', backgroundElement: '#212225', backgroundSelected: '#2E3135', textSecondary: '#B0B4BA' };
+    for (const colorPalette of ['default', 'blue-orange', 'monochrome', 'banorte']) for (const highContrast of [false, true]) {
+      const colors = accessibleColors(base, mode, { ...defaults, colorPalette, highContrast });
+      const label = `${mode}/${colorPalette}/${highContrast}`;
+      for (const token of ['accentSurface', 'skeleton', 'skeletonHighlight', 'overlay', 'shadow']) {
+        assert.equal(typeof colors[token], 'string', `${label}/${token}`);
+        assert.ok(colors[token].length > 0, `${label}/${token}`);
+      }
+      // A skeleton must read as a placeholder against the ground it sits on, not
+      // vanish into it — otherwise a loading surface looks like an empty one.
+      assert.notEqual(colors.skeleton, colors.background, label);
+      // The sweep has to be visible against the fill it passes over.
+      assert.notEqual(colors.skeletonHighlight, colors.skeleton, label);
+      // `accentSurface` is the palette's own selected ground, so the contrast
+      // assertions above already cover every text token placed on it.
+      assert.equal(colors.accentSurface, colors.backgroundSelected, label);
     }
   }
 });

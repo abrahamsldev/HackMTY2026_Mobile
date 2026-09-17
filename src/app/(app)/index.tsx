@@ -31,6 +31,7 @@ import {
   WelcomeComposerReveal,
   extractFirstName,
 } from "@/features/assistant/components";
+import { haptics } from "@/features/assistant/haptics";
 import { useAssistant } from "@/features/assistant/use-assistant";
 import { useVoiceFlow } from "@/features/assistant/use-voice-flow";
 import { useSession } from "@/features/auth/session-provider";
@@ -202,6 +203,7 @@ function AssistantWorkspace({
 
   function handleQuickSuggestion(suggestion: string, origin?: A2UIActionOrigin) {
     if (quickSuggestion || assistant.pending) return;
+    haptics.selection();
     setQuickSuggestionOrigin(origin);
     setQuickSuggestion(suggestion);
     setQuickSuggestionComplete(false);
@@ -235,8 +237,8 @@ function AssistantWorkspace({
   const actionTransitionWaiting = actionTransition === "thinking";
   const workspaceHidden = voiceOverlayActive || quickSuggestionWaiting || actionTransitionWaiting;
   const workspaceBlocked = voiceOverlayActive || quickSuggestionActive || actionTransitionActive;
-  const assistantBottomInset = Math.max(insets.bottom, Spacing.three);
-  const messagesBottomSpacing = Math.max(assistantBottomInset, 24) + 64 + Spacing.four;
+  const assistantBottomInset = Math.max(insets.bottom, Spacing.md);
+  const messagesBottomSpacing = Math.max(assistantBottomInset, 24) + 64 + Spacing.lg;
 
   function handleRetry() {
     if (assistant.pending || submissionLocked.current) return;
@@ -410,6 +412,7 @@ function AssistantWorkspace({
                     />
                   )}
                   <MorphingStage
+                    status={assistant.status}
                     isPending={assistant.pending && !assistant.actionStatus}
                     hasContent={Boolean(activeResponse?.reply.message || activeSurfaces.length > 0 || pastTurns.length > 0)}
                     revealed={responseRevealed}
@@ -472,8 +475,8 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   bannerContainer: {
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.two,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
     maxWidth: MaxContentWidth,
     alignSelf: "center",
     width: "100%",
@@ -482,18 +485,18 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.lg,
   },
   welcomeInner: {
     width: "100%",
     maxWidth: MaxContentWidth,
     alignItems: "center",
-    gap: Spacing.four,
+    gap: Spacing.lg,
   },
   welcomeComposerWrapper: {
     width: "100%",
-    marginTop: Spacing.two,
+    marginTop: Spacing.sm,
   },
   conversationContainer: {
     flex: 1,
@@ -504,25 +507,25 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     flexGrow: 1,
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.four,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
   },
   messagesInner: {
     width: "100%",
     maxWidth: MaxContentWidth,
     alignSelf: "center",
-    gap: Spacing.three,
+    gap: Spacing.md,
   },
   turnContainer: {
-    gap: Spacing.two,
+    gap: Spacing.sm,
   },
   questionBankConversationWrapper: {
-    marginVertical: Spacing.two,
+    marginVertical: Spacing.sm,
   },
   bottomComposerContainer: {
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.three,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
   },
   bottomComposerInner: {
     width: "100%",

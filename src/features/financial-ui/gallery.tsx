@@ -23,18 +23,18 @@ export function FinancialViewGallery() {
   const definition = financialViewCatalog[selected];
   const intent = questionBank.find(item => item.id === selected)!;
   const preview = previews.find(item => item.intent === selected)!;
-  return <View style={{ gap: Spacing.four }}>
+  return <View style={{ gap: Spacing.lg }}>
     <ThemedText accessibilityRole="header" type="subtitle">Una vista para cada pregunta</ThemedText>
     <InfoBanner title="Datos ficticios" message="Explora las 13 vistas del banco de preguntas. Buscar, ocultar saldos y comparar escenarios funciona aquí mismo; esta galería no realiza operaciones bancarias." />
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>{questionBank.map(item => <ActionButton key={item.id} label={`${selected === item.id ? '✓ ' : ''}${item.area}`} variant={selected === item.id ? 'primary' : 'outline'} onPress={() => setSelected(item.id as FinancialViewIntent)} />)}</View>
-    <Card variant="outlined"><View style={{ gap: Spacing.two }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>{questionBank.map(item => <ActionButton key={item.id} label={`${selected === item.id ? '✓ ' : ''}${item.area}`} variant={selected === item.id ? 'primary' : 'outline'} onPress={() => setSelected(item.id as FinancialViewIntent)} />)}</View>
+    <Card variant="outlined"><View style={{ gap: Spacing.sm }}>
       <StatusBadge label={definition.name} tone="info" />
       {intent.questions.map(question => <ThemedText key={question}>{question}</ThemedText>)}
       <ThemedText themeColor="textSecondary">{definition.composition}</ThemedText>
       <ThemedText type="smallBold">Componentes reutilizados</ThemedText><ThemedText type="small">{definition.components.join(' · ')}</ThemedText>
     </View></Card>
     <A2UISurface key={selected} surface={preview.surface} disabled={false} onDispatch={() => {}} />
-    <Card variant="outlined"><View style={{ gap: Spacing.two }}>
+    <Card variant="outlined"><View style={{ gap: Spacing.sm }}>
       <ThemedText type="smallBold">Datos que debe enviar el agente</ThemedText><ThemedText type="small">{definition.requiredData}</ThemedText>
       <ThemedText type="smallBold">Interacciones de la vista</ThemedText><ThemedText type="small">{definition.localActions}</ThemedText>
       <ThemedText type="smallBold">Acciones que requieren al agente</ThemedText><ThemedText type="small">{definition.agentActions}</ThemedText>

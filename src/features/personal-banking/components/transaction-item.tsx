@@ -183,7 +183,7 @@ export function TransactionItem({
 const styles = StyleSheet.create({
   itemWrapper: {
     width: '100%',
-    paddingVertical: Spacing.three,
+    paddingVertical: Spacing.md,
   },
   pressed: {
     opacity: 0.7,
@@ -194,13 +194,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.sm,
   },
   mainInfo: {
     flexGrow: 1,
     flexBasis: 180,
     maxWidth: '100%',
-    gap: Spacing.half,
+    gap: Spacing.xxs,
   },
   subInfo: {
     flexDirection: 'row',
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   amountContainer: {
     maxWidth: '100%',
     alignItems: 'flex-end',
-    gap: Spacing.half,
+    gap: Spacing.xxs,
   },
   amountText: {
     fontSize: 15,
@@ -218,9 +218,9 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   badge: {
-    paddingHorizontal: Spacing.one,
+    paddingHorizontal: Spacing.xs,
     paddingVertical: 2,
-    borderRadius: Spacing.one,
+    borderRadius: Spacing.xs,
   },
   declinedBadgeText: {
     color: '#EF4444',

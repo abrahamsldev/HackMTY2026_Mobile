@@ -192,7 +192,7 @@ test('a streamed turn reports every phase and resolves the same reply as the pla
       Accept: 'application/x-ndjson',
       Authorization: `Bearer ${TOKEN}`,
     });
-    assert.deepEqual(JSON.parse(calls.body), { query: 'Revisar base', user_id: USER });
+    assert.deepEqual(JSON.parse(calls.body), { query: 'Revisar base', user_id: USER, account_id: ACCOUNT });
     return value;
   }));
   // The repeated `interpreting` reaches the hook twice; deduping is the hook's

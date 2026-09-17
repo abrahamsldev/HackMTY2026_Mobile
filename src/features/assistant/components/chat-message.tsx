@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Animated, Clipboard, Easing, Platform, StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
 import { Pressable, TextInput } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
+import { AppIcon, type AppIconName } from '@/components/ui/icon';
 import { Spacing } from '@/constants/theme';
 import { type A2UIAction, type A2UIActionOrigin, type A2UISurfaceState } from '@/features/a2ui';
 import { useAccessibility } from '@/features/accessibility/accessibility-provider';
@@ -327,7 +327,7 @@ function IconButton({
 }: {
   label: string;
   color: string;
-  icon: 'copy' | 'edit' | 'close' | 'confirm';
+  icon: Extract<AppIconName, 'copy' | 'edit' | 'close' | 'confirm'>;
   onPress: () => void;
   disabled?: boolean;
 }) {
@@ -346,34 +346,7 @@ function IconButton({
           opacity: disabled ? 0.38 : pressed ? 0.72 : 1,
         },
       ]}>
-      <Svg width={19} height={19} viewBox="0 0 24 24">
-        {icon === 'copy' && (
-          <Path
-            d="M9 8h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Zm-2 8H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-            fill="none"
-            stroke={color}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-          />
-        )}
-        {icon === 'edit' && (
-          <Path
-            d="M4 20h4l11-11-4-4L4 16v4ZM13.5 6.5l4 4"
-            fill="none"
-            stroke={color}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-          />
-        )}
-        {icon === 'close' && (
-          <Path d="m7 7 10 10M17 7 7 17" fill="none" stroke={color} strokeLinecap="round" strokeWidth={2} />
-        )}
-        {icon === 'confirm' && (
-          <Path d="m6 12 4 4 8-9" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} />
-        )}
-      </Svg>
+      <AppIcon name={icon} size={19} color={color} />
     </Pressable>
   );
 }
@@ -382,7 +355,7 @@ const styles = StyleSheet.create({
   userContainer: {
     alignSelf: 'flex-end',
     maxWidth: '85%',
-    marginVertical: Spacing.one,
+    marginVertical: Spacing.xs,
   },
   userContainerEditing: {
     width: '85%',
@@ -390,8 +363,8 @@ const styles = StyleSheet.create({
   userBubble: {
     borderRadius: 16,
     borderWidth: 2,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   userText: {
     fontSize: 15,
@@ -401,15 +374,15 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 16,
     borderWidth: 2,
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.one,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
   },
   userEditInput: {
     minHeight: 48,
     maxHeight: 132,
     paddingHorizontal: 0,
-    paddingVertical: Spacing.two,
+    paddingVertical: Spacing.sm,
     borderWidth: 0,
     borderColor: 'transparent',
     outlineColor: 'transparent',
@@ -421,12 +394,12 @@ const styles = StyleSheet.create({
   userActionsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    paddingRight: Spacing.one,
+    paddingRight: Spacing.xs,
   },
   editConfirmationRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: Spacing.one,
+    gap: Spacing.xs,
   },
   iconButton: {
     width: 44,
@@ -438,14 +411,14 @@ const styles = StyleSheet.create({
   assistantContainer: {
     alignSelf: 'flex-start',
     width: '100%',
-    marginVertical: Spacing.one,
-    gap: Spacing.one,
+    marginVertical: Spacing.xs,
+    gap: Spacing.xs,
   },
   assistantHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-    marginBottom: Spacing.one,
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   assistantHeaderPending: {
     alignItems: 'center',
@@ -460,8 +433,8 @@ const styles = StyleSheet.create({
     maxWidth: '92%',
     borderWidth: 2,
     borderRadius: 16,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   assistantText: {
     fontSize: 15,
@@ -469,8 +442,8 @@ const styles = StyleSheet.create({
   },
   surfacesContainer: {
     width: '100%',
-    gap: Spacing.three,
-    marginTop: Spacing.two,
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
   },
   surfaceWrapper: {
     width: '100%',
@@ -478,6 +451,6 @@ const styles = StyleSheet.create({
   a2uiError: {
     fontSize: 12,
     fontStyle: 'italic',
-    paddingHorizontal: Spacing.one,
+    paddingHorizontal: Spacing.xs,
   },
 });
