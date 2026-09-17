@@ -166,7 +166,11 @@
                     "category": "transport",
                     "status": "completed"
                   }
-                ]
+                ],
+                "highlight": {
+                  "transactionId": "example-pharmacy",
+                  "focus": "largest"
+                }
               }
             }
           }

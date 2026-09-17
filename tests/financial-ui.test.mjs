@@ -150,3 +150,15 @@ test('the payment countdown reads calendar days in Monterrey, not UTC instants',
   assert.equal(daysUntil('2026-09-12', new Date('2026-09-12T18:00:00Z')), 0);
   assert.equal(daysUntil('2026-09-10', new Date('2026-09-12T18:00:00Z')), -2);
 });
+
+test('a transactions view may single out one movement, and only one that is in the list', () => {
+  const base = examples.find((view) => view.intent === 'transactions');
+  assert.ok(base.highlight, 'the gallery example carries a highlight');
+  assert.ok(bankingViewSchema.safeParse(base).success);
+  assert.ok(base.transactions.some((row) => row.transactionId === base.highlight.transactionId));
+  // A highlight pointing at a row the user cannot see would be an estimate.
+  assert.equal(bankingViewSchema.safeParse({ ...base, highlight: { transactionId: 'ghost', focus: 'largest' } }).success, false);
+  // The reason is a closed vocabulary shared with the agent's presentation options.
+  assert.equal(bankingViewSchema.safeParse({ ...base, highlight: { ...base.highlight, focus: 'biggest' } }).success, false);
+  assert.equal(bankingViewSchema.safeParse({ ...base, highlight: { ...base.highlight, reason: 'x' } }).success, false);
+});

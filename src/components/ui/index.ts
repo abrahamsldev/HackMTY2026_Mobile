@@ -40,3 +40,5 @@ export {
 export { AreaChart, type AreaChartProps } from '../charts/area-chart';
 
 export { HeatmapChart, type HeatmapChartProps } from '../charts/heatmap-chart';
+
+export { ProgressRing, type ProgressRingProps } from '../charts/progress-ring';

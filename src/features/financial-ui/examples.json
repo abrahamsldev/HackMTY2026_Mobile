@@ -90,7 +90,11 @@
         "status": "completed"
       }
     ],
-    "currency": "MXN"
+    "currency": "MXN",
+    "highlight": {
+      "transactionId": "example-pharmacy",
+      "focus": "largest"
+    }
   },
   {
     "intent": "spending-analysis",

@@ -30,9 +30,13 @@ function corePalette(base: BaseColors, colorScheme: 'light' | 'dark', settings: 
       danger: settings.highContrast ? base.text : readableRed,
       warning: base.text,
       dangerBackground: banortePalette.strongRed,
+      // Brand red leads; the other three are hues it can be told apart from.
+      // The old set was three reds and a gray — series 2 and 3 sat at ΔE 11.7
+      // for full color vision (floor 15), and the gray fell under the chroma
+      // floor. Validated with the six categorical checks, both modes.
       chartColors: dark
-        ? [banortePalette.red, banortePalette.white, '#FF9AA9', '#C9BFC1']
-        : [banortePalette.red, banortePalette.strongRed, '#5A0A18', '#6B6163'],
+        ? [banortePalette.red, '#3987e5', '#1aab7f', '#c98500']
+        : [banortePalette.red, '#2a78d6', '#199e70', '#c98500'],
     };
   }
   const alternate = settings.colorPalette === 'blue-orange';
@@ -48,7 +52,15 @@ function corePalette(base: BaseColors, colorScheme: 'light' | 'dark', settings: 
     danger: mono || settings.highContrast ? base.text : alternate ? (dark ? '#FDBA74' : '#9A3412') : dark ? '#FCA5A5' : '#991B1B',
     warning: mono || settings.highContrast ? base.text : dark ? '#FDE68A' : '#854D0E',
     dangerBackground: mono ? '#333333' : alternate ? '#9A3412' : '#991B1B',
-    chartColors: mono ? (dark ? ['#FFFFFF', '#BBBBBB', '#888888', '#666666'] : ['#111111', '#555555', '#888888', '#AAAAAA']) : alternate ? ['#0072B2', '#D55E00', '#CC79A7', '#009E73'] : dark ? ['#60A5FA', '#C4B5FD', '#86EFAC', '#FDBA74'] : ['#1D4ED8', '#7C3AED', '#15803D', '#C2410C'],
+    // Every set below passes the six categorical checks (lightness band, chroma
+    // floor, CVD separation, normal-vision floor, contrast vs surface) on its
+    // own surface. Dark mode is a selected set of steps, never the light hexes
+    // reused. `default` is the one palette the charts draw with color alone —
+    // no dash patterns — so it has to clear the normal-vision floor unaided;
+    // the previous violet/blue pair sat at ΔE 13, under the 15 floor.
+    // Okabe-Ito ordered blue, green, orange, magenta: that order keeps every
+    // adjacent pair above the CVD floor; the original order did not.
+    chartColors: mono ? (dark ? ['#FFFFFF', '#BBBBBB', '#888888', '#666666'] : ['#111111', '#555555', '#888888', '#AAAAAA']) : alternate ? (dark ? ['#2b8fd0', '#1aab7f', '#e06a1a', '#c66d9d'] : ['#0072B2', '#009E73', '#D55E00', '#CC79A7']) : dark ? ['#3987e5', '#d95926', '#199e70', '#c98500'] : ['#2a78d6', '#eb6834', '#199e70', '#c98500'],
   };
 }
 

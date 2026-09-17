@@ -12,6 +12,7 @@ import {
   EmptyState,
   InfoBanner,
   ProgressBar,
+  ProgressRing,
   StatusBadge,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
@@ -118,6 +119,18 @@ const financePreviewResult = financePreviewProcessor.process([
             { date: '2026-09-12', value: 420 },
           ],
         },
+      },
+    },
+    {
+      // The exact wire shape an agent sends for one ratio against a limit: a
+      // Chart whose `kind` is `ring`, resolved through a data binding like the
+      // other two. The client applies its own defaults for intent and size.
+      surfaceId: 'catalog-ring-preview',
+      title: 'Chart · ring',
+      chart: {
+        kind: 'ring',
+        accessibleSummary: 'Presupuesto de transporte al 86 por ciento, cerca del límite.',
+        props: { value: 6900, max: 8000, label: 'Transporte', currency: 'MXN', caption: 'Septiembre' },
       },
     },
   ].flatMap(({ surfaceId, title, chart }) => [
@@ -360,6 +373,21 @@ export default function ComponentCatalogScreen() {
               />
             </Stack>
           </Card>
+
+          {/* Medidores: una razón contra un límite. El tono sale del umbral,
+              nunca de una prop, y siempre viene acompañado de la palabra. */}
+          <Card variant="default" padding="md">
+            <View style={styles.ringRow}>
+              <ProgressRing value={3200} max={8000} label="Alimentos" currency="MXN" intent="spend" size="md" caption="Septiembre" />
+              <ProgressRing value={6900} max={8000} label="Transporte" currency="MXN" intent="spend" size="md" caption="Septiembre" />
+              <ProgressRing value={9100} max={8000} label="Compras" currency="MXN" intent="spend" size="md" caption="Septiembre" />
+            </View>
+            <View style={styles.ringRow}>
+              <ProgressRing value={18500} max={50000} label="Viaje" currency="MXN" intent="goal" size="sm" />
+              <ProgressRing value={50000} max={50000} label="Fondo de emergencia" currency="MXN" intent="goal" size="sm" />
+              <ProgressRing value={0} max={12000} label="Colegiatura" currency="MXN" intent="goal" size="sm" />
+            </View>
+          </Card>
         </Section>
 
         {/* 4. Avisos */}
@@ -556,6 +584,7 @@ export default function ComponentCatalogScreen() {
 }
 
 const styles = StyleSheet.create({
+  ringRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', gap: Spacing.md, paddingVertical: Spacing.sm },
   header: {
     paddingVertical: Spacing.sm,
     gap: Spacing.xs,

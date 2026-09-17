@@ -1,5 +1,6 @@
 import { areaChartPropsSchema } from '../../../components/charts/area-chart-model.ts';
 import { heatmapChartPropsSchema } from '../../../components/charts/heatmap-chart-model.ts';
+import { progressRingPropsSchema } from '../../../components/charts/progress-ring-model.ts';
 import { z } from 'zod';
 
 import { resolveDataPath } from '../data-model.ts';
@@ -21,9 +22,21 @@ export const a2uiHeatmapChartValueSchema = z.object({
   }),
 }).strict();
 
+/**
+ * A meter: one ratio against a limit. The same Zod model the local
+ * `ProgressRing` validates with, so the wire contract and the component can
+ * never disagree about what a ring accepts.
+ */
+export const a2uiRingChartValueSchema = z.object({
+  kind: z.literal('ring'),
+  accessibleSummary: z.string().min(1).max(500).optional(),
+  props: progressRingPropsSchema,
+}).strict();
+
 export const a2uiChartValueSchema = z.discriminatedUnion('kind', [
   a2uiAreaChartValueSchema,
   a2uiHeatmapChartValueSchema,
+  a2uiRingChartValueSchema,
 ]);
 
 export const a2uiChartInputSchema = z.union([bindingSchema, a2uiChartValueSchema]);
@@ -38,7 +51,7 @@ export function resolveA2UIChart(
   return a2uiChartValueSchema.safeParse(candidate);
 }
 
-export function chartAdapterKind(input: unknown): 'area' | 'heatmap' | 'invalid' {
+export function chartAdapterKind(input: unknown): 'area' | 'heatmap' | 'ring' | 'invalid' {
   const parsed = a2uiChartValueSchema.safeParse(input);
   return parsed.success ? parsed.data.kind : 'invalid';
 }

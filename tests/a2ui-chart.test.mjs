@@ -14,6 +14,7 @@ const contractFixtures = JSON.parse(
   readFileSync(new URL('./fixtures/chart-contract.json', import.meta.url), 'utf8'),
 );
 const [area, heatmap] = contractFixtures.accepted;
+const ring = contractFixtures.accepted.find((chart) => chart.kind === 'ring');
 
 function messages(catalogId, chart) {
   return [
@@ -25,10 +26,11 @@ function messages(catalogId, chart) {
   ];
 }
 
-test('valid finance Chart values select the existing area and heatmap adapters', () => {
+test('valid finance Chart values select the existing area, heatmap and ring adapters', () => {
   assert.equal(chartAdapterKind(area), 'area');
   assert.equal(chartAdapterKind(heatmap), 'heatmap');
-  for (const chart of [area, heatmap]) {
+  assert.equal(chartAdapterKind(ring), 'ring');
+  for (const chart of [area, heatmap, ring]) {
     assert.equal(new A2UIMessageProcessor().process(messages(A2UI_FINANCE_CATALOG_ID, chart)).ok, true);
   }
 });
@@ -67,15 +69,30 @@ test('thin client adapter delegates only to trusted charts and keeps a safe inva
     'utf8',
   );
   assert.match(adapter, /value\.kind === 'area'/);
+  assert.match(adapter, /value\.kind === 'ring'/);
   assert.match(adapter, /<AreaChart/);
   assert.match(adapter, /<HeatmapChart/);
+  assert.match(adapter, /<ProgressRing/);
   assert.match(adapter, /<GenerativeError/);
   assert.doesNotMatch(adapter, /\.\.\.parsed\.data\.props/);
 });
 
-test('component gallery contains bounded A2UI previews for both variants', () => {
+test('component gallery contains bounded A2UI previews for every chart kind', () => {
   const gallery = readFileSync(new URL('../src/app/(app)/explore.tsx', import.meta.url), 'utf8');
   assert.match(gallery, /catalog-area-preview/);
   assert.match(gallery, /catalog-heatmap-preview/);
+  assert.match(gallery, /catalog-ring-preview/);
   assert.match(gallery, /A2UI_FINANCE_CATALOG_ID/);
+});
+
+test('a ring Chart resolves through a data binding and applies the client defaults', () => {
+  const processed = new A2UIMessageProcessor().process(messages(A2UI_FINANCE_CATALOG_ID, ring));
+  assert.equal(processed.ok, true);
+  const minimal = a2uiChartValueSchema.safeParse({ kind: 'ring', props: { value: 1, max: 4, label: 'Mínimo' } });
+  assert.ok(minimal.success);
+  // Defaults are the client's, so a server that sends only the three required
+  // fields still gets a spend meter that warns at 80 %.
+  assert.equal(minimal.data.props.intent, 'spend');
+  assert.equal(minimal.data.props.warnAt, 0.8);
+  assert.equal(minimal.data.props.size, 'md');
 });

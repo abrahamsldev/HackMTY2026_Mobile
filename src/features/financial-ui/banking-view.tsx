@@ -2,11 +2,11 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { TextInput } from '@/components/accessible-primitives';
 import { ThemedText } from '@/components/themed-text';
-import { ActionButton, AreaChart, Card, Divider, EmptyState, HeatmapChart, InfoBanner, ProgressBar, StatusBadge, TextBlock } from '@/components/ui';
+import { ActionButton, AreaChart, Card, Divider, EmptyState, HeatmapChart, InfoBanner, ProgressRing, StatusBadge, TextBlock } from '@/components/ui';
 import { AccountBalanceCard, CreditUtilizationGauge, DueDateCountdown, FinancialStatCard, PaymentCard, SpendingCategoryChart, TransactionItem, TransactionList, TrendIndicator } from '@/features/personal-banking';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { budgetProgress, filterTransactions, type BankingViewData, type PaymentCardData, type ReadyBankingView, type ScenarioData } from './model';
+import { budgetProgress, filterTransactions, type BankingViewData, type PaymentCardData, type ReadyBankingView, type ScenarioData, type TransactionFocus } from './model';
 
 const money = (value: number, currency: string) => new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(value);
 const date = (value: string) => new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T12:00:00Z`));
@@ -57,6 +57,13 @@ function Summary({ data }: { data: Extract<ReadyBankingView, { intent: 'financia
   </>);
 }
 
+const focusLabels: Record<TransactionFocus, string> = {
+  largest: 'Tu mayor movimiento',
+  smallest: 'Tu movimiento más pequeño',
+  latest: 'Tu movimiento más reciente',
+  recurring: 'Cargo recurrente',
+};
+
 function Movements({ data }: { data: Extract<ReadyBankingView, { intent: 'transactions' }> }) {
   const theme = useTheme();
   const [query, setQuery] = useState('');
@@ -64,7 +71,12 @@ function Movements({ data }: { data: Extract<ReadyBankingView, { intent: 'transa
   const [selected, setSelected] = useState<string | null>(null);
   const rows = filterTransactions(data.transactions, query, direction).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
   const expenses = sum(rows.filter(row => row.amount < 0 && row.status !== 'declined').map(row => -row.amount));
+  const highlighted = data.highlight ? data.transactions.find(row => row.transactionId === data.highlight!.transactionId) : undefined;
   return group(<>
+    {highlighted && data.highlight && <Card variant="highlighted">{group(<>
+      <ThemedText accessibilityRole="header" type="smallBold">{focusLabels[data.highlight.focus]}</ThemedText>
+      <TransactionItem {...highlighted} currency={data.currency} timeZone={data.timeZone} />
+    </>)}</Card>}
     <StatusBadge label={`${date(data.startDate)} — ${date(data.endDate)}`} tone="info" />
     <ThemedText type="small" themeColor="textSecondary">Horario de Monterrey · {rows.length} movimientos</ThemedText>
     <Metric label="Gastos en los resultados" value={expenses} currency={data.currency} />
@@ -118,14 +130,16 @@ function Content({ data }: { data: ReadyBankingView }) {
       <ScheduleList currency={currency} items={data.upcoming.map(item => ({ ...item, income: item.direction === 'income', detail: item.direction === 'income' ? 'Ingreso previsto' : 'Pago previsto' }))} />
     </>);
     case 'budgets': return data.budgets.length ? group(<>{data.budgets.map(item => {
-      const { percentage, remaining } = budgetProgress(item.spent, item.limit);
-      return <Card key={item.id}>{group(<>
-        <StatusBadge label={item.status === 'paused' ? 'Pausado' : remaining < 0 ? 'Límite superado' : 'En seguimiento'} tone={item.status === 'paused' ? 'neutral' : remaining < 0 ? 'danger' : 'info'} />
-        <ThemedText type="smallBold">{item.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{item.period}</ThemedText>
-        <TextBlock variant="amount" value={`${money(item.spent, currency)} / ${money(item.limit, currency)}`} />
-        <ProgressBar value={percentage} label="Presupuesto utilizado" showValue tone={remaining < 0 ? 'danger' : percentage >= 80 ? 'warning' : 'default'} size="lg" />
-        <Detail label={remaining < 0 ? 'Excedente' : 'Disponible para gastar'} value={money(Math.abs(remaining), currency)} />
-      </>)}</Card>;
+      const { remaining } = budgetProgress(item.spent, item.limit);
+      return <Card key={item.id}><View style={styles.meterRow}>
+        <View style={styles.meterText}>
+          <StatusBadge label={item.status === 'paused' ? 'Pausado' : remaining < 0 ? 'Límite superado' : 'En seguimiento'} tone={item.status === 'paused' ? 'neutral' : remaining < 0 ? 'danger' : 'info'} />
+          <ThemedText accessibilityRole="header" type="smallBold">{item.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{item.period}</ThemedText>
+          <TextBlock variant="amount" value={`${money(item.spent, currency)} / ${money(item.limit, currency)}`} />
+          <Detail label={remaining < 0 ? 'Excedente' : 'Disponible para gastar'} value={money(Math.abs(remaining), currency)} />
+        </View>
+        <ProgressRing value={item.spent} max={item.limit} label="Utilizado" currency={currency} intent="spend" size="md" />
+      </View></Card>;
     })}</>) : <Missing description="No hay presupuestos creados para este periodo." />;
     case 'recurring-payments': return group(<>
       <View style={styles.metrics}>{(['weekly', 'monthly', 'yearly'] as const).filter(cycle => data.payments.some(p => p.cycle === cycle && p.status === 'active')).map(cycle => <View style={styles.metric} key={cycle}><Metric label={cycle === 'weekly' ? 'Cargos semanales activos' : cycle === 'monthly' ? 'Cargos mensuales activos' : 'Cargos anuales activos'} value={sum(data.payments.filter(p => p.cycle === cycle && p.status === 'active').map(p => p.amount))} currency={currency} /></View>)}</View>
@@ -160,13 +174,15 @@ function Content({ data }: { data: ReadyBankingView }) {
       {data.reportedTransaction && <TransactionList title="Movimiento en revisión"><TransactionItem {...data.reportedTransaction} currency={currency} /></TransactionList>}
       <InfoBanner title="Siguiente paso" message={data.guidance} tone="warning" />
     </>);
-    case 'savings-goals': return data.goals.length ? group(<>{data.goals.map(item => <Card key={item.id}>{group(<>
-      <ThemedText accessibilityRole="header" type="smallBold">{item.name}</ThemedText><TextBlock variant="amount" value={money(item.saved, currency)} />
-      <ThemedText themeColor="textSecondary">de {money(item.target, currency)} · meta al {date(item.targetDate)}</ThemedText>
-      <ProgressBar value={Math.min(100, item.saved / item.target * 100)} showValue label="Avance de tu meta" size="lg" tone="success" />
-      <Detail label="Por ahorrar" value={money(Math.max(0, item.target - item.saved), currency)} /><Detail label="Aportación mensual sugerida" value={money(item.monthlyContribution, currency)} />
-      {item.saved >= item.target && <StatusBadge label="Meta alcanzada" tone="success" />}
-    </>)}</Card>)}</>) : <Missing description="Todavía no hay metas de ahorro registradas." />;
+    case 'savings-goals': return data.goals.length ? group(<>{data.goals.map(item => <Card key={item.id}><View style={styles.meterRow}>
+      <View style={styles.meterText}>
+        <ThemedText accessibilityRole="header" type="smallBold">{item.name}</ThemedText><TextBlock variant="amount" value={money(item.saved, currency)} />
+        <ThemedText themeColor="textSecondary">de {money(item.target, currency)} · meta al {date(item.targetDate)}</ThemedText>
+        <Detail label="Por ahorrar" value={money(Math.max(0, item.target - item.saved), currency)} /><Detail label="Aportación mensual sugerida" value={money(item.monthlyContribution, currency)} />
+        {item.saved >= item.target && <StatusBadge label="Meta alcanzada" tone="success" />}
+      </View>
+      <ProgressRing value={item.saved} max={item.target} label="Avance" currency={currency} intent="goal" size="md" />
+    </View></Card>)}</>) : <Missing description="Todavía no hay metas de ahorro registradas." />;
     case 'banking-information': return group(<>
       <Card>{group(<><ThemedText type="smallBold">{data.bankName}</ThemedText><Detail label="Titular" value={data.holder} />{data.maskedClabe && <Detail label="CLABE enmascarada" value={data.maskedClabe} />}</>)}</Card>
       <ThemedText type="smallBold">Estados de cuenta</ThemedText>
@@ -189,6 +205,9 @@ export function BankingView({ data }: { data: BankingViewData }) {
 }
 
 const styles = StyleSheet.create({
+  // Figures first, meter last: the reading order is also the tree order.
+  meterRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.md },
+  meterText: { flex: 1, minWidth: 180, gap: Spacing.xs },
   stack: { gap: Spacing.lg, width: '100%' },
   viewPadding: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
   heading: { gap: Spacing.xs },

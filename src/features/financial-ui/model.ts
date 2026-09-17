@@ -22,6 +22,14 @@ export function transactionDay(occurredAt: string): string {
   const part = (type: string) => parts.find(p => p.type === type)?.value;
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
+/**
+ * Why one movement is singled out. It is the same closed vocabulary the agent
+ * may set as a presentation option, so a focused question ("mi mayor compra del
+ * mes pasado") arrives as data the client can label, never as prose to parse.
+ */
+export const transactionFocusSchema = z.enum(['largest', 'smallest', 'latest', 'recurring']);
+export type TransactionFocus = z.infer<typeof transactionFocusSchema>;
+
 export const transactionSchema = z.object({
   transactionId: id, title: label, description: description.optional(), amount: signedMoney,
   occurredAt: z.iso.datetime({ offset: true }),
@@ -57,8 +65,13 @@ export const readyBankingViewSchema = z.discriminatedUnion('intent', [
   }).strict()
     .refine(v => (v.cards ?? []).every(card => card.accountId === undefined || v.accounts.some(a => a.accountId === card.accountId)),
       'Hay tarjetas que no pertenecen a ninguna cuenta del resumen.'),
-  z.object({ ...common, intent: z.literal('transactions'), startDate: day, endDate: day, timeZone: z.literal('America/Monterrey'), transactions: unique(transactionSchema, 'transactionId', 100) }).strict()
+  z.object({ ...common, intent: z.literal('transactions'), startDate: day, endDate: day, timeZone: z.literal('America/Monterrey'), transactions: unique(transactionSchema, 'transactionId', 100),
+    // One movement the answer is about, drawn above the list. The id must be in
+    // the list: a highlight of a row the user cannot see would be an estimate.
+    highlight: z.object({ transactionId: id, focus: transactionFocusSchema }).strict().optional(),
+  }).strict()
     .refine((v) => v.startDate <= v.endDate, 'Periodo inválido.')
+    .refine((v) => !v.highlight || v.transactions.some((t) => t.transactionId === v.highlight!.transactionId), 'El movimiento destacado no está en la lista.')
     .refine(v => v.transactions.every(row => {
       if (!Number.isFinite(new Date(row.occurredAt).getTime())) return false;
       const localDay = transactionDay(row.occurredAt);

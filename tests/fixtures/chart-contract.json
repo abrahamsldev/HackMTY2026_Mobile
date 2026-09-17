@@ -4,10 +4,26 @@
       "kind": "area",
       "accessibleSummary": "Two months of income.",
       "props": {
-        "series": [{"id": "income", "label": "Income", "tone": "blue"}],
+        "series": [
+          {
+            "id": "income",
+            "label": "Income",
+            "tone": "blue"
+          }
+        ],
         "data": [
-          {"label": "Jan", "values": [10]},
-          {"label": "Feb", "values": [-2.5]}
+          {
+            "label": "Jan",
+            "values": [
+              10
+            ]
+          },
+          {
+            "label": "Feb",
+            "values": [
+              -2.5
+            ]
+          }
         ]
       }
     },
@@ -15,31 +31,72 @@
       "kind": "heatmap",
       "accessibleSummary": "Daily activity.",
       "props": {
-        "data": [{"date": "2026-09-12", "value": 42.5}]
+        "data": [
+          {
+            "date": "2026-09-12",
+            "value": 42.5
+          }
+        ]
       }
     },
     {
       "kind": "area",
       "props": {
-        "series": [{"id": "balance", "label": "Balance"}],
+        "series": [
+          {
+            "id": "balance",
+            "label": "Balance"
+          }
+        ],
         "data": []
       }
     },
     {
       "kind": "heatmap",
-      "props": {"data": []}
+      "props": {
+        "data": []
+      }
+    },
+    {
+      "kind": "ring",
+      "accessibleSummary": "Presupuesto de alimentos al 40 por ciento.",
+      "props": {
+        "value": 3200,
+        "max": 8000,
+        "label": "Alimentos",
+        "currency": "MXN",
+        "intent": "spend",
+        "caption": "Septiembre"
+      }
+    },
+    {
+      "kind": "ring",
+      "props": {
+        "value": 18500,
+        "max": 50000,
+        "label": "Viaje"
+      }
     }
   ],
   "rejected": [
     {
       "kind": "pie",
-      "props": {"data": []}
+      "props": {
+        "data": []
+      }
     },
     {
       "kind": "area",
-      "style": {"color": "red"},
+      "style": {
+        "color": "red"
+      },
       "props": {
-        "series": [{"id": "income", "label": "Income"}],
+        "series": [
+          {
+            "id": "income",
+            "label": "Income"
+          }
+        ],
         "data": []
       }
     },
@@ -47,16 +104,44 @@
       "kind": "area",
       "onPointSelect": "callback",
       "props": {
-        "series": [{"id": "income", "label": "Income"}],
+        "series": [
+          {
+            "id": "income",
+            "label": "Income"
+          }
+        ],
         "data": []
       }
     },
     {
       "kind": "heatmap",
       "props": {
-        "data": [{"date": "2026-02-30", "value": 1}]
+        "data": [
+          {
+            "date": "2026-02-30",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "kind": "ring",
+      "props": {
+        "value": 10,
+        "max": 0,
+        "label": "Sin límite"
+      }
+    },
+    {
+      "kind": "ring",
+      "props": {
+        "value": 10,
+        "max": 100,
+        "label": "Estilo",
+        "style": {
+          "color": "red"
+        }
       }
     }
   ]
 }
-

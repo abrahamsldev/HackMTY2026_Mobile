@@ -52,7 +52,13 @@ export type A2UIHeatmapChartValue = {
   props: import('@/components/charts/heatmap-chart-model').HeatmapChartData;
 };
 
-export type A2UIChartValue = A2UIAreaChartValue | A2UIHeatmapChartValue;
+export type A2UIRingChartValue = {
+  kind: 'ring';
+  accessibleSummary?: string;
+  props: import('@/components/charts/progress-ring-model').ProgressRingData;
+};
+
+export type A2UIChartValue = A2UIAreaChartValue | A2UIHeatmapChartValue | A2UIRingChartValue;
 
 export type A2UITextComponent = A2UIComponentCommon & {
   component: 'Text';
